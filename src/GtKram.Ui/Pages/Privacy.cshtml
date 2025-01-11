@@ -1,0 +1,17 @@
+﻿@page
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Datenschutz";
+    ViewData["HasFooter"] = true;
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+        @await Html.ReadTextContent("~/html/privacy.html")
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+

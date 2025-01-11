@@ -1,0 +1,94 @@
+﻿@page "/Bazaars/{eventId:guid}/Seller/{id:guid}/Articles"
+@model GtKram.Ui.Pages.Bazaars.SellerArticlesModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { eventId = Model.EventId, id = Model.Id };
+    Model.BuildHeaderMenu(pageParam);
+    var printLink = Url.PageLink("PrintSellerArticles", null, pageParam);
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, pageParam, new { eventId = Model.EventId }, new { id = Model.EventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <div>Gesamt: @Model.AvailableCount / @Model.MaxArticleCount</div>
+                                <div>Gesamtwert: @Model.AvailableTotalValue.ToString("0.00") €</div>
+                                <div>Verkauft: @Model.SoldCount</div>
+                                <div>Verkaufswert: @Model.SoldTotalValue.ToString("0.00") €</div>
+                                <div>Auszahlung: @Model.PaymentTotalValue.ToString("0.00") €</div>
+                            </div>
+                            <hr class="dropdown-divider" />
+                            <a href="@printLink" class="dropdown-item" target="_blank" rel="noopener noreferrer">
+                                Etiketten drucken
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="title is-4">@(Model.Event == null ? "Kinderbasar wurde nicht gefunden" : $"{Model.Event}")</h2>
+        <h2 class="subtitle">Verkäufer: @Model.SellerName (#@Model.SellerNumber)</h2>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="table-container">
+            <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Nummer</th>
+                        <th>Name</th>
+                        <th>Größe</th>
+                        <th>Preis</th>
+                        <th>Verkauft</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Articles.Length < 1)
+                    {
+                        <tr>
+                            <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
+                        </tr>
+                    }
+                    @foreach (var a in Model.Articles)
+                    {
+                        <tr>
+                            <td>@a.LabelNumber</td>
+                            <td>@a.Name</td>
+                            <td>@a.Size</td>
+                            <td>@a.Price.ToString("0.00") €</td>
+                            <td>
+                                <i class="@(a.IsSold ? "fas fa-check-circle has-text-success" : "")"></i>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")

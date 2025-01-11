@@ -1,0 +1,56 @@
+﻿@page "/Billings/Bazaar/{eventId:guid}/ArticleAdd/{billingId:guid}"
+@model GtKram.Ui.Pages.Billings.ArticleAddModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { eventId = Model.EventId, billingId = Model.BillingId };
+    Model.BuildHeaderMenu(pageParam);
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        @Html.CreateBreadcrumb(pageParam, pageParam, new { eventId = Model.EventId })
+
+        <h2 class="subtitle">@(Model.EventNameAndDescription ?? "Unbekannt")</h2>
+
+        <div class="columns">
+            <div class="column is-half">
+
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset>
+                        <div class="field">
+                            <label class="label" asp-for="SellerNumber"></label>
+                            <div class="control">
+                                <input class="input" type="text" autofocus="" asp-for="SellerNumber" />
+                            </div>
+                            <span asp-validation-for="SellerNumber"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="LabelNumber"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="LabelNumber" />
+                            </div>
+                            <span asp-validation-for="LabelNumber"></span>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Anlegen</button>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")

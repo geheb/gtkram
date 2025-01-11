@@ -1,0 +1,226 @@
+﻿@page "/Bazaars/{id:guid}/Edit"
+@model GtKram.Ui.Pages.Bazaars.EditModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { id = Model.Id };
+    Model.BuildHeaderMenu(pageParam);
+    var dateConverter = new GermanDateTimeConverter();
+    var indexLink = Url.PageLink("Index");
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam)</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <a class="dropdown-item copy-link" href="#" data-url="@(Url.PageLink("Register", null, pageParam))">
+                                Link für Registrierungen kopieren
+                            </a>
+                            <a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="@(Url.PageLink("Register", null, pageParam))">
+                                Link für Registrierungen öffnen
+                            </a>
+                            <hr class="dropdown-divider" />
+                            <a href="@(Url.PageLink("Sellers", null, new { eventId = Model.Id }))" class="dropdown-item">
+                                Registrierungen anzeigen
+                            </a>
+                            @if (!Model.HasRegistrations)
+                            {
+                                <a class="dropdown-item open-modal" href="#"
+                                    data-target="#deleteEventModal"
+                                    data-url="@(Url.PageLink(string.Empty, "delete", pageParam))">
+                                    Kinderbasar löschen
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns mt-4">
+            <div class="column is-half">
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        <div class="field">
+                            <label class="label" asp-for="Input.Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" autofocus="" asp-for="Input.Name" />
+                            </div>
+                            <span asp-validation-for="Input.Name"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Description"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Description" />
+                            </div>
+                            <span asp-validation-for="Input.Description"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label">Startet/Endet am</label>
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.StartDate" />
+                            </div>
+                            <span asp-validation-for="Input.StartDate"></span>
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.EndDate" />
+                            </div>
+                            <span asp-validation-for="Input.EndDate"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Address"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Address" />
+                            </div>
+                            <span asp-validation-for="Input.Address"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.MaxSellers"></label>
+                            <div class="control">
+                                <input class="input" type="number" asp-for="Input.MaxSellers" />
+                            </div>
+                            <span asp-validation-for="Input.MaxSellers"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label">Registrierung startet/endet am</label>
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.RegisterStartDate" />
+                            </div>
+                            <span asp-validation-for="Input.RegisterStartDate"></span>
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.RegisterEndDate" />
+                            </div>
+                            <span asp-validation-for="Input.RegisterEndDate"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.EditArticleEndDate"></label>
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.EditArticleEndDate" />
+                            </div>
+                            <span asp-validation-for="Input.EditArticleEndDate"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label">Abholung der Etiketten startet/endet am</label>
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.PickUpLabelsStartDate" />
+                            </div>
+                            <span asp-validation-for="Input.PickUpLabelsStartDate"></span>
+                            <div class="control">
+                                <input class="input" type="datetime-local" asp-for="Input.PickUpLabelsEndDate" />
+                            </div>
+                            <span asp-validation-for="Input.PickUpLabelsEndDate"></span>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <input id="checkBoxRegLocked" type="checkbox" asp-for="Input.IsRegistrationsLocked" />
+                                <label for="checkBoxRegLocked">@Html.DisplayNameFor(m => m.Input.IsRegistrationsLocked)</label>
+                            </div>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Speichern</button>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteEventModal",
+    "Kinderbasar löschen",
+    @"Möchtest du wirklich den ausgewählten Kinderbasar löschen?")
+
+@Html.CreateModalTemplateWithOkCancel(
+    "completeEventModal",
+    "Registrierung abschließen",
+    @"Möchtest du wirklich die Registrierung zum ausgewählten Kinderbasar abschließen?
+<p class=""mt-3""><strong>Die Teilnehmer werden über eine Zu-/Absage per E-Mail benachrichtigt!</strong></p>")
+
+@Html.CreateModalTemplateWithOkCancel(
+    "reopenEventModal",
+    "Registrierung eröffnen",
+    @"Möchtest du wirklich die Registrierung zum ausgewählten Kinderbasar eröffnen?")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+
+            handleModal({
+                id: '#deleteEventModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.replace('@Html.Raw(indexLink)');
+                    },
+                    toast: {
+                        success: 'Kinderbasar wurde gelöscht.',
+                        failed: 'Kinderbasar konnte nicht gelöscht werden.'
+                    }
+                }
+            });
+
+            handleModal({
+                id: '#completeEventModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Registrierung wurde abgeschlossen.',
+                        failed: 'Registrierung konnte nicht abgeschlossen werden.'
+                    }
+                }
+            });
+
+            handleModal({
+                id: '#reopenEventModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Registrierung wurde eröffnet.',
+                        failed: 'Registrierung konnte nicht eröffnet werden.'
+                    }
+                }
+            });
+
+        });
+    </script>
+}

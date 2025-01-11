@@ -1,0 +1,65 @@
+﻿@page "/MyBazaars/{bazaarId:guid}/Articles/Add"
+
+@model GtKram.Ui.Pages.MyBazaars.AddArticleModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { bazaarId = Model.BazaarId };
+    Model.BuildHeaderMenu(pageParam);
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        @Html.CreateBreadcrumb(pageParam, pageParam)
+
+        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="columns">
+            <div class="column is-half">
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        <div class="field">
+                            <label class="label" asp-for="Input.Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" autofocus="" asp-for="Input.Name" />
+                            </div>
+                            <span asp-validation-for="Input.Name"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Size"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Size" />
+                            </div>
+                            <span asp-validation-for="Input.Size"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Price"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Price" />
+                            </div>
+                            <span asp-validation-for="Input.Price"></span>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Anlegen</button>
+                    </fieldset>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")

@@ -1,0 +1,96 @@
+﻿@page
+@model GtKram.Ui.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    Model.BuildHeaderMenu();
+    var roleConverter = new RoleConverter();
+    var dateConverter = new GermanDateTimeConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb()</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <div>Bestätigt: @Model.UsersConfirmed</div>
+                                <div>Unbestätigt: @Model.UsersNotConfirmed</div>
+                                <div>Gesperrt: @Model.UsersLocked</div>
+                            </div>
+                            <hr class="dropdown-divider" />
+                            <a href="@(Url.PageLink("AddUser"))" class="dropdown-item">Benutzer anlegen</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Rollen</th>
+                        <th>E-Mail bestätigt</th>
+                        <th>Gesperrt bis</th>
+                        <th>Letzte Anmeldung</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users)
+                    {
+                        <tr class="clickable-row" data-url="@(Url.PageLink("EditUser", null, new { id = u.Id }))">
+                            <td>@u.Name</td>
+                            <td>
+                                <div class="tags">
+                                    @foreach (var r in u.Roles)
+                                    {
+                                        <span class="tag @roleConverter.RoleToClass(r)">@roleConverter.RoleToString(r)</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>@(u.IsEmailConfirmed ? "Ja" : "Nein")</td>
+                            <td>@(u.IsLockedUntil.HasValue ? dateConverter.ToDateTime(u.IsLockedUntil.Value) : "-")</td>
+                            <td>@(u.LastLogin.HasValue ? dateConverter.ToDateTime(u.LastLogin.Value) : "unbekannt")</td>
+                            <td>
+                                <a href="@(Url.PageLink("EditUser", null, new { id = u.Id }))">Bearbeiten</a>
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts {
+<script type="text/javascript">
+    $(function () {
+        $(".clickable-row").click(function (e) {
+            e.stopPropagation();
+            window.location = $(this).data("url");
+        });
+    });
+</script>
+}
+

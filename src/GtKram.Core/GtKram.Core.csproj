@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <EmbeddedResource Include="Email\ConfirmChangeEmail.html" />
+    <EmbeddedResource Include="Email\ConfirmRegistration.html" />
+    <EmbeddedResource Include="Email\DenySeller.html" />
+    <EmbeddedResource Include="Email\AcceptSeller.html" />
+    <EmbeddedResource Include="Email\PasswordForgotten.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DnsClient" />
+    <PackageReference Include="FluentResults" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+    <PackageReference Include="Scriban" />
+  </ItemGroup>
+
+</Project>

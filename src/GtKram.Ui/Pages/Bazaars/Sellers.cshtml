@@ -1,0 +1,223 @@
+﻿@page "/Bazaars/{eventId:guid}/Sellers"
+@model GtKram.Ui.Pages.Bazaars.SellersModel
+@{
+    const string Accepted = "Zugesagt";
+    const string Denied = "Abgesagt";
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { eventId = Model.EventId };
+    Model.BuildHeaderMenu(pageParam);
+    var clothingConverter = new ClothingConverter();
+    var sellerRoleConverter = new SellerRoleConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { id = Model.EventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <div>Gesamt: @Model.Count</div>
+                                <div>Zugesagt: @Model.AcceptedCount</div>
+                                <div>Abgesagt: @Model.CancelledCount</div>
+                                <div>Unbestätigt: @Model.UnconfirmedCount</div>
+                                <div>Zugesagt ohne Artikel: @Model.AcceptedWithoutArticleCount</div>
+                                <div>Eingetragene Artikel: @Model.ArticleCount</div>
+                            </div>
+                            @if (!Model.IsExpired)
+                            {
+                                <hr class="dropdown-divider" />
+                                <a href="@Url.PageLink("AddSeller", null, new { EventId = Model.EventId })" class="dropdown-item">
+                                    Verkäufer anlegen
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+
+        <div class="table-container">
+            <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Kleidungsstücke</th>
+                        <th>Teilnahme</th>
+                        <th>Rolle</th>
+                        <th>Kita</th>
+                        <th>Artikel</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Registrations.Length < 1)
+                    {
+                        <tr>
+                            <td colspan="7"><div class="has-text-centered">Keine Registrierungen gefunden.</div></td>
+                        </tr>
+                    }
+                    @foreach (var r in Model.Registrations)
+                    {
+                        <tr class="@(r.BazaarSellerId.HasValue ? "clickable-row" : string.Empty)" 
+                            data-url="@(r.BazaarSellerId.HasValue ? Url.PageLink("EditSeller", null, new { eventId = Model.EventId, id = r.BazaarSellerId.Value }) : string.Empty)">
+                            <td>@r.Name (#@(r.SellerNumber.HasValue ? r.SellerNumber.Value : string.Empty))</td>
+                            <td>
+                                @if (r.Clothing != null)
+                                {
+                                    <div class="tags">
+                                        @foreach (var c in clothingConverter.MapToString(r.Clothing))
+                                        {
+                                            <span class="tag">@c</span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (r.Accepted.HasValue)
+                                {
+                                    <span class="@(r.Accepted.Value ? "tag is-success" : "tag is-danger")">@(r.Accepted.Value ? Accepted : Denied)</span>
+                                }
+                                else
+                                {
+                                    <span class="tag">Keine</span>
+                                }
+                            </td>
+                            <td>
+                                @if (r.Role.HasValue)
+                                {
+                                    <span class="tag @sellerRoleConverter.RoleToClass(r.Role)">@sellerRoleConverter.RoleToString(r.Role)</span>
+                                }
+                                else
+                                {
+                                    <span class="tag">Keine</span>
+                                }
+                            </td>
+                            <td>@(r.HasKita ? "Ja" : "Nein")</td>
+                            <td>@(r.ArticleCount.HasValue ? r.ArticleCount.Value : 0)</td>
+                            <td>
+                                @if (r.BazaarSellerId.HasValue)
+                                {
+                                    <a class="seller-edit"
+                                       href="@(Url.PageLink("EditSeller", null, new { eventId = Model.EventId, id = r.BazaarSellerId.Value }))">
+                                       Bearbeiten
+                                    </a>
+                                }
+                                @if (!r.IsEventExpired)
+                                {
+                                    @if (r.BazaarSellerId.HasValue)
+                                    {
+                                        <span> · </span>
+                                    }
+                                    <a class="seller-confirm" href="#"
+                                        data-url="@(Url.PageLink(string.Empty, "accept", new { eventId = Model.EventId, sellerId = r.Id }))">Zusagen</a>
+                                    <span> · </span>
+                                    <a class="seller-deny" href="#"
+                                        data-url="@(Url.PageLink(string.Empty, "deny", new { eventId = Model.EventId, sellerId = r.Id }))">Absagen</a>
+                                    <span> · </span>
+                                    <a class="open-modal" href="#"
+                                        data-target="#deleteSellerModal"
+                                        data-seller="@r.Name (@r.Email)"
+                                        data-url="@(Url.PageLink(string.Empty, "delete", new { eventId = Model.EventId, sellerId = r.Id }))">Löschen</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteSellerModal",
+    "Registrierung löschen",
+    $@"Möchtest du wirklich die Registrierung ""<span class=""modal-seller""></span>"" für den Kinderbasar ""{Model.Event}"" löschen?")
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+
+            $(".clickable-row").click(function (e) {
+                e.stopPropagation();
+                window.location = $(this).data("url");
+            });
+
+            handleModal({
+                id: '#deleteSellerModal',
+                token: {@Html.AjaxCsrfToken()},
+                init: function(target, relatedTarget) {
+                    const info = relatedTarget.dataset['seller'];
+                    target.find('.modal-seller').text(info);
+                },
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Teilnahme wurde gelöscht.',
+                        failed: 'Teilnahme konnte nicht gelöscht werden.'
+                    }
+                }
+            });
+
+            $(".seller-confirm").click(function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const url = $(this).data('url');
+                const spinner = $('<i class="fas fa-spinner fa-spin"></i>');
+                spinner.insertAfter($(this));
+
+                $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
+                    if (data) {
+                        createToast('Teilnahme wurde zugesagt.');
+                        window.location.reload();
+                    } else {
+                        createToast('Teilnahme konnte nicht zugesagt werden.');
+                    }
+                }).always(function () {
+                    spinner.remove();
+                });
+            });
+
+            $(".seller-deny").click(function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                const url = $(this).data('url');
+                const spinner = $('<i class="fas fa-spinner fa-spin"></i>');
+                spinner.insertAfter($(this));
+
+                $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
+                    if (data) {
+                        createToast('Teilnahme wurde abgesagt.');
+                        window.location.reload();
+                    } else {
+                        createToast('Teilnahme konnte nicht abgesagt werden.');
+                    }
+                }).always(function () {
+                    spinner.remove();
+                });
+            });
+
+        });
+    </script>
+}

@@ -1,0 +1,123 @@
+﻿@page "/MyBazaars/{bazaarId:guid}/Articles/{id:guid}/Edit"
+@model GtKram.Ui.Pages.MyBazaars.EditArticleModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { bazaarId = Model.BazaarId, id = Model.Id };
+    Model.BuildHeaderMenu(pageParam);
+    var articlesLink = Url.PageLink("Articles", null, new { bazaarId = Model.BazaarId });
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { bazaarId = Model.BazaarId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        @if (ModelState.IsValid)
+                        {
+                            <div class="dropdown-content">
+                                <a class="dropdown-item open-modal" href="#" data-target="#deleteArticleModal"
+                                   data-url="@(Url.PageLink(string.Empty, "delete", pageParam))">
+                                    Artikel löschen
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="columns mt-4">
+            <div class="column is-half">
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        <div class="field">
+                            <label class="label" asp-for="Input.LabelNumber"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.LabelNumber" disabled="disabled" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" autofocus="" asp-for="Input.Name" />
+                            </div>
+                            <span asp-validation-for="Input.Name"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Size"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Size" />
+                            </div>
+                            <span asp-validation-for="Input.Size"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Price"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Input.Price" />
+                            </div>
+                            <span asp-validation-for="Input.Price"></span>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Speichern</button>
+                    </fieldset>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteArticleModal",
+    "Artikel löschen",
+    @"Möchtest du wirklich diesen Artikel löschen?")
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+
+            handleModal({
+                id: '#deleteArticleModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.replace('@Html.Raw(articlesLink)');
+                    },
+                    toast: {
+                        success: 'Artikel wurde gelöscht.',
+                        failed: 'Artikel konnte nicht gelöscht werden.'
+                    }
+                }
+            });
+        });
+    </script>
+}

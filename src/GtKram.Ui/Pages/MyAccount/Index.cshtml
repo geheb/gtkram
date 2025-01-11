@@ -1,0 +1,88 @@
+﻿@page
+@model GtKram.Ui.Pages.MyAccount.IndexModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    Model.BuildHeaderMenu();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb()</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <a href="@Url.PageLink("ChangePassword")" class="dropdown-item">
+                                @(Model.GetNode<ChangePasswordModel>().Title)
+                            </a>
+                            <a href="@Url.PageLink("ChangeEmail")" class="dropdown-item">
+                                @(Model.GetNode<ChangeEmailModel>().Title)
+                            </a>
+                            <a href="@Url.PageLink("EditTwoFactor")" class="dropdown-item">
+                                @(Model.GetNode<EditTwoFactorModel>().Title)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns mt-4">
+            <div class="column is-half">
+
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Info))
+                {
+                    <div class="notification is-success">
+                        <button class="delete"></button>
+                        @Model.Info
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        <div class="field">
+                            <label class="label" asp-for="Email"></label>
+                            <div class="control">
+                                <input class="input" type="email" asp-for="Email" disabled="disabled" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" asp-for="Name" autofocus="" />
+                            </div>
+                            <span asp-validation-for="Name"></span>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Speichern</button>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+

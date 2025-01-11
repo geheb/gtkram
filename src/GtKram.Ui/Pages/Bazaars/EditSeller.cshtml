@@ -1,0 +1,119 @@
+﻿@page "/Bazaars/{eventId:guid}/Seller/{id:guid}/Edit"
+@model GtKram.Ui.Pages.Bazaars.EditSellerModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    var pageParam = new { eventId = Model.EventId, id = Model.Id };
+    Model.BuildHeaderMenu(pageParam);
+    var sellerRoleConverter = new SellerRoleConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { eventId = Model.EventId }, new { id = Model.EventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, pageParam))">
+                                Artikel anzeigen
+                            </a>
+                            <a class="dropdown-item" href="@(Url.PageLink("PrintSellerArticles", null, pageParam))" target="_blank" rel="noopener noreferrer">
+                                Etiketten drucken
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+
+        <div class="columns mt-4">
+            <div class="column is-half">
+
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        <div class="field">
+                            <label class="label" asp-for="Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" disabled="disabled" asp-for="Name" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Email"></label>
+                            <div class="control">
+                                <input class="input" type="email" disabled="disabled" asp-for="Email" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Phone"></label>
+                            <div class="control">
+                                <input class="input" type="tel" disabled="disabled" asp-for="Phone" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="SellerNumber"></label>
+                            <div class="control">
+                                <input class="input" type="number" asp-for="SellerNumber" />
+                            </div>
+                            <span asp-validation-for="SellerNumber"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label">@Html.DisplayNameFor(m => m.Role)</label>
+                        </div>
+                        <div class="field">
+                            <input id="checkBoxStandard" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Standard).ToString())" />
+                            <label for="checkBoxStandard">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Standard)</label>
+
+                            <input id="checkBoxHelper" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Helper).ToString())" />
+                            <label for="checkBoxHelper">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Helper)</label>
+
+                            <input id="checkBoxLead" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.TeamLead).ToString())" />
+                            <label for="checkBoxLead">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.TeamLead)</label>
+
+                            <input id="checkBoxOrga" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Orga).ToString())" />
+                            <label for="checkBoxOrga">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Orga)</label>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Kasse</label>
+                        </div>
+                        <div class="field">
+                            <div class="control">
+                                <input id="checkBoxCanCreateBillings" type="checkbox" asp-for="CanCreateBillings" />
+                                <label for="checkBoxCanCreateBillings">@Html.DisplayNameFor(m => m.CanCreateBillings)</label>
+                            </div>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Speichern</button>
+
+                    </fieldset>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
