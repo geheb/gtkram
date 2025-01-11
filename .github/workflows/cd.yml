@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Create version
+      run: | 
+        TAG=${{ github.ref_name }}
+        echo "TAG=${TAG}" >> $GITHUB_ENV
+        echo "SEMVER=${TAG#v}" >> $GITHUB_ENV
+
+    - name: Publish files
+      run: |
+        dotnet publish ./src/GtKram.Cli -c Release -o ./dist/cli -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+        dotnet publish ./src/GtKram.Ui -c Release -o ./dist/ui -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+
+    - name: Create archive
+      run: |
+        cd dist ; tar cfJ release-linux-x64.tar.xz *
+
+    - name: Create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release create ${TAG} ./dist/release-linux-x64.tar.xz --generate-notes --title "${TAG}"
