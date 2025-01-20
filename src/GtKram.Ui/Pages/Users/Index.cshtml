@@ -52,7 +52,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var u in Model.Users)
+                    @foreach (var u in Model.Items)
                     {
                         <tr class="clickable-row" data-url="@(Url.PageLink("EditUser", null, new { id = u.Id }))">
                             <td>@u.Name</td>
@@ -65,8 +65,8 @@
                                 </div>
                             </td>
                             <td>@(u.IsEmailConfirmed ? "Ja" : "Nein")</td>
-                            <td>@(u.IsLockedUntil.HasValue ? dateConverter.ToDateTime(u.IsLockedUntil.Value) : "-")</td>
-                            <td>@(u.LastLogin.HasValue ? dateConverter.ToDateTime(u.LastLogin.Value) : "unbekannt")</td>
+                            <td>@(u.LockoutEndDate.HasValue ? dateConverter.ToDateTime(u.LockoutEndDate.Value) : "-")</td>
+                            <td>@(u.LastLoginDate.HasValue ? dateConverter.ToDateTime(u.LastLoginDate.Value) : "unbekannt")</td>
                             <td>
                                 <a href="@(Url.PageLink("EditUser", null, new { id = u.Id }))">Bearbeiten</a>
                             </td>

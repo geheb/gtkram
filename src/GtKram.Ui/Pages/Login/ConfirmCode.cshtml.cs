@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Services;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +12,7 @@ namespace GtKram.Ui.Pages.Login;
 public class ConfirmCodeModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly TwoFactorAuth _twoFactorAuth;
+    private readonly ITwoFactorAuth _twoFactorAuth;
 
     [BindProperty]
     public string? UserName { get; set; }
@@ -29,7 +29,7 @@ public class ConfirmCodeModel : PageModel
 
     public ConfirmCodeModel(
         ILogger<ConfirmCodeModel> logger,
-        TwoFactorAuth twoFactorAuth)
+        ITwoFactorAuth twoFactorAuth)
     {
         _logger = logger;
         _twoFactorAuth = twoFactorAuth;

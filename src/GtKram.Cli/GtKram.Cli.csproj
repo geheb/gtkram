@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GtKram.Core\GtKram.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -16,6 +12,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <DependentUpon>appsettings.json</DependentUpon>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GtKram.Application\GtKram.Application.csproj" />
+    <ProjectReference Include="..\GtKram.Infrastructure\GtKram.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

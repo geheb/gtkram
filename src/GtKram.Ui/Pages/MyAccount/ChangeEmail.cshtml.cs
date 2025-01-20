@@ -1,4 +1,5 @@
-using GtKram.Core.User;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class ChangeEmailModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
 
     [Display(Name = "Aktuelle E-Mail-Adresse")]
     public string? CurrentEmail { get; set; }
@@ -27,7 +28,7 @@ public class ChangeEmailModel : PageModel
 
     public bool IsDisabled { get; set; }
 
-    public ChangeEmailModel(Core.Repositories.Users users)
+    public ChangeEmailModel(IUsers users)
     {
         _users = users;
     }

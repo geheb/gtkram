@@ -1,6 +1,8 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
-using GtKram.Core.User;
+using GtKram.Application.Converter;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.User.Extensions;
+using GtKram.Application.UseCases.User.Models;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +16,10 @@ namespace GtKram.Ui.Pages.Billings;
 public class ArticlesModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly BazaarEvents _bazaarEvents;
-    private readonly BazaarBillings _bazaarBillings;
-    private readonly BazaarBillingArticles _bazaarBillingArticles;
-    private readonly BazaarSellers _bazaarSellers;
+    private readonly IBazaarEvents _bazaarEvents;
+    private readonly IBazaarBillings _bazaarBillings;
+    private readonly IBazaarBillingArticles _bazaarBillingArticles;
+    private readonly IBazaarSellers _bazaarSellers;
 
     public Guid? EventId { get; private set; }
     public Guid? BillingId { get; private set; }
@@ -30,10 +32,10 @@ public class ArticlesModel : PageModel
 
     public ArticlesModel(
         ILogger<ArticlesModel> logger,
-        BazaarEvents bazaarEvents, 
-        BazaarBillings bazaarBillings,
-        BazaarBillingArticles bazaarBillingArticles,
-        BazaarSellers bazaarSellers)
+        IBazaarEvents bazaarEvents, 
+        IBazaarBillings bazaarBillings,
+        IBazaarBillingArticles bazaarBillingArticles,
+        IBazaarSellers bazaarSellers)
     {
         _logger = logger;
         _bazaarEvents = bazaarEvents;
@@ -62,7 +64,6 @@ public class ArticlesModel : PageModel
         }
 
         EventNameAndDescription = @event.FormatEvent(new());
-
 
         var billing = await _bazaarBillings.Find(eventId, billingId, cancellationToken);
         if (billing == null)

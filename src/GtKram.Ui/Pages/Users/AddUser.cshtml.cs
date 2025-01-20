@@ -1,4 +1,5 @@
-using GtKram.Core.Models.Account;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,12 +10,12 @@ namespace GtKram.Ui.Pages.Users;
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
 public class AddUserModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
 
     [BindProperty]
     public CreateUserInput Input { get; set; } = new();
 
-    public AddUserModel(Core.Repositories.Users users)
+    public AddUserModel(IUsers users)
     {
         _users = users;
     }
@@ -43,6 +44,6 @@ public class AddUserModel : PageModel
             return Page();
         }
 
-        return RedirectToPage("Users");
+        return RedirectToPage("Index");
     }
 }

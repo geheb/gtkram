@@ -1,5 +1,6 @@
-using GtKram.Core.Repositories;
-using GtKram.Core.User;
+using GtKram.Application.Repositories;
+using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +13,8 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class IndexModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
-    private readonly TwoFactorAuth _twoFactorAuth;
+    private readonly IUsers _users;
+    private readonly ITwoFactorAuth _twoFactorAuth;
 
     [BindProperty, Display(Name = "E-Mail-Adresse")]
     public string? Email { get; set; }
@@ -25,7 +26,7 @@ public class IndexModel : PageModel
     public bool IsDisabled { get; set; }
     public string? Info { get; set; }
 
-    public IndexModel(Core.Repositories.Users users, TwoFactorAuth twoFactorAuth)
+    public IndexModel(IUsers users, ITwoFactorAuth twoFactorAuth)
     {
         _users = users;
         _twoFactorAuth = twoFactorAuth;

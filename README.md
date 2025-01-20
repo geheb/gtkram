@@ -20,3 +20,4 @@ Die Web-App für einen Kinderbasar
 * https://github.com/altmann/FluentResults
 * https://github.com/MichaCo/DnsClient.NET
 * https://github.com/serilog/serilog-aspnetcore
+* https://github.com/martinothamar/Mediator

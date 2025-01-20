@@ -1,5 +1,5 @@
-using GtKram.Core.Email;
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
+using GtKram.Application.Services;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
@@ -13,8 +13,8 @@ namespace GtKram.Ui.Pages.Login;
 public class PasswordForgottenModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly Core.Repositories.Users _users;
-    private readonly EmailValidatorService _emailValidator;
+    private readonly IUsers _users;
+    private readonly IEmailValidatorService _emailValidator;
 
     [BindProperty]
     public string? UserName { get; set; } // just for Bots
@@ -28,8 +28,8 @@ public class PasswordForgottenModel : PageModel
 
     public PasswordForgottenModel(
         ILogger<PasswordForgottenModel> logger,
-        Core.Repositories.Users users,
-        EmailValidatorService emailValidator)
+        IUsers users,
+        IEmailValidatorService emailValidator)
     {
         _logger = logger;
         _users = users;

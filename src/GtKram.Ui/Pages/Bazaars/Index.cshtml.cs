@@ -1,5 +1,5 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,11 +9,11 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class IndexModel : PageModel
 {
-    private readonly BazaarEvents _bazaarEvents;
+    private readonly IBazaarEvents _bazaarEvents;
 
     public BazaarEventDto[] Events { get; private set; } = [];
 
-    public IndexModel(BazaarEvents bazaarEvents)
+    public IndexModel(IBazaarEvents bazaarEvents)
     {
         _bazaarEvents = bazaarEvents;
     }

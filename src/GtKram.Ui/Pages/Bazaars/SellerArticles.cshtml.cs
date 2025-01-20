@@ -1,5 +1,6 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
+using GtKram.Application.Converter;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,8 +12,8 @@ namespace GtKram.Ui.Pages.Bazaars;
 public class SellerArticlesModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly BazaarSellers _bazaarSellers;
-    private readonly BazaarSellerArticles _bazaarSellerArticles;
+    private readonly IBazaarSellers _bazaarSellers;
+    private readonly IBazaarSellerArticles _bazaarSellerArticles;
 
     public Guid? EventId { get; set; }
     public Guid? Id { get; set; }
@@ -31,8 +32,8 @@ public class SellerArticlesModel : PageModel
 
     public SellerArticlesModel(
         ILogger<SellerArticlesModel> logger,
-        BazaarSellers bazaarSellers, 
-        BazaarSellerArticles bazaarSellerArticles)
+        IBazaarSellers bazaarSellers, 
+        IBazaarSellerArticles bazaarSellerArticles)
     {
         _logger = logger;
         _bazaarSellers = bazaarSellers;

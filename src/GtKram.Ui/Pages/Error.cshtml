@@ -1,4 +1,4 @@
-﻿@page "{statusCode:int=0}"
+﻿@page "/Error/{code:int}"
 @model ErrorModel
 @{
     ViewData["Title"] = "Fehler";
@@ -11,28 +11,18 @@
     <div class="container">
 
         <div class="has-text-centered">
-            @if (Model.ErrorCode == 404)
+
+            <i class="fa-solid fa-ghost fa-fade icon-big mb-6"></i>
+            <h1 class="title">Fehlercode: @Model.Code</h1>
+            <h2 class="subtitle mt-6">@Model.Description</h2>
+
+            @if (Model.Is2faRequired)
             {
-                <i class="fa-solid fa-ghost fa-fade icon-big mb-6"></i>
-                <h1 class="title">@Model.ErrorCode</h1>
-                <h2 class="subtitle">Oops, die Seite gibbet nich!</h2>
-            }
-            else if (Model.ErrorCode == 403)
-            {
-                <i class="fa-solid fa-lock fa-fade icon-big mb-6"></i>
-                <h1 class="title">@Model.ErrorCode</h1>
-                <h2 class="subtitle">Donnerlüttchen, dat hab ich nicht erwartet.</h2>
-                <p>Dir fehlen wohl die richtigen Berechtigungen für die Seite "@Model.ReturnUrl"!</p>
-                @if (Model.Required2fa)
-                {
-                    <p class="mt-1">Für diese Seite wird zusätzlich Zwei-Faktor-Authentifizierung (2FA) benötigt. Diese Einstellung erfolgt unter "Mein Konto".</p>
-                }
-            }
-            else
-            {
-                <i class="fa-solid fa-bug fa-fade icon-big mb-6"></i>
-                <h1 class="title">@Model.ErrorCode</h1>
-                <h2 class="subtitle">Allet kapores...</h2>
+                <div class="content">
+                    <blockquote>
+                        Für diese Seite wird Zwei-Faktor-Authentifizierung (2FA) benötigt. Unter "Mein Konto" kann dieses aktiviert werden.
+                    </blockquote>
+                </div>
             }
         </div>
     </div>

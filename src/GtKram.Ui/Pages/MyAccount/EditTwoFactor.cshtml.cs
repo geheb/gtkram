@@ -1,5 +1,5 @@
-using GtKram.Core.Repositories;
-using GtKram.Core.User;
+using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +13,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class EditTwoFactorModel : PageModel
 {
-    private readonly TwoFactorAuth _twoFactorAuth;
+    private readonly ITwoFactorAuth _twoFactorAuth;
 
     [BindProperty, Display(Name = "6-stelliger Code aus der Authenticator-App")]
     [RequiredField, TextLengthField(6, MinimumLength = 6)]
@@ -25,7 +25,7 @@ public class EditTwoFactorModel : PageModel
     public bool IsTwoFactorEnabled { get; set; }
     public bool IsDisabled { get; set; }
 
-    public EditTwoFactorModel(TwoFactorAuth twoFactorAuth)
+    public EditTwoFactorModel(ITwoFactorAuth twoFactorAuth)
     {
         _twoFactorAuth = twoFactorAuth;
     }

@@ -1,4 +1,5 @@
-using GtKram.Core.Models.Account;
+using GtKram.Application.UseCases.User.Commands;
+using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
 using System.ComponentModel.DataAnnotations;
 
@@ -22,26 +23,24 @@ public class UpdateUserInput
     [RequiredField]
     public bool[] Roles { get; set; } = new bool[4];
 
-    public void From(UserDto dto)
+    public void FromDomain(User user)
     {
-        Name = dto.Name;
-        Email = dto.Email;
-        if (dto.Roles!.Any(r => r == Core.Models.Roles.Admin)) Roles[0] = true;
-        if (dto.Roles!.Any(r => r == Core.Models.Roles.Manager)) Roles[1] = true;
-        if (dto.Roles!.Any(r => r == Core.Models.Roles.Seller)) Roles[2] = true;
-        if (dto.Roles!.Any(r => r == Core.Models.Roles.Billing)) Roles[3] = true;
+        Name = user.Name;
+        Email = user.Email;
+        Roles[0] = user.Roles.Contains(UserRoleType.Administrator);
+        Roles[1] = user.Roles.Contains(UserRoleType.Manager);
+        Roles[2] = user.Roles.Contains(UserRoleType.Seller);
+        Roles[3] = user.Roles.Contains(UserRoleType.Billing);
     }
 
-    public void To(UserDto dto)
+    public UpdateUserCommand ToCommand(Guid id)
     {
-        dto.Name = Name;
-        dto.Email = Email;
+        var roles = new List<UserRoleType>();
+        if (Roles[0]) roles.Add(UserRoleType.Administrator);
+        if (Roles[1]) roles.Add(UserRoleType.Manager);
+        if (Roles[2]) roles.Add(UserRoleType.Seller);
+        if (Roles[3]) roles.Add(UserRoleType.Billing);
 
-        var roles = new List<string>();
-        if (Roles[0]) roles.Add(Core.Models.Roles.Admin);
-        if (Roles[1]) roles.Add(Core.Models.Roles.Manager);
-        if (Roles[2]) roles.Add(Core.Models.Roles.Seller);
-        if (Roles[3]) roles.Add(Core.Models.Roles.Billing);
-        dto.Roles = roles.ToArray();
+        return new(id, Name, Email, Password, roles.ToArray());
     }
 }

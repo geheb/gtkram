@@ -1,5 +1,6 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
+using GtKram.Application.Options;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,12 +12,12 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class AddModel : PageModel
 {
-    private readonly BazaarEvents _bazaarEvents;
+    private readonly IBazaarEvents _bazaarEvents;
 
     [BindProperty]
     public BazaarEventInput Input { get; set; } = new();
 
-    public AddModel(BazaarEvents bazaarEvents, IOptions<AppSettings> appSettings)
+    public AddModel(IBazaarEvents bazaarEvents, IOptions<AppSettings> appSettings)
     {
         _bazaarEvents = bazaarEvents;
         Input.Address = appSettings.Value.DefaultEventLocation;

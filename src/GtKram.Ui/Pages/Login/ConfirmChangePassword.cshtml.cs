@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Converter;
 using GtKram.Ui.I18n;
@@ -13,7 +13,7 @@ namespace GtKram.Ui.Pages.Login;
 public class ConfirmChangePasswordModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
 
     [BindProperty]
     public string? UserName { get; set; } // just for bots
@@ -32,7 +32,7 @@ public class ConfirmChangePasswordModel : PageModel
 
     public ConfirmChangePasswordModel(
         ILogger<ConfirmChangePasswordModel> logger,
-        Core.Repositories.Users users)
+        IUsers users)
     {
         _logger = logger;
         _users = users;

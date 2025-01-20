@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Converter;
 using GtKram.Ui.I18n;
@@ -12,7 +12,7 @@ namespace GtKram.Ui.Pages.Login;
 [AllowAnonymous]
 public class ConfirmRegistrationModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
     private readonly ILogger _logger;
 
     public string ConfirmedEmail { get; set; } = "n.v.";
@@ -27,7 +27,7 @@ public class ConfirmRegistrationModel : PageModel
     [CompareField(nameof(Password))]
     public string? RepeatPassword { get; set; }
 
-    public ConfirmRegistrationModel(Core.Repositories.Users users, ILogger<ConfirmRegistrationModel> logger)
+    public ConfirmRegistrationModel(IUsers users, ILogger<ConfirmRegistrationModel> logger)
     {
         _users = users;
         _logger = logger;

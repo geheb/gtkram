@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Services;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +12,7 @@ namespace GtKram.Ui.Pages.Login;
 public class IndexModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly EmailAuth _emailAuth;
+    private readonly IEmailAuth _emailAuth;
 
     [BindProperty]
     public string? UserName { get; set; }
@@ -27,7 +27,7 @@ public class IndexModel : PageModel
 
     public string? Message { get; set; }
 
-    public IndexModel(ILogger<IndexModel> logger, EmailAuth emailAuth)
+    public IndexModel(ILogger<IndexModel> logger, IEmailAuth emailAuth)
     {
         _logger = logger;
         _emailAuth = emailAuth;

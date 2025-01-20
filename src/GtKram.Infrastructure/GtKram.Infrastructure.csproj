@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<EmbeddedResource Include="Email\AcceptSeller.html" />
+		<EmbeddedResource Include="Email\ChangeEmail.html" />
+		<EmbeddedResource Include="Email\ConfirmRegistration.html" />
+		<EmbeddedResource Include="Email\DenySeller.html" />
+		<EmbeddedResource Include="Email\ResetPassword.html" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DnsClient" />
+		<PackageReference Include="FluentResults" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+		<PackageReference Include="Scriban" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\GtKram.Application\GtKram.Application.csproj" />
+		<ProjectReference Include="..\GtKram.Domain\GtKram.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="GtKram.Cli" />
+	</ItemGroup>
+
+</Project>

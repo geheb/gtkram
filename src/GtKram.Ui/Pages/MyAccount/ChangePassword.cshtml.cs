@@ -1,4 +1,5 @@
-using GtKram.Core.User;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class ChangePasswordModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
 
     [BindProperty, Display(Name = "Aktuelles Passwort")]
     [RequiredField, PasswordLengthField(MinimumLength = 8)]
@@ -28,7 +29,7 @@ public class ChangePasswordModel : PageModel
 
     public bool IsDisabled { get; set; }
 
-    public ChangePasswordModel(Core.Repositories.Users users)
+    public ChangePasswordModel(IUsers users)
     {
         _users = users;
     }

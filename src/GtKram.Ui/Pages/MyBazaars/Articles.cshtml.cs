@@ -1,6 +1,7 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
-using GtKram.Core.User;
+using GtKram.Application.Converter;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.User.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,8 +12,8 @@ namespace GtKram.Ui.Pages.MyBazaars;
 [Authorize(Roles = "seller,admin")]
 public class ArticlesModel : PageModel
 {
-    private readonly BazaarSellerArticles _bazaarSellerArticles;
-    private readonly BazaarSellers _bazaarSellers;
+    private readonly IBazaarSellerArticles _bazaarSellerArticles;
+    private readonly IBazaarSellers _bazaarSellers;
 
     public Guid? BazaarId { get; set; }
     public string? Event { get; set; }
@@ -25,10 +26,10 @@ public class ArticlesModel : PageModel
     public decimal AvailableTotalValue { get; set; }
     public int SoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
-    public BazaarSellerArticleDto[] Articles { get; set; } = Array.Empty<BazaarSellerArticleDto>();
+    public BazaarSellerArticleDto[] Articles { get; set; } = [];
     public decimal PaymentTotalValue { get; set; }
 
-    public ArticlesModel(BazaarSellerArticles bazaarSellerArticles, BazaarSellers bazaarSellers)
+    public ArticlesModel(IBazaarSellerArticles bazaarSellerArticles, IBazaarSellers bazaarSellers)
     {
         _bazaarSellerArticles = bazaarSellerArticles;
         _bazaarSellers = bazaarSellers;

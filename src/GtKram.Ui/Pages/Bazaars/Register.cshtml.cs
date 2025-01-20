@@ -1,6 +1,7 @@
-using GtKram.Core.Email;
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
+using GtKram.Application.Converter;
+using GtKram.Application.Repositories;
+using GtKram.Application.Services;
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
@@ -15,9 +16,9 @@ namespace GtKram.Ui.Pages.Bazaars;
 public class RegisterModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly BazaarEvents _bazaarEvents;
-    private readonly SellerRegistrations _sellerRegistrations;
-    private readonly EmailValidatorService _emailValidator;
+    private readonly IBazaarEvents _bazaarEvents;
+    private readonly ISellerRegistrations _sellerRegistrations;
+    private readonly IEmailValidatorService _emailValidator;
 
     private enum State { Success, RequestFailed, EventNotFound, RegisterClosed }
 
@@ -54,9 +55,9 @@ public class RegisterModel : PageModel
 
     public RegisterModel(
         ILogger<RegisterModel> logger,
-        BazaarEvents bazaarEvents,
-        SellerRegistrations sellerRegistrations, 
-        EmailValidatorService emailValidator)
+        IBazaarEvents bazaarEvents,
+        ISellerRegistrations sellerRegistrations, 
+        IEmailValidatorService emailValidator)
     {
         _logger = logger;
         _bazaarEvents = bazaarEvents;

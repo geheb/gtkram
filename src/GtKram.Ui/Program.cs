@@ -1,8 +1,5 @@
-using GtKram.Core;
-using GtKram.Core.Database;
-using GtKram.Core.Email;
-using GtKram.Core.Entities;
-using GtKram.Core.User;
+using GtKram.Application;
+using GtKram.Infrastructure;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Bindings;
 using GtKram.Ui.Constants;
@@ -25,18 +22,7 @@ void ConfigureApp(WebApplicationBuilder builder)
     var services = builder.Services;
     var configuration = builder.Configuration;
 
-    services.AddMySqlContext(configuration);
-    services.AddMemoryCache();
-
-    services
-        .AddIdentity<IdentityUserGuid, IdentityRoleGuid>(options =>
-        {
-            options.SignIn.RequireConfirmedEmail = true;
-            options.Tokens.EmailConfirmationTokenProvider = ConfirmEmailDataProtectionTokenProviderOptions.ProviderName;
-        })
-        .AddEntityFrameworkStores<AppDbContext>()
-        .AddDefaultTokenProviders()
-        .AddTokenProvider<ConfirmEmailDataProtectorTokenProvider<IdentityUserGuid>>(ConfirmEmailDataProtectionTokenProviderOptions.ProviderName);
+    services.AddPersistence(configuration);
 
     services.AddControllers();
     services.AddRazorPages()
@@ -47,13 +33,7 @@ void ConfigureApp(WebApplicationBuilder builder)
             options.Filters.Add<OperationCancelledExceptionFilter>();
         });
 
-    services.AddDataProtection()
-        .AddCertificate(configuration.GetSection("DataProtection"));
-
-    services.AddAuthorization(options =>
-    {
-        options.AddPolicy(Policies.TwoFactorAuth, policy => policy.RequireClaim(UserClaims.TwoFactorClaim.Type, UserClaims.TwoFactorClaim.Value));
-    });
+    services.AddAuthorizationWith2FA(Policies.TwoFactorAuth);
 
     services.Configure<IdentityOptions>(options =>
     {
@@ -71,24 +51,7 @@ void ConfigureApp(WebApplicationBuilder builder)
         options.User.RequireUniqueEmail = true;
     });
 
-    services.Configure<ConfirmEmailDataProtectionTokenProviderOptions>(options =>
-    {
-        // lifespan of issued tokens for new users
-        options.TokenLifespan = TimeSpan.FromDays(5);
-    });
-
-    services.Configure<DataProtectionTokenProviderOptions>(options =>
-    {
-        // lifespan of issued tokens for changing email or password
-        options.TokenLifespan = TimeSpan.FromDays(1);
-    });
-
-    services.Configure<SecurityStampValidatorOptions>(options =>
-    {
-        // A user accessing the site with an existing cookie would be validated, and a new cookie would be issued. 
-        // This process is completely silent and happens behind the scenes.
-        options.ValidationInterval = TimeSpan.FromMinutes(30);
-    });
+    services.ConfigureDataProtection();
 
     services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
     {
@@ -131,11 +94,9 @@ void ConfigureApp(WebApplicationBuilder builder)
         options.Cookie.Name = CookieNames.XcsrfToken;
     });
 
-    services.Configure<AppSettings>(configuration.GetSection("App"));
-
-    services.AddHttpContextAccessor();
     services.AddSingleton<NodeGeneratorService>();
-    services.AddCore(configuration);
+    services.AddInfrastructure(configuration);
+    services.AddApplication(configuration);
 }
 
 void ConfigurePipeline(WebApplication app)

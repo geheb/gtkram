@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -8,9 +8,9 @@ namespace GtKram.Ui.Pages.Login;
 [Authorize]
 public class ExitModel : PageModel
 {
-    private readonly EmailAuth _emailAuth;
+    private readonly IEmailAuth _emailAuth;
 
-    public ExitModel(EmailAuth emailAuth) => _emailAuth = emailAuth;
+    public ExitModel(IEmailAuth emailAuth) => _emailAuth = emailAuth;
 
     public async Task<IActionResult> OnGetAsync()
     {

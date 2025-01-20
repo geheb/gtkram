@@ -3,7 +3,9 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { id = Model.Id };
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+    Model.BuildHeaderMenu(new { id });
+    var pageParam = new { id };
     Model.BuildHeaderMenu(pageParam);
     var roleConverter = new RoleConverter();
     var usersUrl = Url.PageLink("Index");
@@ -30,12 +32,12 @@
                         {
                             <div class="dropdown-content">
                                 <a class="confirm-email dropdown-item" href="#"
-                                    data-url="@(Url.PageLink(string.Empty, "confirmemail", new { id = Model.Id }))">
+                                    data-url="@(Url.PageLink(string.Empty, "confirmemail", new { id }))">
                                     Bestätigung anfordern
                                 </a>
                                 <a class="dropdown-item open-modal" href="#"
                                    data-target="#resetTwoFactorModal"
-                                   data-url="@(Url.PageLink(string.Empty, "resettwofactor", new { id = Model.Id }))">
+                                   data-url="@(Url.PageLink(string.Empty, "resettwofactor", new { id }))">
                                     2FA zurücksetzen
                                 </a>
                             </div>

@@ -1,5 +1,5 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,8 +10,8 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
 public class SellersModel : PageModel
 {
-    private readonly BazaarEvents _bazaarEvents;
-    private readonly SellerRegistrations _sellerRegistrations;
+    private readonly IBazaarEvents _bazaarEvents;
+    private readonly ISellerRegistrations _sellerRegistrations;
 
     public Guid? EventId { get; set; }
     public string? Event { get; set; }
@@ -29,8 +29,8 @@ public class SellersModel : PageModel
     public bool IsExpired { get; set; }
 
     public SellersModel(
-        BazaarEvents bazaarEvents,
-        SellerRegistrations sellerRegistrations)
+        IBazaarEvents bazaarEvents,
+        ISellerRegistrations sellerRegistrations)
     {
         _bazaarEvents = bazaarEvents;
         _sellerRegistrations = sellerRegistrations;
@@ -46,7 +46,7 @@ public class SellersModel : PageModel
         if (@event != null)
         {
             IsExpired = @event.IsBillingExpired;
-            Event = @event.FormatEvent(new GermanDateTimeConverter());
+            Event = @event.FormatEvent(new());
             Registrations = await _sellerRegistrations.GetAll(eventId, cancellationToken);
             Count = Registrations.Length;
             AcceptedCount = Registrations.Count(r => r.Accepted == true);

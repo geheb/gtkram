@@ -1,5 +1,6 @@
-using GtKram.Core.Database;
-using GtKram.Core.Email;
+using GtKram.Infrastructure;
+using GtKram.Infrastructure.Email;
+using GtKram.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,11 +31,9 @@ class Program
             {
                 services.AddLogging();
                 services.AddHttpClient();
-                services.AddMySqlContext(context.Configuration);
 
-                services.Configure<SmtpConnectionOptions>(context.Configuration.GetSection("Smtp"));
-
-                services.AddSingleton<SmtpDispatcher>();
+                services.AddPersistence(context.Configuration);
+                services.AddSmtp(context.Configuration);
             })
             .ConfigureLogging((context, config) =>
             {
@@ -53,7 +52,6 @@ class Program
         {
             case "--migrate-db": return await MigrateDatabase(host.Services);
             case "--create-dataprotection-cert": return CreateDataProtectionCert();
-            case "--register-seller": return await RegisterSeller(host.Services);
             case "--test-email": return await TestEmail(host.Services);
         }
 
@@ -134,50 +132,6 @@ class Program
 
         return 0;
     }
-
-    private static async Task<int> RegisterSeller(IServiceProvider serviceProvider)
-    {
-        using var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
-
-        var config = serviceScope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var apiKey = config.GetValue<string>("ApiKey");
-        var apiBaseUri = config.GetValue<string>("ApiBaseUri");
-
-        var httpClientFactory = serviceScope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-
-        Console.Write("Event Id: ");
-        var eventId = Guid.Parse(Console.ReadLine()!);
-
-        Console.Write("Name: ");
-        var name = Console.ReadLine();
-
-        Console.Write("Email: ");
-        var email = Console.ReadLine();
-
-        Console.Write("Phone: ");
-        var phone = Console.ReadLine();
-
-        var client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            EventId = eventId,
-            Name = name,
-            Email = email,
-            Phone = phone
-        });
-
-        var response = await client.PostAsync(apiBaseUri + "/api/admin/registerseller",
-            new StringContent(payload, Encoding.UTF8, "application/json"));
-
-        var result = await response.Content.ReadAsStringAsync();
-
-        Console.WriteLine("Result: " + result);
-
-        return response.IsSuccessStatusCode ? 0 : 1;
-    }
-
     private static async Task<int> TestEmail(IServiceProvider serviceProvider)
     {
         using var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();

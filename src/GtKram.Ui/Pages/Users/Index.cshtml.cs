@@ -1,4 +1,6 @@
-using GtKram.Core.Models.Account;
+using GtKram.Application.UseCases.User.Queries;
+using GtKram.Domain.Models;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -8,22 +10,23 @@ namespace GtKram.Ui.Pages.Users;
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
 public class IndexModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
-    public UserDto[] Users { get; private set; } = [];
+    private readonly IMediator _mediator;
+
+    public User[] Items { get; private set; } = [];
     public int UsersConfirmed { get; set; }
     public int UsersNotConfirmed { get; set; }
     public int UsersLocked { get; set; }
 
-    public IndexModel(Core.Repositories.Users users)
+    public IndexModel(IMediator mediator)
     {
-        _users = users;
+        _mediator = mediator;
     }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Users = await _users.GetAll(cancellationToken);
-        UsersConfirmed = Users.Count(u => u.IsEmailConfirmed);
-        UsersNotConfirmed = Users.Count(u => !u.IsEmailConfirmed);
-        UsersLocked = Users.Count(u => u.IsLockedUntil.HasValue);
+        Items = await _mediator.Send(new GetAllUsersQuery(), cancellationToken);
+        UsersConfirmed = Items.Count(u => u.IsEmailConfirmed);
+        UsersNotConfirmed = Items.Count(u => !u.IsEmailConfirmed);
+        UsersLocked = Items.Count(u => u.LockoutEndDate.HasValue);
     }
 }

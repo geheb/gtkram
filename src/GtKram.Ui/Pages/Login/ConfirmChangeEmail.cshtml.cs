@@ -1,4 +1,4 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
 using GtKram.Ui.Converter;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
@@ -9,12 +9,12 @@ namespace GtKram.Ui.Pages.Login;
 [AllowAnonymous]
 public class ConfirmChangeEmailModel : PageModel
 {
-    private readonly Core.Repositories.Users _users;
+    private readonly IUsers _users;
     private readonly ILogger _logger;
 
     public string ConfirmedEmail { get; set; } = "n.v.";
 
-    public ConfirmChangeEmailModel(Core.Repositories.Users users, ILogger<ConfirmChangeEmailModel> logger)
+    public ConfirmChangeEmailModel(IUsers users, ILogger<ConfirmChangeEmailModel> logger)
     {
         _users = users;
         _logger = logger;

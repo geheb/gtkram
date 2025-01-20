@@ -1,11 +1,14 @@
-@using GtKram.Ui.Converter;
-@using GtKram.Core.Models;
-@using GtKram.Ui.Html;
-@using System.Net;
-@using System.Globalization;
+@using GtKram.Application.Converter
+@using GtKram.Application.Options
+@using GtKram.Application.UseCases.Bazaar.Models
+@using GtKram.Application.UseCases.User.Models
+@using GtKram.Ui.Converter
+@using GtKram.Ui.Html
+@using System.Net
+@using System.Globalization
 @using Microsoft.Extensions.Options
 
-@inject IOptions<AppSettings> appSettings;
+@inject IOptions<AppSettings> appSettings
 
 @namespace GtKram.Ui.Pages
 

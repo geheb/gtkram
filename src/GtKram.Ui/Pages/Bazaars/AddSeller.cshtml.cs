@@ -1,5 +1,5 @@
-using GtKram.Core.Email;
-using GtKram.Core.Repositories;
+using GtKram.Application.Repositories;
+using GtKram.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,9 +10,9 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class AddSellerModel : PageModel
 {
-    private readonly BazaarEvents _bazaarEvents;
-    private readonly SellerRegistrations _sellerRegistrations;
-    private readonly EmailValidatorService _emailValidator;
+    private readonly IBazaarEvents _bazaarEvents;
+    private readonly ISellerRegistrations _sellerRegistrations;
+    private readonly IEmailValidatorService _emailValidator;
 
     [BindProperty]
     public AddSellerInput Input { get; set; } = new();
@@ -22,9 +22,9 @@ public class AddSellerModel : PageModel
     public string? Details { get; set; }
 
     public AddSellerModel(
-        BazaarEvents bazaarEvents,
-        SellerRegistrations sellerRegistrations,
-        EmailValidatorService emailValidator)
+        IBazaarEvents bazaarEvents,
+        ISellerRegistrations sellerRegistrations,
+        IEmailValidatorService emailValidator)
     {
         _bazaarEvents = bazaarEvents;
         _sellerRegistrations = sellerRegistrations;
@@ -66,7 +66,7 @@ public class AddSellerModel : PageModel
             return false;
         }
 
-        Details = dto.FormatEvent(new GermanDateTimeConverter());
+        Details = dto.FormatEvent(new());
 
         return ModelState.IsValid;
     }

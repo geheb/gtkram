@@ -1,4 +1,5 @@
-using GtKram.Core.Repositories;
+using GtKram.Application.Converter;
+using GtKram.Application.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,8 +10,8 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class EditModel : PageModel
 {
-    private readonly BazaarEvents _bazaarEvents;
-    private readonly SellerRegistrations _sellerRegistrations;
+    private readonly IBazaarEvents _bazaarEvents;
+    private readonly ISellerRegistrations _sellerRegistrations;
 
     public Guid? Id { get; set; }
 
@@ -21,7 +22,7 @@ public class EditModel : PageModel
     [BindProperty]
     public BazaarEventInput Input { get; set; } = new();
 
-    public EditModel(BazaarEvents bazaarEvents, SellerRegistrations sellerRegistrations)
+    public EditModel(IBazaarEvents bazaarEvents, ISellerRegistrations sellerRegistrations)
     {
         _bazaarEvents = bazaarEvents;
         _sellerRegistrations = sellerRegistrations;

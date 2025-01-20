@@ -1,6 +1,6 @@
-using GtKram.Core.Models.Bazaar;
-using GtKram.Core.Repositories;
-using GtKram.Core.User;
+using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +12,8 @@ namespace GtKram.Ui.Pages.MyBazaars;
 [Authorize(Roles = "seller,admin")]
 public class EditArticleModel : PageModel
 {
-    private readonly BazaarSellerArticles _bazaarSellerArticles;
-    private readonly BazaarSellers _bazaarSellers;
+    private readonly IBazaarSellerArticles _bazaarSellerArticles;
+    private readonly IBazaarSellers _bazaarSellers;
 
     public Guid? BazaarId { get; set; }
     public Guid? Id { get; set; }
@@ -23,7 +23,9 @@ public class EditArticleModel : PageModel
     [BindProperty]
     public ArticleInput Input { get; set; } = new();
 
-    public EditArticleModel(BazaarSellerArticles bazaarSellerArticles, BazaarSellers bazaarSellers)
+    public EditArticleModel(
+        IBazaarSellerArticles bazaarSellerArticles, 
+        IBazaarSellers bazaarSellers)
     {
         _bazaarSellerArticles = bazaarSellerArticles;
         _bazaarSellers = bazaarSellers;

@@ -82,17 +82,17 @@
                             <label class="label">@Html.DisplayNameFor(m => m.Role)</label>
                         </div>
                         <div class="field">
-                            <input id="checkBoxStandard" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Standard).ToString())" />
-                            <label for="checkBoxStandard">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Standard)</label>
+                            <input id="checkBoxStandard" type="radio" asp-for="Role" value="@(((int)SellerRole.Standard).ToString())" />
+                            <label for="checkBoxStandard">@sellerRoleConverter.RoleToString(SellerRole.Standard)</label>
 
-                            <input id="checkBoxHelper" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Helper).ToString())" />
-                            <label for="checkBoxHelper">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Helper)</label>
+                            <input id="checkBoxHelper" type="radio" asp-for="Role" value="@(((int)SellerRole.Helper).ToString())" />
+                            <label for="checkBoxHelper">@sellerRoleConverter.RoleToString(SellerRole.Helper)</label>
 
-                            <input id="checkBoxLead" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.TeamLead).ToString())" />
-                            <label for="checkBoxLead">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.TeamLead)</label>
+                            <input id="checkBoxLead" type="radio" asp-for="Role" value="@(((int)SellerRole.TeamLead).ToString())" />
+                            <label for="checkBoxLead">@sellerRoleConverter.RoleToString(SellerRole.TeamLead)</label>
 
-                            <input id="checkBoxOrga" type="radio" asp-for="Role" value="@(((int)Core.Models.Bazaar.SellerRole.Orga).ToString())" />
-                            <label for="checkBoxOrga">@sellerRoleConverter.RoleToString(Core.Models.Bazaar.SellerRole.Orga)</label>
+                            <input id="checkBoxOrga" type="radio" asp-for="Role" value="@(((int)SellerRole.Orga).ToString())" />
+                            <label for="checkBoxOrga">@sellerRoleConverter.RoleToString(SellerRole.Orga)</label>
                         </div>
 
                         <div class="field">
