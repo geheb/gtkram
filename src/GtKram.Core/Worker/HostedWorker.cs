@@ -233,8 +233,13 @@ public sealed class HostedWorker : BackgroundService
             pickupdate = FormatDate(dc, pickUpStart, pickUpEnd),
         };
 
-        var calendarEvent = new CalendarEvent().Create("Abholung der Etiketten", @event.Address, pickUpStart, pickUpEnd);
-        var attachment = Attachment.CreateAttachmentFromString(calendarEvent, "event.ics", Encoding.UTF8, CalendarEvent.MimeType);
+        Attachment? attachment = null;
+        if (template == BazaarEmailTemplate.AcceptSeller)
+        {
+            var calendarEvent = new CalendarEvent().Create("Abholung der Etiketten", @event.Address, pickUpStart, pickUpEnd);
+            attachment = Attachment.CreateAttachmentFromString(calendarEvent, "event.ics", Encoding.UTF8, CalendarEvent.MimeType);
+        }
+
         var message = await _bazaarEmailTemplateRenderer.Render(template, model);
 
         try
