@@ -23,7 +23,7 @@ public class UpdateUserInput
     [RequiredField]
     public bool[] Roles { get; set; } = new bool[4];
 
-    public void FromDomain(User user)
+    public void Init(User user)
     {
         Name = user.Name;
         Email = user.Email;
@@ -41,6 +41,6 @@ public class UpdateUserInput
         if (Roles[2]) roles.Add(UserRoleType.Seller);
         if (Roles[3]) roles.Add(UserRoleType.Billing);
 
-        return new(id, Name, Email, Password, roles.ToArray());
+        return new(id, Name!, Email!, Password, [.. roles]);
     }
 }

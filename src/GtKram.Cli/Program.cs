@@ -140,7 +140,7 @@ class Program
         Console.Write("Email: ");
         var email = Console.ReadLine();
 
-        await emailSender.SendEmailAsync(email!, "Test", "<html><body>Test</body></html>");
+        await emailSender.Send(email!, "Test", "<html><body>Test</body></html>");
 
         return 0;
     }

@@ -4,6 +4,7 @@ public sealed class EmailQueue
 {
     public Guid Id { get; set; }
     public DateTimeOffset CreatedOn {  get; set; }
+    public DateTimeOffset? SentOn { get; set; }
     public string? Recipient { get; set; }
     public string? Subject { get; set; }
     public string? Body { get; set; }

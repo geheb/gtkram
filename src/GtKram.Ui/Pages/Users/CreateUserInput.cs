@@ -1,4 +1,5 @@
-using GtKram.Application.UseCases.User.Models;
+using GtKram.Application.UseCases.User.Commands;
+using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
 using System.ComponentModel.DataAnnotations;
 
@@ -18,16 +19,14 @@ public class CreateUserInput
     [RequiredField]
     public bool[] Roles { get; set; } = new bool[4];
 
-    public void To(UserDto dto)
+    public CreateUserCommand ToCommand()
     {
-        dto.Name = Name;
-        dto.Email = Email;
+        var roles = new List<UserRoleType>();
+        if (Roles[0]) roles.Add(UserRoleType.Administrator);
+        if (Roles[1]) roles.Add(UserRoleType.Manager);
+        if (Roles[2]) roles.Add(UserRoleType.Seller);
+        if (Roles[3]) roles.Add(UserRoleType.Billing);
 
-        var roles = new List<string>();
-        if (Roles[0]) roles.Add(Application.UseCases.User.Models.Roles.Admin);
-        if (Roles[1]) roles.Add(Application.UseCases.User.Models.Roles.Manager);
-        if (Roles[2]) roles.Add(Application.UseCases.User.Models.Roles.Seller);
-        if (Roles[3]) roles.Add(Application.UseCases.User.Models.Roles.Billing);
-        dto.Roles = roles.ToArray();
+        return new(Name!, Email!, [.. roles]);
     }
 }

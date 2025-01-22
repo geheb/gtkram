@@ -1,7 +1,10 @@
-using GtKram.Application.Services;
+using FluentResults;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
+using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Constants;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,7 +16,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class EditTwoFactorModel : PageModel
 {
-    private readonly ITwoFactorAuth _twoFactorAuth;
+    private readonly IMediator _mediator;
 
     [BindProperty, Display(Name = "6-stelliger Code aus der Authenticator-App")]
     [RequiredField, TextLengthField(6, MinimumLength = 6)]
@@ -21,54 +24,72 @@ public class EditTwoFactorModel : PageModel
 
     [Display(Name = "Geheimer Schlüssel")]
     public string? SecretKey { get; set; }
+
     public string? AuthUri { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
     public bool IsDisabled { get; set; }
 
-    public EditTwoFactorModel(ITwoFactorAuth twoFactorAuth)
+    public EditTwoFactorModel(IMediator mediator)
     {
-        _twoFactorAuth = twoFactorAuth;
+        _mediator = mediator;
     }
 
-    public Task OnGetAsync()
+    public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        return Update();
+        var result2fa = await _mediator.Send(new GetTwoFactorAuthQuery(User.GetId()), cancellationToken);
+        if (result2fa.IsFailed)
+        {
+            result2fa = await _mediator.Send(new CreateTwoFactorAuthCommand(User.GetId()), cancellationToken);
+        }
+
+        if (result2fa.IsSuccess)
+        {
+            IsTwoFactorEnabled = result2fa.Value.IsEnabled;
+            SecretKey = result2fa.Value.SecretKey;
+            AuthUri = result2fa.Value.AuthUri;
+        }
+        else
+        {
+            IsDisabled = true;
+            result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+        }
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        if (!await Update()) return Page();
+        var result2fa = await _mediator.Send(new GetTwoFactorAuthQuery(User.GetId()), cancellationToken);
+        if (result2fa.IsFailed)
+        {
+            IsDisabled = true;
+            result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            return Page();
+        }
 
-        var enable = !IsTwoFactorEnabled;
+        IsTwoFactorEnabled = result2fa.Value.IsEnabled;
+        SecretKey = result2fa.Value.SecretKey;
+        AuthUri = result2fa.Value.AuthUri;
 
-        var result = await _twoFactorAuth.Enable(User.GetId(), enable, Code!);
+        Result result;
+        if (IsTwoFactorEnabled)
+        {
+            result = await _mediator.Send(new DisableTwoFactorAuthCommand(User.GetId(), Code!), cancellationToken);
+        }
+        else
+        {
+            result = await _mediator.Send(new EnableTwoFactorAuthCommand(User.GetId(), Code!), cancellationToken);
+        }
+
         if (result.IsFailed)
         {
             result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return Page();
         }
 
-        if (!enable)
+        if (!IsTwoFactorEnabled)
         {
             Response.Cookies.Delete(CookieNames.TwoFactorTrustToken);
         }
 
-        return RedirectToPage("Index", new { message = enable ? 3 : 4 });
-    }
-
-    private async Task<bool> Update()
-    {
-        var result = await _twoFactorAuth.GenerateKey(User.GetId());
-        if (result.IsFailed)
-        {
-            IsDisabled = true;
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
-            return false;
-        }
-
-        SecretKey = result.Value.SecretKey;
-        AuthUri = result.Value.AuthUri;
-        IsTwoFactorEnabled = result.Value.IsEnabled;
-        return ModelState.IsValid;
+        return RedirectToPage("Index", new { message = IsTwoFactorEnabled ? 3 : 4 });
     }
 }

@@ -1,7 +1,10 @@
 using GtKram.Application.Repositories;
 using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
+using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,10 +16,9 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class IndexModel : PageModel
 {
-    private readonly IUsers _users;
-    private readonly ITwoFactorAuth _twoFactorAuth;
+    private readonly IMediator _mediator;
 
-    [BindProperty, Display(Name = "E-Mail-Adresse")]
+    [Display(Name = "E-Mail-Adresse")]
     public string? Email { get; set; }
 
     [BindProperty, Display(Name = "Name")]
@@ -24,12 +26,12 @@ public class IndexModel : PageModel
     public string? Name { get; set; }
 
     public bool IsDisabled { get; set; }
+
     public string? Info { get; set; }
 
-    public IndexModel(IUsers users, ITwoFactorAuth twoFactorAuth)
+    public IndexModel(IMediator mediator)
     {
-        _users = users;
-        _twoFactorAuth = twoFactorAuth;
+        _mediator = mediator;
     }
 
     public Task OnGetAsync(int? message, CancellationToken cancellationToken)
@@ -50,10 +52,10 @@ public class IndexModel : PageModel
     {
         if (!await Update(cancellationToken)) return;
 
-        var errors = await _users.Update(User.GetId(), Name!);
-        if (errors != null)
+        var result = await _mediator.Send(new UpdateUsersNameCommand(User.GetId(), Name!), cancellationToken);
+        if (result.IsFailed)
         {
-            errors.ToList().ForEach(e => ModelState.AddModelError(string.Empty, e));
+            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return;
         }
 
@@ -62,15 +64,15 @@ public class IndexModel : PageModel
 
     private async Task<bool> Update(CancellationToken cancellationToken)
     {
-        var user = await _users.Find(User.GetId(), cancellationToken);
-        if (user == null)
+        var result = await _mediator.Send(new FindUserByIdQuery(User.GetId()), cancellationToken);
+        if (result.IsFailed)
         {
             IsDisabled = true;
             return false;
         }
 
-        Name = user.Name;
-        Email = user.Email;
+        Name = result.Value.Name;
+        Email = result.Value.Email;
 
         return ModelState.IsValid;
     }

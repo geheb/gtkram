@@ -12,8 +12,7 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class UserRepository : IUserRepository
 {
-    private const string _notFound = "Benutzer wurde nicht gefunden.";
-
+    private const string _userNotFound = "Der Benutzer wurde nicht gefunden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly TimeProvider _timeProvider;
     private readonly UserManager<IdentityUserGuid> _userManager;
@@ -72,7 +71,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
         }
 
         user.Email = $"{user.UserName}@deactivated";
@@ -93,7 +92,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
         }
 
         return Result.Ok(user.MapToDomain(new()));
@@ -104,7 +103,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
         }
         return Result.Ok(user.MapToDomain(new()));
     }
@@ -128,7 +127,12 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
+        }
+
+        if (user.Email == email)
+        {
+            return Result.Ok();
         }
 
         var token = await _userManager.GenerateChangeEmailTokenAsync(user, email);
@@ -148,7 +152,12 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
+        }
+
+        if (user.Name == name)
+        {
+            return Result.Ok();
         }
 
         user.Name = name;
@@ -169,7 +178,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
         }
 
         IdentityResult result;
@@ -209,7 +218,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(_userNotFound);
         }
 
         IdentityResult result;
@@ -243,5 +252,22 @@ internal sealed class UserRepository : IUserRepository
         }
 
         return Result.Ok();
+    }
+
+    public async Task<Result<string>> CreateEmailConfirmationToken(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return Result.Fail("Die E-Mail-Adresse wurde bereits bestätigt.");
+        }
+
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        return Result.Ok(token);
     }
 }

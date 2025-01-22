@@ -6,9 +6,10 @@ namespace GtKram.Application.Services;
 
 public interface ITwoFactorAuth
 {
-    Task<Result<UserTwoFactor>> GenerateKey(Guid userId);
-    Task<Result> Enable(Guid userId, bool enable, string code);
-    Task<bool> Reset(Guid userId);
-    Task<bool> HasUserAuthentication();
+    Task<Result<UserTwoFactorAuthSettings>> CreateAuthenticator(Guid id);
+    Task<Result<UserTwoFactorAuthSettings>> GetAuthenticator(Guid id);
+    Task<Result> Enable(Guid id, bool enable, string code);
+    Task<Result> Reset(Guid id);
+    Task<Result> HasUserAuthentication();
     Task<SignInResult> SignIn(string code, bool remember);
 }

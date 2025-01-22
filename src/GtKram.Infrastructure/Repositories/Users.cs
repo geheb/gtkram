@@ -550,9 +550,9 @@ internal sealed class Users : IUsers
         return newEmail;
     }
 
-    private async Task<bool> NotifyConfirmRegistration(IdentityUserGuid user, CancellationToken cancellationToken)
+    private Task<bool> NotifyConfirmRegistration(IdentityUserGuid user, CancellationToken cancellationToken)
     {
-        if (_httpContext.HttpContext is null)
+        /*if (_httpContext.HttpContext is null)
         {
             return false;
         }
@@ -591,13 +591,13 @@ internal sealed class Users : IUsers
         {
             _logger.LogInformation("Save changes for user {Email} failed", user.Email);
             return false;
-        }
-        return true;
+        }*/
+        return Task.FromResult(false); ;
     }
 
-    private async Task<bool> NotifyChangePassword(IdentityUserGuid user, CancellationToken cancellationToken)
+    private Task<bool> NotifyChangePassword(IdentityUserGuid user, CancellationToken cancellationToken)
     {
-        if (_httpContext.HttpContext is null)
+        /*if (_httpContext.HttpContext is null)
         {
             return false;
         }
@@ -636,13 +636,13 @@ internal sealed class Users : IUsers
         {
             _logger.LogInformation("Save changes for user {Email} failed", user.Email);
             return false;
-        }
-        return true;
+        }*/
+        return Task.FromResult(false);
     }
 
-    private async Task<bool> NotifyConfirmChangeEmail(IdentityUserGuid user, string newEmail, CancellationToken cancellationToken)
+    private Task<bool> NotifyConfirmChangeEmail(IdentityUserGuid user, string newEmail, CancellationToken cancellationToken)
     {
-        if (_httpContext.HttpContext is null)
+        /*if (_httpContext.HttpContext is null)
         {
             return false;
         }
@@ -685,7 +685,7 @@ internal sealed class Users : IUsers
             _logger.LogInformation("Save changes for user {Email} failed", user.Email);
             return false;
         }
-
-        return true;
+        */
+        return Task.FromResult(false);
     }
 }

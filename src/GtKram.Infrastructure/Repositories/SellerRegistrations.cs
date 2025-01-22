@@ -213,9 +213,9 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
         return await _dbContext.SaveChangesAsync(cancellationToken) > 0;
     }
 
-    public async Task<bool> NotifyRegistration(Guid registrationId, CancellationToken cancellationToken)
+    public Task<bool> NotifyRegistration(Guid registrationId, CancellationToken cancellationToken)
     {
-        var dbSetBazaarSellerRegistration = _dbContext.Set<BazaarSellerRegistration>();
+        /*var dbSetBazaarSellerRegistration = _dbContext.Set<BazaarSellerRegistration>();
 
         using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -272,7 +272,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
 
             await transaction.CommitAsync(cancellationToken);
         }
-
-        return true;
+        */
+        return Task.FromResult(false);
     }
 }

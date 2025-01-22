@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 internal sealed class TwoFactorAuth : ITwoFactorAuth
 {
+    private const string _userNotFound = "Der Benutzer wurde nicht gefunden.";
+    private const string _twoFactorAuthNotEnabled = "Die Zwei-Faktor-Authentifizierung (2FA) ist nicht eingerichtet.";
+
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly SignInManager<IdentityUserGuid> _signInManager;
     private readonly string _appTitle;
@@ -28,39 +31,60 @@ internal sealed class TwoFactorAuth : ITwoFactorAuth
         _signInManager = signInManager;
     }
 
-    public async Task<Result<UserTwoFactor>> GenerateKey(Guid userId)
+    public async Task<Result<UserTwoFactorAuthSettings>> GetAuthenticator(Guid id)
     {
-        var user = await _signInManager.UserManager.FindByIdAsync(userId.ToString());
-        if (user == null)
+        var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
+        if (user is null)
         {
-            return Result.Fail("Benutzer wurde nicht gefunden.");
+            return Result.Fail(_userNotFound);
         }
-
-        var isTwoFactorEnabled = await _signInManager.IsTwoFactorEnabledAsync(user);
 
         var key = await _signInManager.UserManager.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
-            var result = await _signInManager.UserManager.ResetAuthenticatorKeyAsync(user);
-            if (!result.Succeeded) return Result.Fail(result.Errors.Select(e => e.Description));
-            key = await _signInManager.UserManager.GetAuthenticatorKeyAsync(user);
-            if (string.IsNullOrEmpty(key))
-            {
-                return Result.Fail(_errorDescriber.DefaultError().Description);
-            }
+            return Result.Fail(_twoFactorAuthNotEnabled);
         }
+
+        var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
 
         var uri = GenerateQrCodeUri(_appTitle, user.Email!, key);
 
-        return Result.Ok(new UserTwoFactor(isTwoFactorEnabled, key, uri));
+        return Result.Ok(new UserTwoFactorAuthSettings(isEnabled, key, uri));
     }
 
-    public async Task<Result> Enable(Guid userId, bool enable, string code)
+    public async Task<Result<UserTwoFactorAuthSettings>> CreateAuthenticator(Guid id)
     {
-        var user = await _signInManager.UserManager.FindByIdAsync(userId.ToString());
+        var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var result = await _signInManager.UserManager.ResetAuthenticatorKeyAsync(user);
+        if (!result.Succeeded)
+        {
+            return Result.Fail(result.Errors.Select(e => e.Description));
+        }
+
+        var key = await _signInManager.UserManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(key))
+        {
+            return Result.Fail("Fehler beim Erstellen des geheimen Schlüssels.");
+        }
+
+        var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
+
+        var uri = GenerateQrCodeUri(_appTitle, user.Email!, key);
+
+        return Result.Ok(new UserTwoFactorAuthSettings(isEnabled, key, uri));
+    }
+
+    public async Task<Result> Enable(Guid id, bool enable, string code)
+    {
+        var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user == null)
         {
-            return Result.Fail("Benutzer wurde nicht gefunden.");
+            return Result.Fail(_userNotFound);
         }
 
         var isValid = await _signInManager.UserManager.VerifyTwoFactorTokenAsync(
@@ -95,33 +119,39 @@ internal sealed class TwoFactorAuth : ITwoFactorAuth
         return Result.Ok();
     }
 
-    public async Task<bool> Reset(Guid userId)
+    public async Task<Result> Reset(Guid id)
     {
-        var user = await _signInManager.UserManager.FindByIdAsync(userId.ToString());
+        var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user == null)
         {
-            return false;
+            return Result.Fail(_userNotFound);
         }
 
-        if (!user.TwoFactorEnabled)
+        var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
+        if (!isEnabled)
         {
-            return true;
+            return Result.Fail(_twoFactorAuthNotEnabled);
         }
 
-        var result = await _signInManager.UserManager.RemoveClaimAsync(user, UserClaims.TwoFactorClaim);
-        if (result.Succeeded)
+        var result = await _signInManager.UserManager.SetTwoFactorEnabledAsync(user, false);
+        if (!result.Succeeded)
         {
-            result = await _signInManager.UserManager.SetTwoFactorEnabledAsync(user, false);
-            return result.Succeeded;
+            return Result.Fail(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
 
-        return false;
+        result = await _signInManager.UserManager.RemoveClaimAsync(user, UserClaims.TwoFactorClaim);
+        if (!result.Succeeded)
+        {
+            return Result.Fail(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+
+        return Result.Ok();
     }
 
-    public async Task<bool> HasUserAuthentication()
+    public async Task<Result> HasUserAuthentication()
     {
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-        return user != null;
+        return user is null ? Result.Fail("Die Anmeldung is abgelaufen, bitte erneut anmelden.") : Result.Ok();
     }
 
     public Task<SignInResult> SignIn(string code, bool remember) => _signInManager.TwoFactorAuthenticatorSignInAsync(code, false, remember);

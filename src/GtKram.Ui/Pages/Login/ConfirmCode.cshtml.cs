@@ -84,10 +84,11 @@ public class ConfirmCodeModel : PageModel
             return false;
         }
 
-        if (!await _twoFactorAuth.HasUserAuthentication())
+        var result = await _twoFactorAuth.HasUserAuthentication();
+        if (result.IsFailed)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, "Die Anmeldung is abgelaufen, bitte zurück zum Login und erneut versuchen.");
+            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return false;
         }
 

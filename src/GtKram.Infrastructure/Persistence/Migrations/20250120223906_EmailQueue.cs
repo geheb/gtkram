@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -17,6 +17,7 @@ namespace GtKram.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<byte[]>(type: "binary(16)", nullable: false),
                     CreatedOn = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: false),
+                    SentOn = table.Column<DateTimeOffset>(type: "datetime(6)", nullable: true),
                     Recipient = table.Column<string>(type: "longtext", nullable: false),
                     Subject = table.Column<string>(type: "longtext", nullable: false),
                     Body = table.Column<string>(type: "longtext", nullable: false),

@@ -12,6 +12,7 @@ namespace GtKram.Infrastructure.Email;
 
 internal sealed class EmailService : IEmailService
 {
+    private readonly TemplateRenderer _templateRenderer;
     private readonly AppSettings _appSettings;
     private readonly TimeProvider _timeProvider;
     private readonly EmailQueueRepository _repository;
@@ -25,6 +26,7 @@ internal sealed class EmailService : IEmailService
         IOptions<ConfirmEmailDataProtectionTokenProviderOptions> confirmEmailOptions,
         IOptions<DataProtectionTokenProviderOptions> changeEmailOrPasswordOptions)
     {
+        _templateRenderer = new(GetType().Assembly);
         _appSettings = appSettings.Value;
         _timeProvider = timeProvider;
         _repository = repository;
@@ -45,8 +47,7 @@ internal sealed class EmailService : IEmailService
             signature = _appSettings.Organizer
         };
 
-        var renderer = new AccountEmailTemplateRenderer();
-        var message = await renderer.Render(AccountEmailTemplate.ChangeEmail, model);
+        var message = await _templateRenderer.Render("ChangeEmail.html", model);
 
         var entity = new EmailQueue
         {
@@ -72,8 +73,7 @@ internal sealed class EmailService : IEmailService
             signature = _appSettings.Organizer
         };
 
-        var renderer = new AccountEmailTemplateRenderer();
-        var message = await renderer.Render(AccountEmailTemplate.ConfirmRegistration, model);
+        var message = await _templateRenderer.Render("ConfirmRegistration.html", model);
 
         var entity = new EmailQueue
         {
@@ -99,8 +99,7 @@ internal sealed class EmailService : IEmailService
             signature = _appSettings.Organizer
         };
 
-        var renderer = new AccountEmailTemplateRenderer();
-        var message = await renderer.Render(AccountEmailTemplate.ResetPassword, model);
+        var message = await _templateRenderer.Render("ResetPassword.html", model);
 
         var entity = new EmailQueue
         {
@@ -133,8 +132,7 @@ internal sealed class EmailService : IEmailService
             pickupdate = dc.FormatFull(pickUpStart, pickUpEnd),
         };
 
-        var renderer = new BazaarEmailTemplateRenderer();
-        var message = await renderer.Render(BazaarEmailTemplate.AcceptSeller, model);
+        var message = await _templateRenderer.Render("AcceptSeller.html", model);
         var calendarEvent = new CalendarEvent().Create("Abholung der Etiketten", @event.Address, pickUpStart, pickUpEnd);
 
         var entity = new EmailQueue
@@ -165,8 +163,7 @@ internal sealed class EmailService : IEmailService
             signature = _appSettings.Organizer,
         };
 
-        var renderer = new BazaarEmailTemplateRenderer();
-        var message = await renderer.Render(BazaarEmailTemplate.DenySeller, model);
+        var message = await _templateRenderer.Render("DenySeller.html", model);
 
         var entity = new EmailQueue
         {

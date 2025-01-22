@@ -15,7 +15,7 @@ internal sealed class SmtpDispatcher
         _connectionOptions = options.Value;
     }
 
-    public async Task SendEmailAsync(string email, string subject, string htmlMessage, Attachment? attachment = null)
+    public async Task Send(string email, string subject, string htmlMessage, Attachment? attachment = null)
     {
         var from = new MailAddress(_connectionOptions.SenderEmail, _connectionOptions.SenderName);
         var to = new MailAddress(email);

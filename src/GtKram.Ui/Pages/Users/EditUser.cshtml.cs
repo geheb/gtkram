@@ -1,4 +1,5 @@
 using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,7 @@ public class EditUserModel : PageModel
             return;
         }
 
-        Input.FromDomain(result.Value);
+        Input.Init(result.Value);
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken)
@@ -61,15 +62,17 @@ public class EditUserModel : PageModel
 
         return RedirectToPage("Index");
     }
-    public IActionResult OnPostConfirmEmail(Guid id)
+
+    public async Task<IActionResult> OnPostConfirmEmail(Guid id, CancellationToken cancellationToken)
     {
-        var result = false;// await _users.NotifyConfirmRegistration(id, cancellationToken);
-        return new JsonResult(result);
+        var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id, token = string.Empty });
+        var result = await _mediator.Send(new SendConfirmRegistrationCommand(id, callbackUrl!), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 
-    public async Task<IActionResult> OnPostResetTwoFactorAsync(Guid id)
+    public async Task<IActionResult> OnPostResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _twoFactorAuth.Reset(id);
-        return new JsonResult(result);
+        var result = await _mediator.Send(new ResetTwoFactorAuthCommand(id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }
