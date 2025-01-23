@@ -1,11 +1,11 @@
-using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 
 namespace GtKram.Ui.Pages.MyAccount;
 
@@ -13,7 +13,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class ChangeEmailModel : PageModel
 {
-    private readonly IUsers _users;
+    private readonly IMediator _mediator;
 
     [Display(Name = "Aktuelle E-Mail-Adresse")]
     public string? CurrentEmail { get; set; }
@@ -26,29 +26,29 @@ public class ChangeEmailModel : PageModel
     [RequiredField, PasswordLengthField(MinimumLength = 8)]
     public string? CurrentPassword { get; set; }
 
-    public bool IsDisabled { get; set; }
-
-    public ChangeEmailModel(IUsers users)
+    public ChangeEmailModel(IMediator mediator)
     {
-        _users = users;
+        _mediator = mediator;
     }
 
     public void OnGet()
     {
-        CurrentEmail = User.FindFirstValue(ClaimTypes.Email);
+        CurrentEmail = User.GetEmail();
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        CurrentEmail = User.FindFirstValue(ClaimTypes.Email);
+        CurrentEmail = User.GetEmail();
 
         if (!ModelState.IsValid) return Page();
 
-        var result = await _users.NotifyConfirmChangeEmail(User.GetId(), NewEmail!, CurrentPassword!, cancellationToken);
-        if (!string.IsNullOrEmpty(result.Error))
+        var callbackUrl = Url.PageLink("/Login/ConfirmChangeEmail", values: new { id = User.GetId(), token = string.Empty, email = NewEmail });
+
+        var result = await _mediator.Send(new SendChangeEmailCommand(User.GetId(), NewEmail!, CurrentPassword!, callbackUrl!), cancellationToken);
+
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, result.Error);
-            IsDisabled = result.IsFatal;
+            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return Page();
         }       
 

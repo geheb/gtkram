@@ -1,6 +1,7 @@
-using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +13,7 @@ namespace GtKram.Ui.Pages.MyAccount;
 [Authorize]
 public class ChangePasswordModel : PageModel
 {
-    private readonly IUsers _users;
+    private readonly IMediator _mediator;
 
     [BindProperty, Display(Name = "Aktuelles Passwort")]
     [RequiredField, PasswordLengthField(MinimumLength = 8)]
@@ -27,32 +28,20 @@ public class ChangePasswordModel : PageModel
     [CompareField(nameof(NewPassword))]
     public string? ConfirmNewPassword { get; set; }
 
-    public bool IsDisabled { get; set; }
-
-    public ChangePasswordModel(IUsers users)
+    public ChangePasswordModel(IMediator mediator)
     {
-        _users = users;
+        _mediator = mediator;
     }
 
-    public void OnGet()
-    {
-    }
-
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return Page();
 
-        var result = await _users.ChangePassword(User.GetId(), null, NewPassword!);
-        if (string.IsNullOrEmpty(result.Email))
-        {
-            IsDisabled = true;
-            ModelState.AddModelError(string.Empty, "Benutzer nicht gefunden.");
-            return Page();
-        }
+        var result = await _mediator.Send(new ChangePasswordCommand(User.GetId(), CurrentPassword!, NewPassword!), cancellationToken);
 
-        if (result.Error != null)
+        if (result.IsFailed)
         {
-            result.Error.ToList().ForEach(e => ModelState.AddModelError(string.Empty, e));
+            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return Page();
         }
 

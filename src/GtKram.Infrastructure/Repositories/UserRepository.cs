@@ -66,6 +66,74 @@ internal sealed class UserRepository : IUserRepository
         return Result.Ok();
     }
 
+    public async Task<Result> Update(Guid id, string newName, string newEmail, string? newPassword, UserRoleType[] newRoles, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        IdentityResult identityResult;
+
+        if (!string.IsNullOrWhiteSpace(newName) && user.Name != newName)
+        {
+            user.Name = newName;
+            identityResult = await _userManager.UpdateAsync(user);
+            if (!identityResult.Succeeded)
+            {
+                return Result.Fail(identityResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        var result = await UpdateRoles(user, newRoles, cancellationToken);
+        if (result.IsFailed)
+        {
+            return result;
+        }
+
+        var shouldConfirmEmail = false;
+
+        if (!string.IsNullOrWhiteSpace(newEmail) && user.Email != newEmail)
+        {
+            var hasFound = await _userManager.FindByEmailAsync(newEmail) is not null;
+            if (hasFound)
+            {
+                return Result.Fail("Die neue E-Mail-Adresse ist bereits vergeben.");
+            }
+            var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+            identityResult = await _userManager.ChangeEmailAsync(user, newEmail, token);
+            if (!identityResult.Succeeded)
+            {
+                return Result.Fail(identityResult.Errors.Select(e => e.Description));
+            }
+            shouldConfirmEmail = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(newPassword))
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            identityResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            if (!identityResult.Succeeded)
+            {
+                return Result.Fail(identityResult.Errors.Select(e => e.Description));
+            }
+            shouldConfirmEmail = true;
+        }
+
+        if (!user.EmailConfirmed && shouldConfirmEmail)
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            identityResult = await _userManager.ConfirmEmailAsync(user, token);
+            if (!identityResult.Succeeded)
+            {
+                return Result.Fail(identityResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        return Result.Ok();
+    }
+
     public async Task<Result> Disable(Guid id, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -120,31 +188,6 @@ internal sealed class UserRepository : IUserRepository
         return result.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
-    public async Task<Result> UpdateEmail(Guid id, string email, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(email);
-
-        var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user is null)
-        {
-            return Result.Fail(_userNotFound);
-        }
-
-        if (user.Email == email)
-        {
-            return Result.Ok();
-        }
-
-        var token = await _userManager.GenerateChangeEmailTokenAsync(user, email);
-        var result = await _userManager.ChangeEmailAsync(user, email, token);
-        if (!result.Succeeded)
-        {
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-        }
-
-        return Result.Ok();
-    }
-
     public async Task<Result> UpdateName(Guid id, string name, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -165,90 +208,31 @@ internal sealed class UserRepository : IUserRepository
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
+            return Result.Fail(result.Errors.Select(e => e.Description));
         }
 
         return Result.Ok();
     }
 
-    public async Task<Result> UpdatePassword(Guid id, string password, CancellationToken cancellationToken)
+    public async Task<Result> ChangePassword(Guid id, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(password);
-
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
             return Result.Fail(_userNotFound);
         }
 
-        IdentityResult result;
-        foreach (var validator in _userManager.PasswordValidators)
+        var result = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash!, currentPassword);
+        if (result != PasswordVerificationResult.Success)
         {
-            result = await validator.ValidateAsync(_userManager, user, password);
-            if (!result.Succeeded)
-            {
-                return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-            }
+            return Result.Fail("Das aktuelle Passwort stimmt nicht überein.");
         }
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        result = await _userManager.ResetPasswordAsync(user, token, password);
-        if (!result.Succeeded)
+        var identityResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!identityResult.Succeeded)
         {
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-        }
-
-        if (!user.EmailConfirmed)
-        {
-            token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            result = await _userManager.ConfirmEmailAsync(user, token);
-            if (!result.Succeeded)
-            {
-                return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-            }
-        }
-
-        return Result.Ok();
-    }
-
-    public async Task<Result> UpdateRoles(Guid id, UserRoleType[] roles, CancellationToken cancellationToken)
-    {
-        ArgumentOutOfRangeException.ThrowIfZero(roles.Length);
-
-        var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user is null)
-        {
-            return Result.Fail(_userNotFound);
-        }
-
-        IdentityResult result;
-        var currentStringRoles = await _userManager.GetRolesAsync(user);
-        if (currentStringRoles.Count == 0)
-        {
-            result = await _userManager.AddToRolesAsync(user, roles.Select(r => r.MapToRole()));
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-        }
-
-        var currentRoles = currentStringRoles.Select(r => r.MapToRole()).ToArray();
-        var removeRoles = currentRoles.Except(roles).ToArray();
-        var addRoles = roles.Except(currentRoles).ToArray();
-
-        if (removeRoles.Length > 0)
-        {
-            result = await _userManager.RemoveFromRolesAsync(user, removeRoles.Select(r => r.MapToRole()));
-            if (!result.Succeeded)
-            {
-                return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-            }
-        }
-
-        if (addRoles.Length > 0)
-        {
-            result = await _userManager.AddToRolesAsync(user, addRoles.Select(r => r.MapToRole()));
-            if (!result.Succeeded)
-            {
-                return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
-            }
+            return Result.Fail(identityResult.Errors.Select(e => e.Description));
         }
 
         return Result.Ok();
@@ -269,5 +253,69 @@ internal sealed class UserRepository : IUserRepository
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         return Result.Ok(token);
+    }
+
+    public async Task<Result<string>> CreateChangeEmailToken(Guid id, string newEmail, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+        return Result.Ok(token);
+    }
+
+    public async Task<Result> VerifyPassword(Guid id, string password, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var result = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash!, password);
+        if (result != PasswordVerificationResult.Success)
+        {
+            return Result.Fail("Das angegebene Passwort stimmt nicht überein.");
+        }
+
+        return Result.Ok();
+    }
+
+    private async Task<Result> UpdateRoles(IdentityUserGuid user, UserRoleType[] roles, CancellationToken cancellationToken)
+    {
+        IdentityResult result;
+        var currentStringRoles = await _userManager.GetRolesAsync(user);
+        if (currentStringRoles.Count == 0)
+        {
+            result = await _userManager.AddToRolesAsync(user, roles.Select(r => r.MapToRole()));
+            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
+        }
+
+        var currentRoles = currentStringRoles.Select(r => r.MapToRole()).ToArray();
+        var removeRoles = currentRoles.Except(roles).ToArray();
+        var addRoles = roles.Except(currentRoles).ToArray();
+
+        if (removeRoles.Length > 0)
+        {
+            result = await _userManager.RemoveFromRolesAsync(user, removeRoles.Select(r => r.MapToRole()));
+            if (!result.Succeeded)
+            {
+                return Result.Fail(result.Errors.Select(e => e.Description));
+            }
+        }
+
+        if (addRoles.Length > 0)
+        {
+            result = await _userManager.AddToRolesAsync(user, addRoles.Select(r => r.MapToRole()));
+            if (!result.Succeeded)
+            {
+                return Result.Fail(result.Errors.Select(e => e.Description));
+            }
+        }
+
+        return Result.Ok();
     }
 }

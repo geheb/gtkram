@@ -9,10 +9,11 @@ public interface IUserRepository
     Task<Result<User>> FindByEmail(string email, CancellationToken cancellationToken);
     Task<User[]> GetAll(CancellationToken cancellationToken);
     Task<Result> Create(string name, string email, UserRoleType[] roles, CancellationToken cancellationToken);
-    Task<Result> UpdateName(Guid id, string name, CancellationToken cancellationToken);
-    Task<Result> UpdateRoles(Guid id, UserRoleType[] roles, CancellationToken cancellationToken);
-    Task<Result> UpdateEmail(Guid id, string email, CancellationToken cancellationToken);
-    Task<Result> UpdatePassword(Guid id, string password, CancellationToken cancellationToken);
+    Task<Result> Update(Guid id, string newName, string newEmail, string? newPassword, UserRoleType[] newRoles, CancellationToken cancellationToken);
+    Task<Result> UpdateName(Guid id, string newName, CancellationToken cancellationToken);
+    Task<Result> ChangePassword(Guid id, string currentPassword, string newPassword, CancellationToken cancellationToken);
     Task<Result> Disable(Guid id, CancellationToken cancellationToken);
     Task<Result<string>> CreateEmailConfirmationToken(Guid id, CancellationToken cancellationToken);
+    Task<Result<string>> CreateChangeEmailToken(Guid id, string newEmail, CancellationToken cancellationToken);
+    Task<Result> VerifyPassword(Guid id, string currentPassword, CancellationToken cancellationToken);
 }
