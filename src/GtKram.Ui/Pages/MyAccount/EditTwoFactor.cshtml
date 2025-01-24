@@ -36,36 +36,34 @@
                 }
  
                 <form method="post">
-                    <fieldset disabled="@Model.IsDisabled">
-                        <div class="field">
-                            <label class="label" for="qrcode">QR-Code</label>
-                            <div class="control">
-                                <a href="@Model.AuthUri"><canvas id="qrcode"></canvas></a>
-                            </div>
+                    <div class="field">
+                        <label class="label" for="qrcode">QR-Code</label>
+                        <div class="control">
+                            <a href="@Model.AuthUri"><canvas id="qrcode"></canvas></a>
                         </div>
-                        <div class="field">
-                            <label class="label" asp-for="SecretKey"></label>
-                            <div class="control">
-                                <input class="input" type="text" asp-for="SecretKey" readonly="readonly" />
-                            </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" asp-for="SecretKey"></label>
+                        <div class="control">
+                            <input class="input" type="text" asp-for="SecretKey" readonly="readonly" />
                         </div>
-                        <div class="field">
-                            <label class="label" asp-for="Code"></label>
-                            <div class="control">
-                                <input class="input" type="text" asp-for="Code" autocomplete="off" autofocus="" />
-                            </div>
-                            <span asp-validation-for="Code"></span>
+                    </div>
+                    <div class="field">
+                        <label class="label" asp-for="Code"></label>
+                        <div class="control">
+                            <input class="input" type="text" asp-for="Code" autocomplete="off" autofocus="" />
                         </div>
+                        <span asp-validation-for="Code"></span>
+                    </div>
 
-                        @if (Model.IsTwoFactorEnabled)
-                        {
-                            <button class="button is-primary" type="submit">Deaktivieren</button>
-                        }
-                        else
-                        {
-                            <button class="button is-primary" type="submit">Aktivieren</button>
-                        }
-                    </fieldset>
+                    @if (Model.IsTwoFactorEnabled)
+                    {
+                        <button class="button is-primary" type="submit">Deaktivieren</button>
+                    }
+                    else
+                    {
+                        <button class="button is-primary" type="submit">Aktivieren</button>
+                    }
                 </form>
 
             </div>

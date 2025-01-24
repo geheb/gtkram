@@ -27,7 +27,6 @@ public class EditTwoFactorModel : PageModel
 
     public string? AuthUri { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
-    public bool IsDisabled { get; set; }
 
     public EditTwoFactorModel(IMediator mediator)
     {
@@ -50,7 +49,6 @@ public class EditTwoFactorModel : PageModel
         }
         else
         {
-            IsDisabled = true;
             result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
         }
     }
@@ -60,7 +58,6 @@ public class EditTwoFactorModel : PageModel
         var result2fa = await _mediator.Send(new GetTwoFactorAuthQuery(User.GetId()), cancellationToken);
         if (result2fa.IsFailed)
         {
-            IsDisabled = true;
             result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
             return Page();
         }

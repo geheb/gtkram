@@ -10,7 +10,9 @@ internal sealed class UpsertUserHandler :
     ICommandHandler<CreateUserCommand, Result>,
     ICommandHandler<UpdateUserCommand, Result>,
     ICommandHandler<UpdateUsersNameCommand, Result>,
-    ICommandHandler<ChangePasswordCommand, Result>
+    ICommandHandler<ChangePasswordCommand, Result>,
+    ICommandHandler<ConfirmChangeEmailCommand, Result>,
+    ICommandHandler<ConfirmChangePasswordCommand, Result>
 {
     private readonly IUserRepository _repository;
     private readonly IEmailValidatorService _emailValidatorService;
@@ -46,4 +48,10 @@ internal sealed class UpsertUserHandler :
 
     public async ValueTask<Result> Handle(ChangePasswordCommand command, CancellationToken cancellationToken) =>
         await _repository.ChangePassword(command.Id, command.CurrentPassword, command.NewPassword, cancellationToken);
+
+    public async ValueTask<Result> Handle(ConfirmChangeEmailCommand command, CancellationToken cancellationToken) =>
+        await _repository.ConfirmChangeEmail(command.Id, command.NewEmail, command.Token, cancellationToken);
+
+    public async ValueTask<Result> Handle(ConfirmChangePasswordCommand command, CancellationToken cancellationToken) =>
+        await _repository.ConfirmChangePassword(command.Id, command.NewPassword, command.Token, cancellationToken);
 }

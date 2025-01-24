@@ -318,4 +318,59 @@ internal sealed class UserRepository : IUserRepository
 
         return Result.Ok();
     }
+
+    public async Task<Result> ConfirmChangeEmail(Guid id, string newEmail, string token, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
+        if (!result.Succeeded)
+        {
+            return Result.Fail(result.Errors.Select(e => e.Description));
+        }
+
+        return Result.Ok();
+    }
+
+    public async Task<Result> VerifyConfirmChangePassword(Guid id, string token, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var isValid = await _userManager.VerifyUserTokenAsync(user,
+            _userManager.Options.Tokens.PasswordResetTokenProvider,
+            UserManager<IdentityUserGuid>.ResetPasswordTokenPurpose,
+            token);
+
+        if (!isValid)
+        {
+            return Result.Fail(_errorDescriber.InvalidToken().Description);
+        }
+
+        return Result.Ok();
+    }
+
+    public async Task<Result> ConfirmChangePassword(Guid id, string newPassword, string token, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user is null)
+        {
+            return Result.Fail(_userNotFound);
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            return Result.Fail(result.Errors.Select(e => e.Description));
+        }
+
+        return Result.Ok();
+    }
 }

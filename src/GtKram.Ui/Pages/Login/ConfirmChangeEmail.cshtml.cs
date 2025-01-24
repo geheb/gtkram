@@ -1,6 +1,7 @@
-using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Ui.Converter;
 using GtKram.Ui.I18n;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -9,33 +10,34 @@ namespace GtKram.Ui.Pages.Login;
 [AllowAnonymous]
 public class ConfirmChangeEmailModel : PageModel
 {
-    private readonly IUsers _users;
+    private readonly IMediator _mediator;
     private readonly ILogger _logger;
 
     public string ConfirmedEmail { get; set; } = "n.v.";
 
-    public ConfirmChangeEmailModel(IUsers users, ILogger<ConfirmChangeEmailModel> logger)
+    public ConfirmChangeEmailModel(
+        ILogger<ConfirmChangeEmailModel> logger,
+        IMediator mediator)
     {
-        _users = users;
         _logger = logger;
+        _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid id, string token, string email)
+    public async Task OnGetAsync(Guid id, string email, string token, CancellationToken cancellationToken)
     {
-        if (id == Guid.Empty || string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
+        if (id == Guid.Empty || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return;
         }
 
-        var newEmail = await _users.ConfirmChangeEmail(id, token, email);
-        if (string.IsNullOrEmpty(newEmail))
+        ConfirmedEmail = new EmailConverter().Anonymize(email);
+
+        var result = await _mediator.Send(new ConfirmChangeEmailCommand(id, email, token), cancellationToken);
+        if (result.IsFailed)
         {
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidNewEmailConfirmationLink);
             return;
-        }
-
-        ConfirmedEmail = new EmailConverter().Anonymize(newEmail);
+        }       
     }
 }

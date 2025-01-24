@@ -16,4 +16,7 @@ public interface IUserRepository
     Task<Result<string>> CreateEmailConfirmationToken(Guid id, CancellationToken cancellationToken);
     Task<Result<string>> CreateChangeEmailToken(Guid id, string newEmail, CancellationToken cancellationToken);
     Task<Result> VerifyPassword(Guid id, string currentPassword, CancellationToken cancellationToken);
+    Task<Result> ConfirmChangeEmail(Guid id, string newEmail, string token, CancellationToken cancellationToken);
+    Task<Result> VerifyConfirmChangePassword(Guid id, string token, CancellationToken cancellationToken);
+    Task<Result> ConfirmChangePassword(Guid id, string newPassword, string token, CancellationToken cancellationToken);
 }

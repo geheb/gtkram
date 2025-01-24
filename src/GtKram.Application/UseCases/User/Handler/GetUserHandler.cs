@@ -10,19 +10,23 @@ using System.Threading.Tasks;
 
 internal sealed class GetUserHandler : 
     IQueryHandler<GetAllUsersQuery, Domain.Models.User[]>,
-    IQueryHandler<FindUserByIdQuery, Result<Domain.Models.User>>
+    IQueryHandler<FindUserByIdQuery, Result<Domain.Models.User>>,
+    IQueryHandler<VerifyConfirmChangePasswordQuery, Result>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IUserRepository _repository;
 
     public GetUserHandler(
-        IUserRepository userRepository)
+        IUserRepository respository)
     {
-        _userRepository = userRepository;
+        _repository = respository;
     }
 
     public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken) =>
-        await _userRepository.GetAll(cancellationToken);
+        await _repository.GetAll(cancellationToken);
 
     public async ValueTask<Result<User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken) =>
-        await _userRepository.FindById(query.Id, cancellationToken);
+        await _repository.FindById(query.Id, cancellationToken);
+
+    public async ValueTask<Result> Handle(VerifyConfirmChangePasswordQuery command, CancellationToken cancellationToken) =>
+        await _repository.VerifyConfirmChangePassword(command.Id, command.Token, cancellationToken);
 }
