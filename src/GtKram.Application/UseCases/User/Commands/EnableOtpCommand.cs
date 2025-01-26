@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record UpdateUsersNameCommand(Guid Id, string Name) : ICommand<Result>;
+public sealed record EnableOtpCommand(Guid Id, string Code) : ICommand<Result>;

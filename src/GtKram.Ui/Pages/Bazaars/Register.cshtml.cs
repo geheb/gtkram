@@ -123,7 +123,7 @@ public class RegisterModel : PageModel
     {
         if (id == Guid.Empty || !string.IsNullOrEmpty(SellerUserName) || SellerClothing?.Length > 7)
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
+            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             return State.RequestFailed;
         }
 

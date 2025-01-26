@@ -9,7 +9,6 @@ public sealed class IdentityUserGuid : IdentityUser<Guid> // ApplicationUser
     public DateTimeOffset? DisabledOn { get; set; }
 
     public ICollection<IdentityUserRoleGuid>? UserRoles { get; set; }
-    internal ICollection<AccountNotification>? AccountNotifications { get; set; }
     internal ICollection<BazaarSeller>? BazaarSellers { get; set; }
     internal ICollection<BazaarBilling>? BazaarBillings { get; set; }
 }

@@ -13,16 +13,13 @@ internal sealed class BazaarEvents : IBazaarEvents
 {
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
-    private readonly IUsers _users;
     private readonly ILogger _logger;
 
     public BazaarEvents(
         AppDbContext dbContext,
-        IUsers users,
         ILogger<BazaarEvents> logger)
     {
         _dbContext = dbContext;
-        _users = users;
         _logger = logger;
     }
     public async Task<BazaarEventDto?> Find(Guid id, CancellationToken cancellationToken)

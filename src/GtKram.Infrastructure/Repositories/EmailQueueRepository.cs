@@ -45,6 +45,7 @@ internal sealed class EmailQueueRepository
             .AsNoTracking()
             .Take(128)
             .Where(e => e.SentOn == null)
+            .OrderBy(e => e.CreatedOn)
             .ToArrayAsync(cancellationToken);
     }
 

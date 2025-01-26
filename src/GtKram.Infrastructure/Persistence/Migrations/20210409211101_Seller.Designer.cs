@@ -21,38 +21,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
 
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4", DelegationModes.ApplyToDatabases);
 
-            modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.AccountNotification", b =>
-                {
-                    b.Property<byte[]>("Id")
-                        .HasColumnType("binary(16)");
-
-                    b.Property<string>("CallbackUrl")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTimeOffset>("CreatedOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<byte[]>("ReferenceId")
-                        .HasColumnType("binary(16)");
-
-                    b.Property<DateTimeOffset?>("SentOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("UserId")
-                        .HasColumnType("binary(16)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReferenceId", "Type");
-
-                    b.HasIndex("UserId", "Type", "CreatedOn");
-
-                    b.ToTable("account_notifications");
-                });
-
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.IdentityRoleGuid", b =>
                 {
                     b.Property<byte[]>("Id")
@@ -447,16 +415,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
                     b.ToTable("bazaar_seller_registrations");
                 });
 
-            modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.AccountNotification", b =>
-                {
-                    b.HasOne("GtKram.Infrastructure.Persistence.Entities.IdentityUserGuid", "User")
-                        .WithMany("AccountNotifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.IdentityRoleClaimGuid", b =>
                 {
                     b.HasOne("GtKram.Infrastructure.Persistence.Entities.IdentityRoleGuid", null)
@@ -563,8 +521,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.IdentityUserGuid", b =>
                 {
-                    b.Navigation("AccountNotifications");
-
                     b.Navigation("BazaarSellers");
 
                     b.Navigation("UserRoles");

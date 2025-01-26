@@ -13,16 +13,13 @@ internal sealed class BazaarBillings : IBazaarBillings
 {
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
-    private readonly IUsers _users;
     private readonly ILogger _logger;
 
     public BazaarBillings(
        AppDbContext dbContext,
-       IUsers users,
        ILogger<BazaarBillings> logger)
     {
         _dbContext = dbContext;
-        _users = users;
         _logger = logger;
     }
 

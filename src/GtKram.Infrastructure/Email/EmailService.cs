@@ -34,14 +34,14 @@ internal sealed class EmailService : IEmailService
         _changeEmailOrPasswordTimeout = changeEmailOrPasswordOptions.Value.TokenLifespan;
     }
 
-    public async Task<Result> EnqueueChangeEmail(string email, string name, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueChangeEmail(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
         var model = new
         {
             title = "E-Mail-Adresse ändern",
-            name = name,
+            name = user.Name.Split(' ')[0],
             link = callbackUrl,
             timeout = dc.Format(_changeEmailOrPasswordTimeout),
             signature = _appSettings.Organizer
@@ -52,7 +52,7 @@ internal sealed class EmailService : IEmailService
         var entity = new EmailQueue
         {
             CreatedOn = _timeProvider.GetUtcNow(),
-            Recipient = email,
+            Recipient = user.Email,
             Subject = model.title,
             Body = message
         };
@@ -60,14 +60,14 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueConfirmRegistration(string email, string name, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueConfirmRegistration(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
         var model = new
         {
             title = "Registrierung bestätigen",
-            name = name,
+            name = user.Name.Split(' ')[0],
             link = callbackUrl,
             timeout = dc.Format(_confirmEmailTimeout),
             signature = _appSettings.Organizer
@@ -78,7 +78,7 @@ internal sealed class EmailService : IEmailService
         var entity = new EmailQueue
         {
             CreatedOn = _timeProvider.GetUtcNow(),
-            Recipient = email,
+            Recipient = user.Email,
             Subject = model.title,
             Body = message
         };
@@ -86,14 +86,14 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueResetPassword(string email, string name, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueResetPassword(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
         var model = new
         {
             title = "Passwort zurücksetzen",
-            name = name,
+            name = user.Name.Split(' ')[0],
             link = callbackUrl,
             timeout = dc.Format(_changeEmailOrPasswordTimeout),
             signature = _appSettings.Organizer
@@ -104,7 +104,7 @@ internal sealed class EmailService : IEmailService
         var entity = new EmailQueue
         {
             CreatedOn = _timeProvider.GetUtcNow(),
-            Recipient = email,
+            Recipient = user.Email,
             Subject = model.title,
             Body = message
         };
@@ -112,7 +112,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueAcceptSeller(Domain.Models.BazaarEvent @event, string email, string name, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueAcceptSeller(Domain.Models.BazaarEvent @event, Domain.Models.User user, CancellationToken cancellationToken)
     {
         var editEndDate = @event.EditArticleEndsOn ?? @event.StartsOn;
         var pickUpStart = @event.PickUpLabelsStartsOn ?? @event.StartsOn;
@@ -122,7 +122,7 @@ internal sealed class EmailService : IEmailService
         var model = new
         {
             title = $"Registrierung zum {@event.Name}",
-            name = name,
+            name = user.Name.Split(' ')[0],
             eventname = @event.Name,
             date = dc.FormatFull(@event.StartsOn, @event.EndsOn),
             address = @event.Address,
@@ -138,7 +138,7 @@ internal sealed class EmailService : IEmailService
         var entity = new EmailQueue
         {
             CreatedOn = _timeProvider.GetUtcNow(),
-            Recipient = email,
+            Recipient = user.Email,
             Subject = model.title,
             Body = message,
             AttachmentBlob = Encoding.UTF8.GetBytes(calendarEvent),
@@ -156,7 +156,7 @@ internal sealed class EmailService : IEmailService
         var model = new
         {
             title = $"Registrierung zum {@event.Name}",
-            name = name,
+            name = name.Split(' ')[0],
             eventname = @event.Name,
             date = dc.FormatFull(@event.StartsOn, @event.EndsOn),
             address = @event.Address,

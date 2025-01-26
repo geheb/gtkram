@@ -1,4 +1,6 @@
-using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Commands;
+using GtKram.Application.UseCases.User.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -8,14 +10,13 @@ namespace GtKram.Ui.Pages.Login;
 [Authorize]
 public class ExitModel : PageModel
 {
-    private readonly IEmailAuth _emailAuth;
+    private readonly IMediator _mediator;
 
-    public ExitModel(IEmailAuth emailAuth) => _emailAuth = emailAuth;
+    public ExitModel(IMediator mediator) => _mediator = mediator;
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
-        await _emailAuth.SignOut(User);
-
+        await _mediator.Send(new SignOutCommand(User.GetId()), cancellationToken);
         return LocalRedirect("/");
     }
 }

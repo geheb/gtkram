@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record EnableTwoFactorAuthCommand(Guid Id, string Code) : ICommand<Result>;
+public sealed record SignInOtpCommand(string Code, bool IsRememberClient) : ICommand<Result>;

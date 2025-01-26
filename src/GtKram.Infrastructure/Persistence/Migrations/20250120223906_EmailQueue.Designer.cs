@@ -26,38 +26,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
             MySqlModelBuilderExtensions.HasCharSet(modelBuilder, "utf8mb4", DelegationModes.ApplyToDatabases);
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.AccountNotification", b =>
-                {
-                    b.Property<byte[]>("Id")
-                        .HasColumnType("binary(16)");
-
-                    b.Property<string>("CallbackUrl")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTimeOffset>("CreatedOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<byte[]>("ReferenceId")
-                        .HasColumnType("binary(16)");
-
-                    b.Property<DateTimeOffset?>("SentOn")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("UserId")
-                        .HasColumnType("binary(16)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReferenceId", "Type");
-
-                    b.HasIndex("UserId", "Type", "CreatedOn");
-
-                    b.ToTable("account_notifications", (string)null);
-                });
-
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.BazaarBilling", b =>
                 {
                     b.Property<byte[]>("Id")
@@ -341,6 +309,8 @@ namespace GtKram.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedOn");
+
                     b.ToTable("email_queue", (string)null);
                 });
 
@@ -601,16 +571,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
                     b.ToTable("data_protection_keys", (string)null);
                 });
 
-            modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.AccountNotification", b =>
-                {
-                    b.HasOne("GtKram.Infrastructure.Persistence.Entities.IdentityUserGuid", "User")
-                        .WithMany("AccountNotifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.BazaarBilling", b =>
                 {
                     b.HasOne("GtKram.Infrastructure.Persistence.Entities.BazaarEvent", "BazaarEvent")
@@ -777,8 +737,6 @@ namespace GtKram.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("GtKram.Infrastructure.Persistence.Entities.IdentityUserGuid", b =>
                 {
-                    b.Navigation("AccountNotifications");
-
                     b.Navigation("BazaarBillings");
 
                     b.Navigation("BazaarSellers");

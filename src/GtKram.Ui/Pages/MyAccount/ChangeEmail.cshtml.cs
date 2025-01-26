@@ -1,6 +1,7 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -48,7 +49,7 @@ public class ChangeEmailModel : PageModel
 
         if (result.IsFailed)
         {
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return Page();
         }       
 

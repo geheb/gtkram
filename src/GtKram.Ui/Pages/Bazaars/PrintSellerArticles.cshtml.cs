@@ -33,8 +33,7 @@ public class PrintSellerArticlesModel : PageModel
     public async Task OnGetAsync(Guid eventId, Guid id, CancellationToken cancellationToken)
     {
         if (eventId == Guid.Empty || id == Guid.Empty)
-        {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
+        { 
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return;
         }

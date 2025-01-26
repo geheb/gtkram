@@ -26,12 +26,15 @@ public static class ServiceExtensions
         services.AddHostedService<HostedWorker>();
         services.AddScoped<SmtpDispatcher>();
         services.AddSingleton<IEmailValidatorService, EmailValidatorService>();
-        services.AddScoped<ITwoFactorAuth, TwoFactorAuth>();
-        services.AddScoped<IEmailAuth, EmailAuth>();
+        services.AddScoped<IUserAuthenticator, UserAuthenticator>();
         services.AddScoped<IdentityErrorDescriber, GermanyIdentityErrorDescriber>();
 
+        services.AddScoped<EmailQueueRepository>();
+        services.AddScoped<IEmailService, EmailService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IBazaarEventRepository, BazaarEventRepository>();
+
 
         services.AddScoped<IBazaarBillingArticles, BazaarBillingArticles>();
         services.AddScoped<IBazaarBillings, BazaarBillings>();
@@ -39,10 +42,6 @@ public static class ServiceExtensions
         services.AddScoped<IBazaarSellerArticles, BazaarSellerArticles>();
         services.AddScoped<IBazaarSellers, BazaarSellers>();
         services.AddScoped<ISellerRegistrations, SellerRegistrations>();
-        services.AddScoped<IUsers, Users>();
-
-        services.AddScoped<EmailQueueRepository>();
-        services.AddScoped<IEmailService, EmailService>();
     }
 
     public static void AddAuthorizationWith2FA(this IServiceCollection services, string name)

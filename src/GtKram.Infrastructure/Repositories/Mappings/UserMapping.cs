@@ -2,7 +2,6 @@ using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Domain.Models;
 using GtKram.Infrastructure.Persistence.Entities;
-using System.Globalization;
 
 namespace GtKram.Infrastructure.Repositories.Mappings;
 
@@ -37,21 +36,4 @@ internal static class UserMapping
         Roles.Billing => UserRoleType.Billing,
         _ => throw new NotImplementedException()
     };
-
-    public static UserDto MapToDto(this IdentityUserGuid entity, IdnMapping idn, GermanDateTimeConverter dc)
-    {
-        var email = entity.Email!.Split('@');
-        var isLocked = entity.LockoutEnabled && entity.LockoutEnd.HasValue && entity.LockoutEnd.Value > DateTimeOffset.UtcNow;
-        return new()
-        {
-            Id = entity.Id,
-            Name = entity.Name,
-            Email = email[0] + "@" + idn.GetUnicode(email[1]),
-            IsEmailConfirmed = entity.EmailConfirmed,
-            LastLogin = entity.LastLogin.HasValue ? dc.ToLocal(entity.LastLogin.Value) : null,
-            Roles = entity.UserRoles?.Select(e => e.Role!.Name!).ToArray() ?? [],
-            IsLockedUntil = isLocked ? dc.ToLocal(entity.LockoutEnd!.Value) : null,
-            IsTwoFactorEnabled = entity.TwoFactorEnabled
-        };
-    }
 }

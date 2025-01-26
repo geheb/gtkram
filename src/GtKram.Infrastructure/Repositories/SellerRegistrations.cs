@@ -1,9 +1,14 @@
 using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.User.Commands;
+using GtKram.Domain.Models;
+using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories.Mappings;
+using Mediator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
@@ -14,17 +19,20 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
 {
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
-    private readonly IUsers _users;
+    private readonly IMediator _mediator;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _registerSemaphore = new SemaphoreSlim(1, 1);
 
     public SellerRegistrations(
         AppDbContext dbContext,
-        IUsers users,
+        IMediator mediator,
+        IUserRepository userRepository,
         ILogger<SellerRegistrations> logger)
     {
         _dbContext = dbContext;
-        _users = users;
+        _mediator = mediator;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
@@ -51,7 +59,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
         return entities.Select(e => e.reg.MapToDto(e.count, idn)).ToArray();
     }
 
-    public async Task<bool> Confirm(Guid eventId, Guid registrationId, bool confirmed, CancellationToken cancellationToken)
+    public async Task<bool> Confirm(Guid eventId, Guid registrationId, bool confirmed, string? registerUserCallbackUrl, CancellationToken cancellationToken)
     {
         var dbSetBazaarSellerRegistration = _dbContext.Set<BazaarSellerRegistration>();
 
@@ -112,7 +120,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
             }
         }
 
-        return await NotifyRegistration(entity.Id, cancellationToken);
+        return await NotifyRegistration(entity.Id, registerUserCallbackUrl, cancellationToken);
     }
 
     public async Task<bool> Delete(Guid eventId, Guid sellerId, CancellationToken cancellationToken)
@@ -157,7 +165,6 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
                 entity = new BazaarSellerRegistration();
                 if (!dto.MapToEntity(entity))
                 {
-                    _logger.LogError("Create BazaarSellerRegistration for event {Id} failed", eventId);
                     return default;
                 }
                 entity.Id = _pkGenerator.Generate();
@@ -167,7 +174,6 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
             {
                 if (!dto.MapToEntity(entity!))
                 {
-                    _logger.LogWarning("Update BazaarSellerRegistration for event {Id} failed", eventId);
                     return entity!.Id;
                 }
             }
@@ -213,66 +219,54 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
         return await _dbContext.SaveChangesAsync(cancellationToken) > 0;
     }
 
-    public Task<bool> NotifyRegistration(Guid registrationId, CancellationToken cancellationToken)
+    private async Task<bool> NotifyRegistration(Guid registrationId, string? registerUserCallbackUrl, CancellationToken cancellationToken)
     {
-        /*var dbSetBazaarSellerRegistration = _dbContext.Set<BazaarSellerRegistration>();
-
-        using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var dbSetBazaarSellerRegistration = _dbContext.Set<BazaarSellerRegistration>();
 
         var entity = await dbSetBazaarSellerRegistration
             .Include(e => e.BazaarSeller)
             .Where(e => e.Id == registrationId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (entity == null)
+        if (entity?.Accepted is null)
         {
-            _logger.LogWarning("Registration {Id} not found", registrationId);
             return false;
         }
 
-        if (!entity.Accepted.HasValue)
+        if (entity.BazaarSeller!.UserId is null &&
+            entity.Accepted == true &&
+            registerUserCallbackUrl is not null)
         {
-            _logger.LogWarning("Registration {Id} has no value for accepted", registrationId);
-            return false;
-        }
-
-        var hasChanges = false;
-        var dbSetAccountNotification = _dbContext.Set<AccountNotification>();
-
-        var hasPendingNotification = await dbSetAccountNotification
-            .AsNoTracking()
-            .AnyAsync(e => e.ReferenceId == registrationId && e.SentOn == null, cancellationToken);
-
-        if (!hasPendingNotification)
-        {
-            await dbSetAccountNotification.AddAsync(new AccountNotification
+            var userResult = await _userRepository.Find(entity.Email!, cancellationToken);
+            if (userResult.IsSuccess)
             {
-                Id = _pkGenerator.Generate(),
-                Type = (int)BazaarEmailTemplate.AcceptSeller,
-                CreatedOn = DateTimeOffset.UtcNow,
-                ReferenceId = registrationId,
-            }, cancellationToken);
+                entity.BazaarSeller.UserId = userResult.Value.Id;
+            }
+            else
+            {
+                var idResult = await _mediator.Send(new CreateUserCommand(entity.Name!, entity.Email!, [UserRoleType.Seller], registerUserCallbackUrl), cancellationToken);
+                if (idResult.IsFailed)
+                {
+                    return false;
+                }
+                entity.BazaarSeller.UserId = idResult.Value;
+            }
 
-            hasChanges = true;
+            if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)
+            {
+                return false;
+            }
         }
 
-        // registration has been accepted but user is new
-        if (entity.BazaarSeller != null && !entity.BazaarSeller.UserId.HasValue)
+        if (entity.Accepted == true)
         {
-            var userId = await _users.CreateSeller(entity.Email!, entity.Name!, cancellationToken);
-            if (!userId.HasValue) return false;
-
-            entity.BazaarSeller.UserId = userId;
-            hasChanges = true;
+            await _mediator.Send(new SendAcceptSellerCommand(entity.BazaarSeller.UserId!.Value, entity.BazaarEventId!.Value), cancellationToken);
         }
-
-        if (hasChanges)
+        else
         {
-            if (await _dbContext.SaveChangesAsync(cancellationToken) < 1) return false;
-
-            await transaction.CommitAsync(cancellationToken);
+            await _mediator.Send(new SendDenySellerCommand(entity.Email!, entity.Name!, entity.BazaarEventId!.Value), cancellationToken);
         }
-        */
-        return Task.FromResult(false);
+
+        return true;
     }
 }

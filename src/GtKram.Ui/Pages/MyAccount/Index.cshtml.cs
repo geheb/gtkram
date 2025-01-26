@@ -1,9 +1,8 @@
-using GtKram.Application.Repositories;
-using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -52,10 +51,10 @@ public class IndexModel : PageModel
     {
         if (!await Update(cancellationToken)) return;
 
-        var result = await _mediator.Send(new UpdateUsersNameCommand(User.GetId(), Name!), cancellationToken);
+        var result = await _mediator.Send(new UpdateUserCommand(User.GetId(), Name!, null), cancellationToken);
         if (result.IsFailed)
         {
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return;
         }
 

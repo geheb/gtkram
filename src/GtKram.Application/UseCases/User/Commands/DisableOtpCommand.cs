@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record ResetTwoFactorAuthCommand(Guid Id) : ICommand<Result>;
+public sealed record DisableOtpCommand(Guid Id, string Code) : ICommand<Result>;

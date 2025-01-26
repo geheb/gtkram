@@ -11,15 +11,11 @@ namespace GtKram.Ui.Pages.Login;
 public class ConfirmChangeEmailModel : PageModel
 {
     private readonly IMediator _mediator;
-    private readonly ILogger _logger;
 
     public string ConfirmedEmail { get; set; } = "n.v.";
 
-    public ConfirmChangeEmailModel(
-        ILogger<ConfirmChangeEmailModel> logger,
-        IMediator mediator)
+    public ConfirmChangeEmailModel(IMediator mediator)
     {
-        _logger = logger;
         _mediator = mediator;
     }
 

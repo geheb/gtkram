@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Queries;
 
-public sealed record GetTwoFactorAuthQuery(Guid Id) : IQuery<Result<UserTwoFactorAuthSettings>>;
+public sealed record GetOtpQuery(Guid Id) : IQuery<Result<UserOtp>>;

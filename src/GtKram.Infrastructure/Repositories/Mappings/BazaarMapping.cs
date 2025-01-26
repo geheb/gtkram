@@ -8,6 +8,23 @@ namespace GtKram.Infrastructure.Repositories.Mappings;
 
 internal static class BazaarMapping
 {
+    public static Domain.Models.BazaarEvent MapToDomain(this BazaarEvent entity, GermanDateTimeConverter dc) => new()
+    {
+        Id = entity.Id,
+        Name = entity.Name,
+        Description = entity.Description,
+        StartsOn = dc.ToLocal(entity.StartDate),
+        EndsOn = dc.ToLocal(entity.EndDate),
+        Address = entity.Address,
+        MaxSellers = entity.MaxSellers,
+        RegisterStartsOn = dc.ToLocal(entity.RegisterStartDate),
+        RegisterEndsOn = dc.ToLocal(entity.RegisterEndDate),
+        EditArticleEndsOn = entity.EditArticleEndDate.HasValue ? dc.ToLocal(entity.EditArticleEndDate.Value) : null,
+        PickUpLabelsStartsOn = entity.PickUpLabelsStartDate.HasValue ? dc.ToLocal(entity.PickUpLabelsStartDate.Value) : null,
+        PickUpLabelsEndsOn = entity.PickUpLabelsEndDate.HasValue ? dc.ToLocal(entity.PickUpLabelsEndDate.Value) : null,
+        IsRegistrationsLocked = entity.IsRegistrationsLocked,
+    };
+
     public static BazaarBillingDto MapToDto(this BazaarBilling entity, int articleCount, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,

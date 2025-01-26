@@ -53,23 +53,25 @@
                         </figure>
 
                         <form method="post">
-                            <input class="input is-hidden" type="text" asp-for="UserName" />
-                            <div class="field">
-                                <div class="control">
-                                    <input class="input is-large" type="email" placeholder="Deine E-Mail-Adresse" autofocus="" asp-for="Email" />
+                            <fieldset disabled="@Model.IsDisabled">
+                                <input class="input is-hidden" type="text" asp-for="UserName" />
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input is-large" type="email" placeholder="Deine E-Mail-Adresse" autofocus="" asp-for="Email" />
+                                    </div>
+                                    <span asp-validation-for="Email"></span>
                                 </div>
-                                <span asp-validation-for="Email"></span>
-                            </div>
-                            <div class="field">
-                                <div class="control has-icons-right">
-                                    <input class="input is-large" type="password" placeholder="Dein Passwort" asp-for="Password" />
-                                    <span class="icon is-right is-toggle-password">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
+                                <div class="field">
+                                    <div class="control has-icons-right">
+                                        <input class="input is-large" type="password" placeholder="Dein Passwort" asp-for="Password" />
+                                        <span class="icon is-right is-toggle-password">
+                                            <i class="fas fa-eye"></i>
+                                        </span>
+                                    </div>
+                                    <span asp-validation-for="Password"></span>
                                 </div>
-                                <span asp-validation-for="Password"></span>
-                            </div>
-                            <button class="button is-block is-info is-large is-fullwidth" type="submit">Login <i class="fas fa-sign-in-alt" aria-hidden="true"></i></button>
+                                <button class="button is-block is-info is-large is-fullwidth" type="submit">Login <i class="fas fa-sign-in-alt" aria-hidden="true"></i></button>
+                            </fieldset>
                         </form>
 
                     </div>

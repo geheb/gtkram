@@ -19,7 +19,7 @@ public class CreateUserInput
     [RequiredField]
     public bool[] Roles { get; set; } = new bool[4];
 
-    public CreateUserCommand ToCommand()
+    public CreateUserCommand ToCommand(string callbackUrl)
     {
         var roles = new List<UserRoleType>();
         if (Roles[0]) roles.Add(UserRoleType.Administrator);
@@ -27,6 +27,6 @@ public class CreateUserInput
         if (Roles[2]) roles.Add(UserRoleType.Seller);
         if (Roles[3]) roles.Add(UserRoleType.Billing);
 
-        return new(Name!, Email!, [.. roles]);
+        return new(Name!, Email!, [.. roles], callbackUrl);
     }
 }

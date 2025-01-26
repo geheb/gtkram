@@ -47,7 +47,6 @@ public class SellerArticlesModel : PageModel
 
         if (eventId == Guid.Empty || id == Guid.Empty)
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return;
         }

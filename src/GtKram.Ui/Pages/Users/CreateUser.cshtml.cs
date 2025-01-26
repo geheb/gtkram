@@ -1,3 +1,4 @@
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,10 +24,12 @@ public class CreateUserModel : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var result = await _mediator.Send(Input.ToCommand(), cancellationToken);
+        var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id = Guid.Empty, token = string.Empty });
+
+        var result = await _mediator.Send(Input.ToCommand(callbackUrl!), cancellationToken);
         if (result.IsFailed)
         {
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return Page();
         }
 

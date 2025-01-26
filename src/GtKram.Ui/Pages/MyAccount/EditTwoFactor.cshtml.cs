@@ -4,6 +4,7 @@ using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Constants;
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,10 +36,10 @@ public class EditTwoFactorModel : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        var result2fa = await _mediator.Send(new GetTwoFactorAuthQuery(User.GetId()), cancellationToken);
+        var result2fa = await _mediator.Send(new GetOtpQuery(User.GetId()), cancellationToken);
         if (result2fa.IsFailed)
         {
-            result2fa = await _mediator.Send(new CreateTwoFactorAuthCommand(User.GetId()), cancellationToken);
+            result2fa = await _mediator.Send(new CreateOtpCommand(User.GetId()), cancellationToken);
         }
 
         if (result2fa.IsSuccess)
@@ -49,16 +50,16 @@ public class EditTwoFactorModel : PageModel
         }
         else
         {
-            result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result2fa.Errors);
         }
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        var result2fa = await _mediator.Send(new GetTwoFactorAuthQuery(User.GetId()), cancellationToken);
+        var result2fa = await _mediator.Send(new GetOtpQuery(User.GetId()), cancellationToken);
         if (result2fa.IsFailed)
         {
-            result2fa.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result2fa.Errors);
             return Page();
         }
 
@@ -69,16 +70,16 @@ public class EditTwoFactorModel : PageModel
         Result result;
         if (IsTwoFactorEnabled)
         {
-            result = await _mediator.Send(new DisableTwoFactorAuthCommand(User.GetId(), Code!), cancellationToken);
+            result = await _mediator.Send(new DisableOtpCommand(User.GetId(), Code!), cancellationToken);
         }
         else
         {
-            result = await _mediator.Send(new EnableTwoFactorAuthCommand(User.GetId(), Code!), cancellationToken);
+            result = await _mediator.Send(new EnableOtpCommand(User.GetId(), Code!), cancellationToken);
         }
 
         if (result.IsFailed)
         {
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return Page();
         }
 

@@ -62,7 +62,6 @@ public class EditSellerModel : PageModel
         if (eventId == Guid.Empty || id == Guid.Empty)
         {
             IsDisabled = true;
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return;
         }
@@ -98,7 +97,6 @@ public class EditSellerModel : PageModel
         if (eventId == Guid.Empty || id == Guid.Empty)
         {
             IsDisabled = true;
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }

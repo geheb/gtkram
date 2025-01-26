@@ -12,7 +12,7 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.Ui.Pages.Login;
 
 [AllowAnonymous]
-public class ConfirmChangePasswordModel : PageModel
+public class ConfirmResetPasswordModel : PageModel
 {
     private readonly ILogger _logger;
     private readonly IMediator _mediator;
@@ -33,8 +33,8 @@ public class ConfirmChangePasswordModel : PageModel
 
     public string ChangePasswordEmail { get; set; } = "n.v.";
 
-    public ConfirmChangePasswordModel(
-        ILogger<ConfirmChangePasswordModel> logger,
+    public ConfirmResetPasswordModel(
+        ILogger<ConfirmResetPasswordModel> logger,
         IMediator mediator)
     {
         _logger = logger;
@@ -74,7 +74,7 @@ public class ConfirmChangePasswordModel : PageModel
         if (id == Guid.Empty || string.IsNullOrWhiteSpace(token) || !string.IsNullOrWhiteSpace(UserName))
         {
             IsDisabled = true;
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
+            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }
@@ -91,7 +91,7 @@ public class ConfirmChangePasswordModel : PageModel
 
         if (!ModelState.IsValid) return Page();
 
-        var result = await _mediator.Send(new ConfirmChangePasswordCommand(id, Password!, token), cancellationToken);
+        var result = await _mediator.Send(new ConfirmResetPasswordCommand(id, Password!, token), cancellationToken);
         if (result.IsFailed)
         {
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidPasswordResetLink);

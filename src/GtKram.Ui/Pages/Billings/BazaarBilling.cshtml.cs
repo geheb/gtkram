@@ -40,7 +40,6 @@ public class BazaarBillingModel : PageModel
         EventId = eventId;
         if (eventId == Guid.Empty)
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return;
         }
@@ -86,7 +85,6 @@ public class BazaarBillingModel : PageModel
     {
         if (eventId == Guid.Empty)
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }

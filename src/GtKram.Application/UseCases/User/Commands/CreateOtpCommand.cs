@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record CreateTwoFactorAuthCommand(Guid Id) : ICommand<Result<UserTwoFactorAuthSettings>>;
+public sealed record CreateOtpCommand(Guid Id) : ICommand<Result<UserOtp>>;

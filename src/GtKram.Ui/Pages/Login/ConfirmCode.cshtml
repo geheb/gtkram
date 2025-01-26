@@ -46,22 +46,19 @@
                         </figure>
 
                         <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
-                            <fieldset disabled="@Model.IsDisabled">
-                                <input class="input is-hidden" type="text" asp-for="UserName" />
-                                <div class="field">
-                                    <div class="control">
-                                        <input class="input is-large" type="text" autofocus="" asp-for="Code" />
-                                    </div>
-                                    <span asp-validation-for="Code"></span>
+                            <div class="field">
+                                <div class="control">
+                                    <input class="input is-large" type="text" autofocus="" asp-for="Code" />
                                 </div>
-                                <div class="field">
-                                    <div class="control">
-                                        <input type="checkbox" asp-for="IsTrustBrowser" />
-                                        <label asp-for="IsTrustBrowser"></label>
-                                    </div>
+                                <span asp-validation-for="Code"></span>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <input type="checkbox" asp-for="IsTrustBrowser" />
+                                    <label asp-for="IsTrustBrowser"></label>
                                 </div>
-                                <button class="button is-block is-info is-large is-fullwidth" type="submit">Login <i class="fas fa-sign-in-alt" aria-hidden="true"></i></button>
-                            </fieldset>
+                            </div>
+                            <button class="button is-block is-info is-large is-fullwidth" type="submit">Login <i class="fas fa-sign-in-alt" aria-hidden="true"></i></button>
                         </form>
 
                     </div>

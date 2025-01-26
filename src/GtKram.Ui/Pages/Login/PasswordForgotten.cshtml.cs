@@ -1,7 +1,10 @@
 using GtKram.Application.Repositories;
 using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Commands;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,8 +16,7 @@ namespace GtKram.Ui.Pages.Login;
 public class PasswordForgottenModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly IUsers _users;
-    private readonly IEmailValidatorService _emailValidator;
+    private readonly IMediator _mediator;
 
     [BindProperty]
     public string? UserName { get; set; } // just for Bots
@@ -28,16 +30,10 @@ public class PasswordForgottenModel : PageModel
 
     public PasswordForgottenModel(
         ILogger<PasswordForgottenModel> logger,
-        IUsers users,
-        IEmailValidatorService emailValidator)
+        IMediator mediator)
     {
         _logger = logger;
-        _users = users;
-        _emailValidator = emailValidator;
-    }
-
-    public void OnGet()
-    {
+        _mediator = mediator;
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -45,20 +41,16 @@ public class PasswordForgottenModel : PageModel
         if (!string.IsNullOrEmpty(UserName)) 
         {
             IsDisabled = true;
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
+            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }
 
         if (!ModelState.IsValid) return Page();
 
-        if (!await _emailValidator.Validate(Email!, cancellationToken))
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidEmail);
-            return Page();
-        }
+        var callbackUrl = Url.PageLink("/Login/ConfirmResetPassword", values: new { id = User.GetId(), token = string.Empty });
 
-        await _users.NotifyPasswordForgotten(Email!, cancellationToken);
+        await _mediator.Send(new SendResetPasswordCommand(Email!, callbackUrl!), cancellationToken);
 
         return RedirectToPage("Index", new { message = 2 });
     }

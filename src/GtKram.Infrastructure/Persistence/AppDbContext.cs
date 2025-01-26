@@ -50,7 +50,7 @@ internal sealed class AppDbContext
 
         CreateDataProtection(modelBuilder);
         CreateIdentity(modelBuilder);
-        CreateAccountNotifications(modelBuilder);
+        CreateEmailQueue(modelBuilder);
         CreateBazaar(modelBuilder);
     }
 
@@ -195,25 +195,19 @@ internal sealed class AppDbContext
         });
     }
 
-    private void CreateAccountNotifications(ModelBuilder modelBuilder)
+    private void CreateEmailQueue(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AccountNotification>(eb =>
+        modelBuilder.Entity<EmailQueue>(eb =>
         {
-            eb.ToTable("account_notifications");
-            eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
-            eb.Property(e => e.UserId).HasColumnType(KeyType);
-            eb.Property(e => e.Type).IsRequired();
-            eb.Property(e => e.ReferenceId).HasColumnType(KeyType);
+            eb.ToTable("email_queue");
 
-            eb.HasOne(e => e.User)
-                .WithMany(e => e.AccountNotifications)
-                .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.NoAction)
-                .IsRequired(false);
+            eb.Property(e => e.Id).HasColumnType(KeyType);
+            eb.Property(e => e.CreatedOn).IsRequired();
+            eb.Property(e => e.Recipient).IsRequired();
+            eb.Property(e => e.Subject).IsRequired();
+            eb.Property(e => e.Body).IsRequired();
 
-            eb.HasIndex(e => new { e.UserId, e.Type, e.CreatedOn });
-
-            eb.HasIndex(e => new { e.ReferenceId, e.Type });
+            eb.HasIndex(e => e.CreatedOn);
         });
     }
 
@@ -289,17 +283,6 @@ internal sealed class AppDbContext
             eb.Property(e => e.Id).UseMySqlIdentityColumn();
             eb.Property(e => e.RoleId).HasColumnType(KeyType);
             eb.ToTable("role_claims");
-        });
-
-        modelBuilder.Entity<EmailQueue>(eb =>
-        {
-            eb.ToTable("email_queue");
-
-            eb.Property(e => e.Id).HasColumnType(KeyType);
-            eb.Property(e => e.CreatedOn).IsRequired();
-            eb.Property(e => e.Recipient).IsRequired();
-            eb.Property(e => e.Subject).IsRequired();
-            eb.Property(e => e.Body).IsRequired();
         });
     }
 }

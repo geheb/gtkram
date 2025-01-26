@@ -41,6 +41,6 @@ public class UpdateUserInput
         if (Roles[2]) roles.Add(UserRoleType.Seller);
         if (Roles[3]) roles.Add(UserRoleType.Billing);
 
-        return new(id, Name!, Email!, Password, [.. roles]);
+        return new(id, Name, [.. roles]);
     }
 }

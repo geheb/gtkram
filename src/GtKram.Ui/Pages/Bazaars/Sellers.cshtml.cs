@@ -65,13 +65,14 @@ public class SellersModel : PageModel
 
     public async Task<IActionResult> OnPostAcceptAsync(Guid eventId, Guid sellerId, CancellationToken cancellationToken)
     {
-        var result = await _sellerRegistrations.Confirm(eventId, sellerId, true, cancellationToken);
+        var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id = Guid.Empty, token = string.Empty });
+        var result = await _sellerRegistrations.Confirm(eventId, sellerId, true, callbackUrl!, cancellationToken);
         return new JsonResult(result);
     }
 
     public async Task<IActionResult> OnPostDenyAsync(Guid eventId, Guid sellerId, CancellationToken cancellationToken)
     {
-        var result = await _sellerRegistrations.Confirm(eventId, sellerId, false, cancellationToken);
+        var result = await _sellerRegistrations.Confirm(eventId, sellerId, false, string.Empty, cancellationToken);
         return new JsonResult(result);
     }
 }

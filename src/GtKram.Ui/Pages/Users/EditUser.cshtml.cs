@@ -1,6 +1,6 @@
-using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,19 +13,15 @@ namespace GtKram.Ui.Pages.Users;
 public class EditUserModel : PageModel
 {
     private readonly IMediator _mediator;
-    private readonly ITwoFactorAuth _twoFactorAuth;
 
     [BindProperty]
     public UpdateUserInput Input { get; set; } = new();
 
     public bool IsDisabled { get; set; }
 
-    public EditUserModel(
-        IMediator mediator, 
-        ITwoFactorAuth twoFactorAuth)
+    public EditUserModel(IMediator mediator)
     {
         _mediator = mediator;
-        _twoFactorAuth = twoFactorAuth;
     }
 
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
@@ -34,7 +30,7 @@ public class EditUserModel : PageModel
         if (result.IsFailed)
         {
             IsDisabled = true;
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return;
         }
 
@@ -45,18 +41,17 @@ public class EditUserModel : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var result = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
+        var result = await _mediator.Send(Input.ToCommand(id), cancellationToken);
         if (result.IsFailed)
         {
-            IsDisabled = true;
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
-        result = await _mediator.Send(Input.ToCommand(id), cancellationToken);
+        result = await _mediator.Send(new UpdateAuthCommand(id, Input.Email, Input.Password), cancellationToken);
         if (result.IsFailed)
         {
-            result.Errors.ForEach(e => ModelState.AddModelError(string.Empty, e.Message));
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
@@ -72,7 +67,7 @@ public class EditUserModel : PageModel
 
     public async Task<IActionResult> OnPostResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new ResetTwoFactorAuthCommand(id), cancellationToken);
+        var result = await _mediator.Send(new ResetOtpCommand(id), cancellationToken);
         return new JsonResult(result.IsSuccess);
     }
 }

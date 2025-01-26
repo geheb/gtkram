@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record CreateUserCommand(string Name, string Email, UserRoleType[] Roles) : ICommand<Result>;
+public sealed record CreateUserCommand(string Name, string Email, UserRoleType[] Roles, string CallbackUrl) : ICommand<Result<Guid>>;

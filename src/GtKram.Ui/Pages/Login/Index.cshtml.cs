@@ -1,6 +1,7 @@
-using GtKram.Application.Services;
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,10 +13,10 @@ namespace GtKram.Ui.Pages.Login;
 public class IndexModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly IEmailAuth _emailAuth;
+    private readonly IMediator _mediator;
 
     [BindProperty]
-    public string? UserName { get; set; }
+    public string? UserName { get; set; } // just for Bots
 
     [BindProperty, Display(Name = "E-Mail-Adresse")]
     [RequiredField, EmailLengthField, EmailField]
@@ -27,10 +28,14 @@ public class IndexModel : PageModel
 
     public string? Message { get; set; }
 
-    public IndexModel(ILogger<IndexModel> logger, IEmailAuth emailAuth)
+    public bool IsDisabled { get; set; }
+
+    public IndexModel(
+        ILogger<IndexModel> logger, 
+        IMediator mediator)
     {
         _logger = logger;
-        _emailAuth = emailAuth;
+        _mediator = mediator;
     }
 
     public void OnGet(int message = 0)
@@ -41,43 +46,37 @@ public class IndexModel : PageModel
         }
         else if (message == 2)
         {
-            Message = "Eine E-Mail wird an die E-Mail-Adresse versendet, um das Passwort zu ändern.";
+            Message = "Um das Passwort zu ändern, wurde eine E-Mail versendet.";
         }
     }
 
-    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(string? returnUrl, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(UserName))
         {
-            _logger.LogWarning("Bad request from {Ip}", HttpContext.Connection.RemoteIpAddress);
+            IsDisabled = true;
+            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }
 
-        if (!ModelState.IsValid) return Page();
-
-        var result = await _emailAuth.SignIn(Email!, Password!);
-        if (result.RequiresTwoFactor)
+        if (!ModelState.IsValid)
         {
-            return RedirectToPage("ConfirmCode", new { returnUrl });
+            return Page();
         }
-        else if (result.Succeeded)
+
+        var result = await _mediator.Send(new SignInCommand(Email!, Password!), cancellationToken);
+
+        if (result.IsSuccess)
         {
+            if (result.Value.Requires2FA)
+            {
+                return RedirectToPage("ConfirmCode", new { returnUrl });
+            }
             return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
         }
-        else if (result.IsLockedOut)
-        {
-            ModelState.AddModelError(string.Empty, "Login ist gesperrt");
-        }
-        else if (result.IsNotAllowed)
-        {
-            ModelState.AddModelError(string.Empty, "Login ist nicht erlaubt");
-        }
-        else
-        {
-            ModelState.AddModelError(string.Empty, "Email/Passsort stimmen nicht überein");
-        }
 
+        ModelState.AddModelError(string.Empty, "Deine Anmeldedaten stimmen nicht überein.");
         return Page();
     }
 }

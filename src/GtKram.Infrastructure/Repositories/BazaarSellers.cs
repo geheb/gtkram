@@ -1,6 +1,8 @@
 using GtKram.Application.Converter;
 using GtKram.Application.Repositories;
 using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Domain.Models;
+using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories.Mappings;
@@ -11,12 +13,14 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class BazaarSellers : IBazaarSellers
 {
     private readonly AppDbContext _dbContext;
-    private readonly IUsers _users;
+    private readonly IUserRepository _userRepository;
 
-    public BazaarSellers(AppDbContext dbContext, IUsers users)
+    public BazaarSellers(
+        AppDbContext dbContext, 
+        IUserRepository userRepository)
     {
         _dbContext = dbContext;
-        _users = users;
+        _userRepository = userRepository;
     }
 
     public async Task<BazaarSellerDto[]> GetAll(Guid userId, CancellationToken cancellationToken)
@@ -114,7 +118,8 @@ internal sealed class BazaarSellers : IBazaarSellers
 
         if (canCreateBillings && entity.UserId.HasValue)
         {
-            if (!await _users.AddBillingRole(entity.UserId.Value, cancellationToken))
+            var result = await _userRepository.AddRole(entity.UserId.Value, UserRoleType.Billing, cancellationToken);
+            if (result.IsFailed)
             {
                 return false;
             }

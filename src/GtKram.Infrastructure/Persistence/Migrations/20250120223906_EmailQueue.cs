@@ -29,6 +29,11 @@ namespace GtKram.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("PK_email_queue", x => x.Id);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_email_queue_CreatedOn",
+                table: "email_queue",
+                column: "CreatedOn");
         }
 
         /// <inheritdoc />
