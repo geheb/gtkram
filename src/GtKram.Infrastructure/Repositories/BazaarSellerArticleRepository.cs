@@ -1,5 +1,4 @@
 using FluentResults;
-using GtKram.Application.Converter;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -8,27 +7,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
-internal sealed class BazaarEventRepository : IBazaarEventRepository
+internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleRepository
 {
-    private const string _notFound = "Der Kinderbasar wurde nicht gefunden.";
-    private const string _saveFailed = "Der Kinderbasar konnte nicht gespeichert werden.";
+    private const string _notFound = "Der Artikel wurde nicht gefunden.";
+    private const string _saveFailed = "Der Artikel konnte nicht gespeichert werden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
-    private readonly DbSet<Persistence.Entities.BazaarEvent> _dbSet;
+    private readonly DbSet<Persistence.Entities.BazaarSellerArticle> _dbSet;
 
-    public BazaarEventRepository(
+    public BazaarSellerArticleRepository(
         AppDbContext dbContext,
         TimeProvider timeProvider)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
-        _dbSet = _dbContext.Set<Persistence.Entities.BazaarEvent>();
+        _dbSet = _dbContext.Set<Persistence.Entities.BazaarSellerArticle>();
     }
 
-    public async Task<Result> Create(BazaarEvent model, CancellationToken cancellationToken)
+    public async Task<Result> Create(BazaarSellerArticle model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new(), new());
+        var entity = model.MapToEntity(new());
         entity.Id = _pkGenerator.Generate();
         entity.CreatedOn = _timeProvider.GetUtcNow();
 
@@ -38,7 +37,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
     }
 
-    public async Task<Result<BazaarEvent>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
@@ -46,21 +45,19 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
             return Result.Fail(_notFound);
         }
 
-        return entity.MapToDomain(new());
+        return entity.MapToDomain();
     }
 
-    public async Task<BazaarEvent[]> GetAll(CancellationToken cancellationToken)
+    public async Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
-            .OrderByDescending(e => e.StartDate)
+            .Where(e => e.BazaarSellerId == id)
             .ToArrayAsync(cancellationToken);
 
-        var dc = new GermanDateTimeConverter();
-
-        return entities.Select(e => e.MapToDomain(dc)).ToArray();
+        return entities.Select(e => e.MapToDomain()).ToArray();
     }
 
-    public async Task<Result> Update(BazaarEvent model, CancellationToken cancellationToken)
+    public async Task<Result> Update(BazaarSellerArticle model, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
         if (entity is null)
@@ -68,18 +65,10 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
             return Result.Fail(_notFound);
         }
 
-        model.MapToEntity(entity, new());
+        model.MapToEntity(entity);
         entity.UpdatedOn = _timeProvider.GetUtcNow();
 
         var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isUpdated ? Result.Ok() : Result.Fail(_saveFailed);
-    }
-
-    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
-    {
-        _dbSet.Remove(new Persistence.Entities.BazaarEvent { Id = id });
-
-        var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(_notFound);
     }
 }

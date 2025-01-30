@@ -3,6 +3,7 @@ using GtKram.Application.Repositories;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Models;
+using GtKram.Domain.Models;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

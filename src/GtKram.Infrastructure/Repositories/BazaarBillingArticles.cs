@@ -31,8 +31,8 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
             .Include(e => e.BazaarSellerArticle)
             .ThenInclude(e => e!.BazaarSeller)
             .Where(e => e.BazaarBillingId == billingId && e.BazaarBilling!.BazaarEventId == eventId)
-            .OrderByDescending(e => e.AddedOn)
-            .Select(e => new { e.Id, e.BazaarSellerArticleId, e.AddedOn, e.BazaarSellerArticle!.BazaarSeller!.SellerNumber, e.BazaarSellerArticle.Name, e.BazaarSellerArticle.LabelNumber, e.BazaarSellerArticle.Price })
+            .OrderByDescending(e => e.CreatedOn)
+            .Select(e => new { e.Id, e.BazaarSellerArticleId, e.CreatedOn, e.BazaarSellerArticle!.BazaarSeller!.SellerNumber, e.BazaarSellerArticle.Name, e.BazaarSellerArticle.LabelNumber, e.BazaarSellerArticle.Price })
             .ToArrayAsync(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
@@ -41,7 +41,7 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
         {
             Id = e.Id,
             ArticleId = e.BazaarSellerArticleId!.Value,
-            AddedOn = dc.ToLocal(e.AddedOn),
+            AddedOn = dc.ToLocal(e.CreatedOn),
             SellerNumber = e.SellerNumber,
             Name = e.Name,
             LabelNumber = e.LabelNumber,
@@ -100,7 +100,7 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
             .Include(e => e.BazaarSellerArticle)
             .ThenInclude(e => e!.BazaarSeller)
             .Where(e => e.Id == id)
-            .Select(e => new { e.Id, e.BazaarSellerArticleId, e.AddedOn, e.BazaarSellerArticle!.BazaarSeller!.SellerNumber, e.BazaarSellerArticle.Name, e.BazaarSellerArticle.LabelNumber, e.BazaarSellerArticle.Price })
+            .Select(e => new { e.Id, e.BazaarSellerArticleId, e.CreatedOn, e.BazaarSellerArticle!.BazaarSeller!.SellerNumber, e.BazaarSellerArticle.Name, e.BazaarSellerArticle.LabelNumber, e.BazaarSellerArticle.Price })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (entity == null)
@@ -114,7 +114,7 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
         {
             Id = entity.Id,
             ArticleId = entity.BazaarSellerArticleId!.Value,
-            AddedOn = dc.ToLocal(entity.AddedOn),
+            AddedOn = dc.ToLocal(entity.CreatedOn),
             SellerNumber = entity.SellerNumber,
             Name = entity.Name,
             LabelNumber = entity.LabelNumber,
@@ -135,8 +135,8 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
 
         using var trans = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        entity.BazaarSellerArticle!.Status = (int)SellerArticleStatus.Created;
-        entity.BazaarBilling!.Status = (int)BillingStatus.InProgress; // reset if already completed
+        entity.BazaarSellerArticle!.Status = (int)Domain.Models.SellerArticleStatus.Created;
+        entity.BazaarBilling!.Status = (int)Domain.Models.BillingStatus.InProgress; // reset if already completed
         entity.BazaarBilling.Total -= entity.BazaarSellerArticle.Price;
 
         dbSetBazaarBillingArticle.Remove(entity);
@@ -168,7 +168,7 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
         {
             foreach (var article in billing.BazaarBillingArticles!)
             {
-                article.BazaarSellerArticle!.Status = (int)SellerArticleStatus.Created;
+                article.BazaarSellerArticle!.Status = (int)Domain.Models.SellerArticleStatus.Created;
             }
 
             if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)
@@ -215,14 +215,14 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
         billingArticle = new BazaarBillingArticle
         {
             Id = _pkGenerator.Generate(),
-            AddedOn = DateTimeOffset.UtcNow,
+            CreatedOn = DateTimeOffset.UtcNow,
             BazaarBillingId = billingId,
             BazaarSellerArticleId = article.Id
         };
 
         using var trans = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        article.Status = (int)SellerArticleStatus.Booked;
+        article.Status = (int)Domain.Models.SellerArticleStatus.Booked;
 
         if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)
         {
@@ -240,7 +240,7 @@ internal sealed class BazaarBillingArticles : IBazaarBillingArticles
 
         await dbSetBazaarBillingArticle.AddAsync(billingArticle, cancellationToken);
 
-        billing.Status = (int)BillingStatus.InProgress; // reset if completed
+        billing.Status = (int)Domain.Models.BillingStatus.InProgress; // reset if completed
         billing.Total += article.Price;
 
         if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)

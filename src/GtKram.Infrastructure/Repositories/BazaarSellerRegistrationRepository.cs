@@ -8,25 +8,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
-internal sealed class BazaarEventRepository : IBazaarEventRepository
+internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistrationRepository
 {
-    private const string _notFound = "Der Kinderbasar wurde nicht gefunden.";
-    private const string _saveFailed = "Der Kinderbasar konnte nicht gespeichert werden.";
+    private const string _notFound = "Die Registrierung wurde nicht gefunden.";
+    private const string _saveFailed = "Die Registrierung konnte nicht gespeichert werden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
-    private readonly DbSet<Persistence.Entities.BazaarEvent> _dbSet;
+    private readonly DbSet<Persistence.Entities.BazaarSellerRegistration> _dbSet;
 
-    public BazaarEventRepository(
+    public BazaarSellerRegistrationRepository(
         AppDbContext dbContext,
         TimeProvider timeProvider)
     {
         _dbContext = dbContext;
         _timeProvider = timeProvider;
-        _dbSet = _dbContext.Set<Persistence.Entities.BazaarEvent>();
+        _dbSet = _dbContext.Set<Persistence.Entities.BazaarSellerRegistration>();
     }
 
-    public async Task<Result> Create(BazaarEvent model, CancellationToken cancellationToken)
+    public async Task<Result> Create(BazaarSellerRegistration model, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new(), new());
         entity.Id = _pkGenerator.Generate();
@@ -38,7 +38,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
     }
 
-    public async Task<Result<BazaarEvent>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<Result<BazaarSellerRegistration>> Find(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
@@ -49,10 +49,10 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return entity.MapToDomain(new());
     }
 
-    public async Task<BazaarEvent[]> GetAll(CancellationToken cancellationToken)
+    public async Task<BazaarSellerRegistration[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
-            .OrderByDescending(e => e.StartDate)
+            .Where(e => e.BazaarEventId == id)
             .ToArrayAsync(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
@@ -60,7 +60,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
-    public async Task<Result> Update(BazaarEvent model, CancellationToken cancellationToken)
+    public async Task<Result> Update(BazaarSellerRegistration model, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
         if (entity is null)
@@ -77,9 +77,19 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarEvent { Id = id });
+        _dbSet.Remove(new Persistence.Entities.BazaarSellerRegistration { Id = id });
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isDeleted ? Result.Ok() : Result.Fail(_notFound);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCountByBazaarEventId(CancellationToken cancellationToken)
+    {
+        var result = await _dbSet
+            .GroupBy(e => e.BazaarEventId)
+            .Select(g => new { Id = g.Key!.Value, Count = g.Count() })
+            .ToArrayAsync(cancellationToken);
+
+        return result.ToDictionary(r => r.Id, r => r.Count);
     }
 }

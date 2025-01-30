@@ -19,29 +19,6 @@ internal sealed class AppDbContext
     {
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        var entries = ChangeTracker.Entries()
-            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified) && e.Entity is ChangedOn);
-
-        var now = DateTimeOffset.UtcNow;
-
-        foreach (var entry in entries)
-        {
-            var entity = entry.Entity as ChangedOn;
-            if (entry.State == EntityState.Added)
-            {
-                entity!.CreatedOn = now;
-            }
-            else
-            {
-                entity!.UpdatedOn = now;
-            }
-        }
-
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -60,6 +37,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_events");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.Name).IsRequired().HasMaxLength(128);
             eb.Property(e => e.Description).HasMaxLength(1024);
             eb.Property(e => e.Address).HasMaxLength(256);
@@ -87,6 +65,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_seller_registrations");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.Email).IsRequired().HasMaxLength(256);
             eb.Property(e => e.Name).IsRequired().HasMaxLength(64);
             eb.Property(e => e.Phone).IsRequired().HasMaxLength(32);
@@ -113,6 +92,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_sellers");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.BazaarEventId).HasColumnType(KeyType);
             eb.Property(e => e.UserId).HasColumnType(KeyType);
             eb.Property(e => e.SellerNumber).IsRequired();
@@ -138,6 +118,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_seller_articles");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.BazaarSellerId).HasColumnType(KeyType);
             eb.Property(e => e.LabelNumber).IsRequired();
             eb.Property(e => e.Name).HasMaxLength(256).IsRequired();
@@ -156,6 +137,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_billings");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.Status).IsRequired();
             eb.Property(e => e.BazaarEventId).HasColumnType(KeyType);
             eb.Property(e => e.UserId).HasColumnType(KeyType);
@@ -178,7 +160,7 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_billing_articles");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
-            eb.Property(e => e.AddedOn).IsRequired();
+            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.BazaarBillingId).HasColumnType(KeyType);
             eb.Property(e => e.BazaarSellerArticleId).HasColumnType(KeyType);
 

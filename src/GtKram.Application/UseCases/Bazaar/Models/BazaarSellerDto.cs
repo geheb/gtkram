@@ -1,4 +1,5 @@
 using GtKram.Application.Converter;
+using GtKram.Domain.Models;
 
 namespace GtKram.Application.UseCases.Bazaar.Models;
 

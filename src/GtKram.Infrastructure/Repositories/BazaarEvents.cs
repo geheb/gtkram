@@ -24,7 +24,7 @@ internal sealed class BazaarEvents : IBazaarEvents
     }
     public async Task<BazaarEventDto?> Find(Guid id, CancellationToken cancellationToken)
     {
-        var billingStatus = (int)BillingStatus.Completed;
+        var billingStatus = (int)Domain.Models.BillingStatus.Completed;
         var dbSetBazaarEvent = _dbContext.Set<BazaarEvent>();
 
         var entity = await dbSetBazaarEvent
@@ -46,7 +46,7 @@ internal sealed class BazaarEvents : IBazaarEvents
 
     public async Task<BazaarEventDto[]> GetAll(CancellationToken cancellationToken)
     {
-        var billingStatus = (int)BillingStatus.Completed;
+        var billingStatus = (int)Domain.Models.BillingStatus.Completed;
         var dbSetBazaarEvent = _dbContext.Set<BazaarEvent>();
 
         var entities = await dbSetBazaarEvent
@@ -80,7 +80,7 @@ internal sealed class BazaarEvents : IBazaarEvents
             return Array.Empty<BazaarEventDto>();
         }
 
-        var billingStatus = (int)BillingStatus.Completed;
+        var billingStatus = (int)Domain.Models.BillingStatus.Completed;
         var dbSetBazaarEvent = _dbContext.Set<BazaarEvent>();
 
         var entities = await dbSetBazaarEvent

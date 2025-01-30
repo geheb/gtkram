@@ -25,11 +25,153 @@ internal static class BazaarMapping
         IsRegistrationsLocked = entity.IsRegistrationsLocked,
     };
 
+    public static BazaarEvent MapToEntity(this Domain.Models.BazaarEvent model, BazaarEvent entity, GermanDateTimeConverter dc)
+    {
+        entity.Id = model.Id;
+        entity.Name = model.Name;
+        entity.Description = model.Description;
+        entity.StartDate = model.StartsOn.ToUniversalTime();
+        entity.EndDate = model.EndsOn.ToUniversalTime();
+        entity.Address = model.Address;
+        entity.MaxSellers = model.MaxSellers;
+        entity.RegisterStartDate = model.RegisterStartsOn.ToUniversalTime();
+        entity.RegisterEndDate = model.RegisterEndsOn.ToUniversalTime();
+        entity.EditArticleEndDate = model.EditArticleEndsOn?.ToUniversalTime();
+        entity.PickUpLabelsStartDate = model.PickUpLabelsStartsOn?.ToUniversalTime();
+        entity.PickUpLabelsEndDate = model.PickUpLabelsEndsOn?.ToUniversalTime();
+        entity.IsRegistrationsLocked = model.IsRegistrationsLocked;
+        return entity;
+    }
+
+    public static Domain.Models.BazaarSellerRegistration MapToDomain(this BazaarSellerRegistration entity, GermanDateTimeConverter dc) => new()
+    {
+        Id = entity.Id,
+        BazaarEventId = entity.BazaarEventId,
+        Email = entity.Email,
+        Name = entity.Name,
+        Phone = entity.Phone,
+        Clothing = entity.Clothing,
+        Accepted = entity.Accepted,
+        PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.PreferredType,
+        BazaarSellerId = entity.BazaarSellerId
+    };
+
+    public static BazaarSellerRegistration MapToEntity(this Domain.Models.BazaarSellerRegistration model, BazaarSellerRegistration entity, GermanDateTimeConverter dc)
+    {
+        entity.Id = model.Id;
+        entity.BazaarEventId = model.BazaarEventId;
+        entity.Email = model.Email;
+        entity.Name = model.Name;
+        entity.Phone = model.Phone;
+        entity.Clothing = model.Clothing;
+        entity.Accepted = model.Accepted;
+        entity.PreferredType = (int)model.PreferredType;
+        entity.BazaarSellerId = model.BazaarSellerId;
+        return entity;
+    }
+
+    public static Domain.Models.BazaarBilling MapToDomain(this BazaarBilling entity) => new()
+    {
+        Id = entity.Id,
+        Status = (Domain.Models.BillingStatus)entity.Status,
+        BazaarEventId = entity.BazaarEventId,
+        UserId = entity.UserId,
+        Total = entity.Total,
+    };
+
+    public static BazaarBilling MapToEntity(this Domain.Models.BazaarBilling model, BazaarBilling entity)
+    {
+        entity.Id = model.Id;
+        entity.Status = (int)model.Status;
+        entity.BazaarEventId = model.BazaarEventId;
+        entity.UserId = model.UserId;
+        entity.Total = model.Total;
+        return entity;
+    }
+
+    public static Domain.Models.BazaarBillingArticle MapToDomain(this BazaarBillingArticle entity, GermanDateTimeConverter dc) => new()
+    {
+        Id = entity.Id,
+        CreatedOn = dc.ToLocal(entity.CreatedOn),
+        BazaarBillingId = entity.BazaarBillingId,
+        BazaarSellerArticleId = entity.BazaarSellerArticleId,
+    };
+
+    public static BazaarBillingArticle MapToEntity(this Domain.Models.BazaarBillingArticle model, BazaarBillingArticle entity)
+    {
+        entity.Id = model.Id;
+        entity.CreatedOn = model.CreatedOn.ToUniversalTime();
+        entity.BazaarBillingId = model.BazaarBillingId;
+        entity.BazaarSellerArticleId = model.BazaarSellerArticleId;
+        return entity;
+    }
+
+    public static Domain.Models.BazaarSellerArticle MapToDomain(this BazaarSellerArticle entity) => new()
+    {
+        Id = entity.Id,
+        BazaarSellerId = entity.BazaarSellerId,
+        LabelNumber = entity.LabelNumber,
+        Name = entity.Name,
+        Size = entity.Size,
+        Price = entity.Price,
+        Status = (Domain.Models.SellerArticleStatus)entity.Status,
+    };
+
+    public static BazaarSellerArticle MapToEntity(this Domain.Models.BazaarSellerArticle model, BazaarSellerArticle entity)
+    {
+        entity.Id = model.Id;
+        entity.BazaarSellerId = model.BazaarSellerId;
+        entity.LabelNumber = model.LabelNumber;
+        entity.Name = model.Name;
+        entity.Size = model.Size;
+        entity.Price = model.Price;
+        entity.Status = (int)model.Status;
+        return entity;
+    }
+
+    public static Domain.Models.BazaarSeller MapToDomain(this BazaarSeller entity) => new()
+    {
+        Id = entity.Id,
+        BazaarEventId = entity.BazaarEventId,
+        UserId = entity.UserId,
+        SellerNumber = entity.SellerNumber,
+        Role = (Domain.Models.SellerRole)entity.Role,
+        MaxArticleCount = entity.MaxArticleCount,
+        CanCreateBillings = entity.CanCreateBillings,
+    };
+
+    public static BazaarSeller MapToEntity(this Domain.Models.BazaarSeller model, BazaarSeller entity)
+    {
+        entity.Id = model.Id;
+        entity.BazaarEventId = model.BazaarEventId;
+        entity.UserId = model.UserId;
+        entity.SellerNumber = model.SellerNumber;
+        entity.Role = (int)model.Role;
+        entity.MaxArticleCount = model.MaxArticleCount;
+        entity.CanCreateBillings = model.CanCreateBillings;
+        return entity;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public static BazaarBillingDto MapToDto(this BazaarBilling entity, int articleCount, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
         CreatedOn = dc.ToLocal(entity.CreatedOn),
-        Status = (BillingStatus)entity.Status,
+        Status = (Domain.Models.BillingStatus)entity.Status,
         UserId = entity.UserId!.Value,
         User = entity.User?.Name,
         Total = entity.Total,
@@ -91,7 +233,7 @@ internal static class BazaarMapping
         Name = entity.Name,
         Size = entity.Size,
         Price = entity.Price,
-        Status = (SellerArticleStatus)entity.Status,
+        Status = (Domain.Models.SellerArticleStatus)entity.Status,
         SellerNumber = entity.BazaarSeller!.SellerNumber
     };
 
@@ -124,7 +266,7 @@ internal static class BazaarMapping
 
             UserId = entity.UserId,
             SellerNumber = entity.SellerNumber,
-            Role = (SellerRole)entity.Role,
+            Role = (Domain.Models.SellerRole)entity.Role,
             ArticleCount = articleCount,
             MaxArticleCount = entity.MaxArticleCount,
 
@@ -148,7 +290,7 @@ internal static class BazaarMapping
             Clothing = entity.Clothing?.Split(';').Select(v => int.Parse(v, CultureInfo.InvariantCulture)).ToArray(),
             Accepted = entity.Accepted,
             BazaarSellerId = entity.BazaarSellerId,
-            Role = (SellerRole?)entity.BazaarSeller?.Role,
+            Role = (Domain.Models.SellerRole?)entity.BazaarSeller?.Role,
             SellerNumber = entity.BazaarSeller?.SellerNumber,
             ArticleCount = entity.BazaarSeller is not null ? articleCount : null,
             HasKita = entity.PreferredType == 1,

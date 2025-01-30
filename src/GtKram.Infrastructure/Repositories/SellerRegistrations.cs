@@ -2,9 +2,6 @@ using GtKram.Application.Repositories;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.User.Commands;
-using GtKram.Domain.Models;
-using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories.Mappings;
@@ -20,14 +17,14 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly IMediator _mediator;
-    private readonly IUserRepository _userRepository;
+    private readonly Domain.Repositories.IUserRepository _userRepository;
     private readonly ILogger _logger;
     private readonly SemaphoreSlim _registerSemaphore = new SemaphoreSlim(1, 1);
 
     public SellerRegistrations(
         AppDbContext dbContext,
         IMediator mediator,
-        IUserRepository userRepository,
+        Domain.Repositories.IUserRepository userRepository,
         ILogger<SellerRegistrations> logger)
     {
         _dbContext = dbContext;
@@ -101,8 +98,8 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
                     Id = _pkGenerator.Generate(),
                     BazaarEventId = eventId,
                     SellerNumber = maxSeller + 1,
-                    Role = (int)SellerRole.Standard,
-                    MaxArticleCount = BazaarSellers.CalcMaxArticleCount(SellerRole.Standard)
+                    Role = (int)Domain.Models.SellerRole.Standard,
+                    MaxArticleCount = BazaarSellers.CalcMaxArticleCount(Domain.Models.SellerRole.Standard)
                 };
 
                 await dbSetBazaarSeller.AddAsync(seller, cancellationToken);
@@ -244,7 +241,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
             }
             else
             {
-                var idResult = await _mediator.Send(new CreateUserCommand(entity.Name!, entity.Email!, [UserRoleType.Seller], registerUserCallbackUrl), cancellationToken);
+                var idResult = await _mediator.Send(new CreateUserCommand(entity.Name!, entity.Email!, [Domain.Models.UserRoleType.Seller], registerUserCallbackUrl), cancellationToken);
                 if (idResult.IsFailed)
                 {
                     return false;

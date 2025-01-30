@@ -5,6 +5,7 @@
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
     var dateConverter = new GermanDateTimeConverter();
+    var eventConverter = new BazaarEventConverter();
 }
 
 @await Html.PartialAsync("_Header")
@@ -52,11 +53,11 @@
                     }
                     @foreach (var e in Model.Events)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("Edit", null, new { id = e.Id }))">
-                            <td>@e.FormatEvent(dateConverter)</td>
-                            <td>@e.SellerRegistrationCount</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("Edit", null, new { id = e.Event.Id }))">
+                            <td>@eventConverter.Format(e.Event)</td>
+                            <td>@e.RegistrationCount</td>
                             <td>
-                                <a href="@(Url.PageLink("Edit", null, new { id = e.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("Edit", null, new { id = e.Event.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

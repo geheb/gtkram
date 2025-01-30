@@ -1,4 +1,5 @@
 using FluentResults;
+using GtKram.Domain.Models;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace GtKram.Ui.Extensions;

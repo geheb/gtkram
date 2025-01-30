@@ -1,4 +1,4 @@
-namespace GtKram.Application.UseCases.Bazaar.Models;
+namespace GtKram.Domain.Models;
 
 public enum SellerArticleStatus
 {

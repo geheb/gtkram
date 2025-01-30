@@ -58,7 +58,7 @@ internal sealed class BazaarSellerArticles : IBazaarSellerArticles
             .MaxAsync(e => (int?)e.LabelNumber, cancellationToken) ?? 0;
 
         entity.Id = _pkGenerator.Generate();
-        entity.Status = (int)SellerArticleStatus.Created;
+        entity.Status = (int)Domain.Models.SellerArticleStatus.Created;
         entity.BazaarSellerId = bazaarSellerId;
         entity.LabelNumber = maxLabel + 1;
 
@@ -156,7 +156,7 @@ internal sealed class BazaarSellerArticles : IBazaarSellerArticles
         if (lastEvent is null) return false;
 
         var dbSetBazaarSellerArticle = _dbContext.Set<BazaarSellerArticle>();
-        var status = (int)SellerArticleStatus.Created;
+        var status = (int)Domain.Models.SellerArticleStatus.Created;
         var oldArticles = await dbSetBazaarSellerArticle
             .AsNoTracking()
             .Where(e => e.BazaarSellerId != bazaarSellerId && e.BazaarSeller!.BazaarEventId == lastEvent.Id && e.BazaarSeller.UserId == userId && e.Status == status)
@@ -185,7 +185,7 @@ internal sealed class BazaarSellerArticles : IBazaarSellerArticles
                 Name = old.Name,
                 Price = old.Price,
                 Size = old.Size,
-                Status = (int)SellerArticleStatus.Created,
+                Status = (int)Domain.Models.SellerArticleStatus.Created,
                 LabelNumber = ++maxLabelNumber
             };
 
@@ -221,7 +221,7 @@ internal sealed class BazaarSellerArticles : IBazaarSellerArticles
             return false;
         }
 
-        if (entity.Status != (int)SellerArticleStatus.Created)
+        if (entity.Status != (int)Domain.Models.SellerArticleStatus.Created)
         {
             _logger.LogError("BazaarSellerArticle {Id} has wrong status.", article.Id);
             return false;

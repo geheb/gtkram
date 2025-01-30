@@ -3,8 +3,9 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { id = Model.Id };
-    Model.BuildHeaderMenu(pageParam);
+
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+    Model.BuildHeaderMenu(new { id });
     var dateConverter = new GermanDateTimeConverter();
     var indexLink = Url.PageLink("Index");
 }
@@ -15,7 +16,7 @@
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam)</div>
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { id })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
@@ -27,24 +28,21 @@
                     </div>
                     <div class="dropdown-menu" id="user-action" role="menu">
                         <div class="dropdown-content">
-                            <a class="dropdown-item copy-link" href="#" data-url="@(Url.PageLink("Register", null, pageParam))">
+                            <a class="dropdown-item copy-link" href="#" data-url="@(Url.PageLink("Register", null, new { id }))">
                                 Link für Registrierungen kopieren
                             </a>
-                            <a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="@(Url.PageLink("Register", null, pageParam))">
+                            <a class="dropdown-item" target="_blank" rel="noopener noreferrer" href="@(Url.PageLink("Register", null, new { id }))">
                                 Link für Registrierungen öffnen
                             </a>
                             <hr class="dropdown-divider" />
-                            <a href="@(Url.PageLink("Sellers", null, new { eventId = Model.Id }))" class="dropdown-item">
+                            <a href="@(Url.PageLink("Sellers", null, new { eventId = id }))" class="dropdown-item">
                                 Registrierungen anzeigen
                             </a>
-                            @if (!Model.HasRegistrations)
-                            {
-                                <a class="dropdown-item open-modal" href="#"
-                                    data-target="#deleteEventModal"
-                                    data-url="@(Url.PageLink(string.Empty, "delete", pageParam))">
-                                    Kinderbasar löschen
-                                </a>
-                            }
+                            <a class="dropdown-item open-modal" href="#"
+                               data-target="#deleteEventModal"
+                               data-url="@(Url.PageLink(string.Empty, "delete", new { id }))">
+                                Kinderbasar löschen
+                            </a>
                         </div>
                     </div>
                 </div>

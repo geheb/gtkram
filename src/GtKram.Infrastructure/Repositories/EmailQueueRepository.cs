@@ -7,8 +7,8 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class EmailQueueRepository
 {
-    private const string _notFound = "Der Datensatz wurde nicht gefunden.";
-    private const string _saveFailed = "Der Datensatz konnte nicht gespeichert werden.";
+    private const string _notFound = "Der Email wurde nicht gefunden.";
+    private const string _saveFailed = "Der Email konnte nicht gespeichert werden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly TimeProvider _timeProvider;
     private readonly AppDbContext _dbContext;

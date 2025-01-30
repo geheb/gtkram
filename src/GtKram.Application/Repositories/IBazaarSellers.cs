@@ -1,5 +1,5 @@
 using GtKram.Application.UseCases.Bazaar.Models;
-using System.Security.Claims;
+using GtKram.Domain.Models;
 
 namespace GtKram.Application.Repositories;
 

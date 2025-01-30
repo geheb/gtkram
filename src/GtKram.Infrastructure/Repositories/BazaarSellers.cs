@@ -1,7 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.Repositories;
 using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
@@ -78,15 +77,15 @@ internal sealed class BazaarSellers : IBazaarSellers
         return entity.seller.MapToDto(entity.count, dc);
     }
 
-    public static int CalcMaxArticleCount(SellerRole role) => role switch
+    public static int CalcMaxArticleCount(Domain.Models.SellerRole role) => role switch
     {
-        SellerRole.Orga => 20 * 24,
-        SellerRole.TeamLead => 4 * 24, // alt: 120
-        SellerRole.Helper => 3 * 24, // alt: 96
+        Domain.Models.SellerRole.Orga => 20 * 24,
+        Domain.Models.SellerRole.TeamLead => 4 * 24, // alt: 120
+        Domain.Models.SellerRole.Helper => 3 * 24, // alt: 96
         _ => 2 * 24
     };
 
-    public async Task<bool> Update(Guid id, SellerRole role, int sellerNumber, bool canCreateBillings, CancellationToken cancellationToken)
+    public async Task<bool> Update(Guid id, Domain.Models.SellerRole role, int sellerNumber, bool canCreateBillings, CancellationToken cancellationToken)
     {
         var dbSetBazaarSeller = _dbContext.Set<BazaarSeller>();
 
@@ -118,7 +117,7 @@ internal sealed class BazaarSellers : IBazaarSellers
 
         if (canCreateBillings && entity.UserId.HasValue)
         {
-            var result = await _userRepository.AddRole(entity.UserId.Value, UserRoleType.Billing, cancellationToken);
+            var result = await _userRepository.AddRole(entity.UserId.Value, Domain.Models.UserRoleType.Billing, cancellationToken);
             if (result.IsFailed)
             {
                 return false;

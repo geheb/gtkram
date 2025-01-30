@@ -1,5 +1,6 @@
 using GtKram.Application.Converter;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
 using System.ComponentModel.DataAnnotations;
 
@@ -10,7 +11,7 @@ public class BazaarEventInput
     [Display(Name = "Name des Kinderbasars", Prompt = "z.b. Mein Kinderkram")]
     [RequiredField]
     [StringLength(128, MinimumLength = 4, ErrorMessage = "Das Feld '{0}' muss mindestens {2} und höchstens {1} Zeichen enthalten.")]
-    public string Name { get; set; } = "Mein Kinderkram";
+    public string? Name { get; set; }
 
     [Display(Name = "Beschreibung")]
     [StringLength(1024, ErrorMessage = "Das Feld '{0}' muss mindestens {2} und höchstens {1} Zeichen enthalten.")]
@@ -18,11 +19,11 @@ public class BazaarEventInput
 
     [Display(Name = "Startet am")]
     [RequiredField]
-    public string StartDate { get; set; }
+    public string? StartDate { get; set; }
 
     [Display(Name = "Endet am")]
     [RequiredField]
-    public string EndDate { get; set; }
+    public string? EndDate { get; set; }
 
     [Display(Name = "Adresse")]
     [StringLength(256, MinimumLength = 6, ErrorMessage = "Das Feld '{0}' muss mindestens {2} und höchstens {1} Zeichen enthalten.")]
@@ -31,15 +32,15 @@ public class BazaarEventInput
     [Display(Name = "Maximale Anzahl der Verkäufer")]
     [RequiredField]
     [Range(10, 200, ErrorMessage = "Das Feld '{0}' muss eine Zahl zwischen {1} und {2} sein.")]
-    public int MaxSellers { get; set; } = 70;
+    public int MaxSellers { get; set; }
 
     [Display(Name = "Registrierung startet am")]
     [RequiredField]
-    public string RegisterStartDate { get; set; }
+    public string? RegisterStartDate { get; set; }
 
     [Display(Name = "Registrierung endet am")]
     [RequiredField]
-    public string RegisterEndDate { get; set; }
+    public string? RegisterEndDate { get; set; }
 
     [Display(Name = "Bearbeitung der Artikel endet am")]
     [RequiredField]
@@ -56,8 +57,12 @@ public class BazaarEventInput
     [Display(Name = "Registrierungen sind gesperrt")]
     public bool IsRegistrationsLocked { get; set; }
 
-    public BazaarEventInput()
+    public void InitDefault(string? address)
     {
+        Name = "Mein Kinderkram";
+        Address = address;
+        MaxSellers = 70;
+
         var dc = new GermanDateTimeConverter();
         var now = dc.ToLocal(DateTimeOffset.UtcNow);
 
@@ -74,86 +79,40 @@ public class BazaarEventInput
         PickUpLabelsEndDate = dc.ToIso(baseStartDate.AddDays(-1).AddHours(1));
     }
 
-    public string? Validate()
+    public void Init(BazaarEvent model)
     {
         var dc = new GermanDateTimeConverter();
-        var startDate = dc.FromIsoDateTime(StartDate)!.Value;
-        var endDate = dc.FromIsoDateTime(EndDate)!.Value;
-
-        if (startDate >= endDate)
-        {
-            return "Das Datum für den Kinderbasar ist ungültig.";
-        }
-
-        var regStartDate = dc.FromIsoDateTime(RegisterStartDate)!.Value;
-        var regEndDate = dc.FromIsoDateTime(RegisterEndDate)!.Value;
-
-        if (regStartDate >= regEndDate || regStartDate >= startDate)
-        {
-            return "Die Registrierung der Verkäufer sollte vor dem Kinderbasars stattfinden.";
-        }
-
-        var articleEndDate = dc.FromIsoDateTime(EditArticleEndDate)!.Value;
-        if (articleEndDate >= startDate)
-        {
-            return "Die Bearbeitung der Artikel sollte vor dem Kinderbasars stattfinden.";
-        }
-        else if (articleEndDate <= regEndDate)
-        {
-            return "Die Bearbeitung der Artikel sollte nach dem Datum für die Registrierung liegen.";
-        }
-
-        var pickUpStartDate = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value;
-        var pickUpEndDate = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value;
-        if (pickUpStartDate >= pickUpEndDate)
-        {
-            return "Das Datum für die Abholung der Etiketten ist ungültig.";
-        }
-        else if (pickUpStartDate >= startDate)
-        {
-            return "Die Abholung der Etiketten sollte vor dem Kinderbasar stattfinden.";
-        }
-        else if (pickUpStartDate <= articleEndDate)
-        {
-            return "Die Abholung der Etiketten sollte nach dem Datum für die Bearbeitung der Artikel liegen.";
-        }
-
-        return null;
+        Name = model.Name;
+        Description = model.Description;
+        StartDate = dc.ToIso(model.StartsOn);
+        EndDate = dc.ToIso(model.EndsOn);
+        Address = model.Address;
+        MaxSellers = model.MaxSellers;
+        RegisterStartDate = dc.ToIso(model.RegisterStartsOn);
+        RegisterEndDate = dc.ToIso(model.RegisterEndsOn);
+        EditArticleEndDate = model.EditArticleEndsOn is not null ? dc.ToIso(model.EditArticleEndsOn.Value) : null;
+        PickUpLabelsStartDate = model.PickUpLabelsStartsOn is not null ? dc.ToIso(model.PickUpLabelsStartsOn.Value) : null;
+        PickUpLabelsEndDate = model.PickUpLabelsEndsOn is not null ? dc.ToIso(model.PickUpLabelsEndsOn.Value) : null;
+        IsRegistrationsLocked = model.IsRegistrationsLocked;
     }
 
-    public void From(BazaarEventDto dto)
+    public CreateBazaarEventCommand ToCommand()
     {
         var dc = new GermanDateTimeConverter();
-
-        Name = dto.Name!;
-        Description = dto.Description;
-        StartDate = dc.ToIso(dto.StartDate);
-        EndDate = dc.ToIso(dto.EndDate);
-        Address = dto.Address!;
-        MaxSellers = dto.MaxSellers;
-        RegisterStartDate = dc.ToIso(dto.RegisterStartDate);
-        RegisterEndDate = dc.ToIso(dto.RegisterEndDate);
-        EditArticleEndDate = dto.EditArticleEndDate.HasValue ? dc.ToIso(dto.EditArticleEndDate.Value) : null;
-        PickUpLabelsStartDate = dto.PickUpLabelsStartDate.HasValue ? dc.ToIso(dto.PickUpLabelsStartDate.Value) : null;
-        PickUpLabelsEndDate = dto.PickUpLabelsEndDate.HasValue ? dc.ToIso(dto.PickUpLabelsEndDate.Value) : null;
-        IsRegistrationsLocked = dto.IsRegistrationsLocked;
-    }
-
-    public void To(BazaarEventDto dto)
-    {
-        var dc = new GermanDateTimeConverter();
-
-        dto.Name = Name;
-        dto.Description = Description;
-        dto.StartDate = dc.FromIsoDateTime(StartDate)!.Value;
-        dto.EndDate = dc.FromIsoDateTime(EndDate)!.Value;
-        dto.Address = Address;
-        dto.MaxSellers = MaxSellers;
-        dto.RegisterStartDate = dc.FromIsoDateTime(RegisterStartDate)!.Value;
-        dto.RegisterEndDate = dc.FromIsoDateTime(RegisterEndDate)!.Value;
-        dto.EditArticleEndDate = dc.FromIsoDateTime(EditArticleEndDate);
-        dto.PickUpLabelsStartDate = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value;
-        dto.PickUpLabelsEndDate = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value;
-        dto.IsRegistrationsLocked = IsRegistrationsLocked;
+        return new(new()
+        {
+            Name = Name,
+            Description = Description,
+            StartsOn = dc.FromIsoDateTime(StartDate)!.Value,
+            EndsOn = dc.FromIsoDateTime(EndDate)!.Value,
+            Address = Address,
+            MaxSellers = MaxSellers,
+            RegisterStartsOn = dc.FromIsoDateTime(RegisterStartDate)!.Value,
+            RegisterEndsOn = dc.FromIsoDateTime(RegisterEndDate)!.Value,
+            EditArticleEndsOn = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
+            PickUpLabelsStartsOn = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
+            PickUpLabelsEndsOn = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
+            IsRegistrationsLocked = IsRegistrationsLocked
+        });
     }
 }

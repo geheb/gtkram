@@ -1,4 +1,3 @@
-using GtKram.Application.Repositories;
 using GtKram.Application.Services;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Email;
@@ -34,14 +33,11 @@ public static class ServiceExtensions
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IBazaarEventRepository, BazaarEventRepository>();
-
-
-        services.AddScoped<IBazaarBillingArticles, BazaarBillingArticles>();
-        services.AddScoped<IBazaarBillings, BazaarBillings>();
-        services.AddScoped<IBazaarEvents, BazaarEvents>();
-        services.AddScoped<IBazaarSellerArticles, BazaarSellerArticles>();
-        services.AddScoped<IBazaarSellers, BazaarSellers>();
-        services.AddScoped<ISellerRegistrations, SellerRegistrations>();
+        services.AddScoped<IBazaarSellerRegistrationRepository, BazaarSellerRegistrationRepository>();
+        services.AddScoped<IBazaarBillingRepository, BazaarBillingRepository>();
+        services.AddScoped<IBazaarBillingArticleRepository, BazaarBillingArticleRepository>();
+        services.AddScoped<IBazaarSellerArticleRepository, BazaarSellerArticleRepository>();
+        services.AddScoped<IBazaarSellerRepository, BazaarSellerRepository>();
     }
 
     public static void AddAuthorizationWith2FA(this IServiceCollection services, string name)

@@ -1,5 +1,7 @@
-using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
+using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,69 +12,39 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class EditModel : PageModel
 {
-    private readonly IBazaarEvents _bazaarEvents;
-    private readonly ISellerRegistrations _sellerRegistrations;
-
-    public Guid? Id { get; set; }
+    private readonly IMediator _mediator;
 
     public bool IsDisabled { get; set; }
-    public string? EventDetails { get; set; }
-    public bool HasRegistrations { get; set; }
 
     [BindProperty]
     public BazaarEventInput Input { get; set; } = new();
 
-    public EditModel(IBazaarEvents bazaarEvents, ISellerRegistrations sellerRegistrations)
+    public EditModel(IMediator mediator)
     {
-        _bazaarEvents = bazaarEvents;
-        _sellerRegistrations = sellerRegistrations;
+        _mediator = mediator;
     }
 
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
-        Id = id;
-        var dto = await _bazaarEvents.Find(id, cancellationToken);
-        if (dto == null)
+        var result = await _mediator.Send(new FindBazaarEventQuery(id), cancellationToken);
+        if (result.IsFailed)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden");
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        EventDetails = dto.FormatEvent(new GermanDateTimeConverter());
-        HasRegistrations = dto.SellerRegistrationCount > 0;
-
-        Input = new BazaarEventInput();
-        Input.From(dto);
+        Input.Init(result.Value);
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken)
     {
-        Id = id;
-        var dto = await _bazaarEvents.Find(id, cancellationToken);
-        if (dto == null)
-        {
-            IsDisabled = true;
-            ModelState.Clear();
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden!");
-            return Page();
-        }
-
         if (!ModelState.IsValid) return Page();
 
-        var error = Input.Validate();
-        if (!string.IsNullOrEmpty(error))
+        var result = await _mediator.Send(Input.ToCommand(), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, error);
-            return Page();
-        }
-
-        Input.To(dto);
-        var result = await _bazaarEvents.Update(dto, cancellationToken);
-
-        if (!result)
-        {
-            ModelState.AddModelError(string.Empty, "Fehler beim Speichern des Kinderbasars.");
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
@@ -81,7 +53,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _bazaarEvents.Delete(id, cancellationToken);
-        return new JsonResult(result);
+        var result = await _mediator.Send(new DeleteBazaarEventCommand(id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }

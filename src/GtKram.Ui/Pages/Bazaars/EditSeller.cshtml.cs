@@ -1,6 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.I18n;
 using Microsoft.AspNetCore.Authorization;

@@ -62,7 +62,7 @@ internal sealed class BazaarBillings : IBazaarBillings
         {
             Id = _pkGenerator.Generate(),
             BazaarEventId = eventId,
-            Status = (int)BillingStatus.InProgress,
+            Status = (int)Domain.Models.BillingStatus.InProgress,
             UserId = userId
         };
 
@@ -101,11 +101,11 @@ internal sealed class BazaarBillings : IBazaarBillings
 
         using var trans = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        billing.Status = (int)BillingStatus.Completed;
+        billing.Status = (int)Domain.Models.BillingStatus.Completed;
 
         foreach (var article in billing.BazaarBillingArticles!)
         {
-            article.BazaarSellerArticle!.Status = (int)SellerArticleStatus.Sold;
+            article.BazaarSellerArticle!.Status = (int)Domain.Models.SellerArticleStatus.Sold;
         }
 
         if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)

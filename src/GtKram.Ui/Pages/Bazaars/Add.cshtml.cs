@@ -1,6 +1,6 @@
 using GtKram.Application.Options;
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,40 +12,27 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class AddModel : PageModel
 {
-    private readonly IBazaarEvents _bazaarEvents;
+    private readonly IMediator _mediator;
 
     [BindProperty]
     public BazaarEventInput Input { get; set; } = new();
 
-    public AddModel(IBazaarEvents bazaarEvents, IOptions<AppSettings> appSettings)
+    public AddModel(
+        IMediator mediator, 
+        IOptions<AppSettings> appSettings)
     {
-        _bazaarEvents = bazaarEvents;
-        Input.Address = appSettings.Value.DefaultEventLocation;
-    }
-
-    public void OnGet()
-    {
-        Input = new BazaarEventInput();
+        _mediator = mediator;
+        Input.InitDefault(appSettings.Value.DefaultEventLocation);
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return Page();
 
-        var error = Input.Validate();
-        if (!string.IsNullOrEmpty(error))
+        var result = await _mediator.Send(Input.ToCommand(), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, error);
-            return Page();
-        }
-
-        var dto = new BazaarEventDto();
-        Input.To(dto);
-
-        var result = await _bazaarEvents.Create(dto, cancellationToken);
-        if (!result)
-        {
-            ModelState.AddModelError(string.Empty, "Fehler beim Anlegen des Kinderbasars.");
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
