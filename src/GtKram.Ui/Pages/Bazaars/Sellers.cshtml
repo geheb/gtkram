@@ -3,12 +3,14 @@
 @{
     const string Accepted = "Zugesagt";
     const string Denied = "Abgesagt";
+
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
+
     var pageParam = new { eventId = Model.EventId };
     Model.BuildHeaderMenu(pageParam);
     var clothingConverter = new ClothingConverter();
-    var sellerRoleConverter = new SellerRoleConverter();
+    var sellerConverter = new SellerConverter();
 }
 
 @await Html.PartialAsync("_Header")
@@ -101,7 +103,7 @@
                             <td>
                                 @if (r.Role.HasValue)
                                 {
-                                    <span class="tag @sellerRoleConverter.RoleToClass(r.Role)">@sellerRoleConverter.RoleToString(r.Role)</span>
+                                    <span class="tag @sellerConverter.RoleToClass(r.Role)">@sellerConverter.RoleToString(r.Role)</span>
                                 }
                                 else
                                 {

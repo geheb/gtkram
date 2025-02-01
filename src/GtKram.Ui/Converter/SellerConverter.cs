@@ -2,7 +2,7 @@ using GtKram.Domain.Models;
 
 namespace GtKram.Ui.Converter;
 
-public sealed class SellerRoleConverter
+public sealed class SellerConverter
 {
     public string RoleToString(SellerRole? role)
     {
@@ -29,4 +29,12 @@ public sealed class SellerRoleConverter
             _ => string.Empty
         };
     }
+
+    public int GetMaxArticleCount(SellerRole role) => role switch
+    {
+        SellerRole.Orga => 20 * 24,
+        SellerRole.TeamLead => 4 * 24,
+        SellerRole.Helper => 3 * 24,
+        _ => 2 * 24
+    };
 }

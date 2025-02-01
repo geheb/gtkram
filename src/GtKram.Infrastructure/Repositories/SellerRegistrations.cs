@@ -257,11 +257,11 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
 
         if (entity.Accepted == true)
         {
-            await _mediator.Send(new SendAcceptSellerCommand(entity.BazaarSeller.UserId!.Value, entity.BazaarEventId!.Value), cancellationToken);
+            await _mediator.Send(new SendAcceptSellerEmailCommand(entity.BazaarSeller.UserId!.Value, entity.BazaarEventId!.Value), cancellationToken);
         }
         else
         {
-            await _mediator.Send(new SendDenySellerCommand(entity.Email!, entity.Name!, entity.BazaarEventId!.Value), cancellationToken);
+            await _mediator.Send(new SendDenySellerEmailCommand(entity.Email!, entity.Name!, entity.BazaarEventId!.Value), cancellationToken);
         }
 
         return true;

@@ -4,5 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public sealed record UpdateBazaarEventCommand(BazaarEvent Event) : ICommand<Result>;
-
+public sealed record CreateEventCommand(BazaarEvent Event) : ICommand<Result>;

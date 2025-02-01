@@ -96,7 +96,7 @@ public class BazaarEventInput
         IsRegistrationsLocked = model.IsRegistrationsLocked;
     }
 
-    public CreateBazaarEventCommand ToCommand()
+    public CreateEventCommand ToCommand()
     {
         var dc = new GermanDateTimeConverter();
         return new(new()

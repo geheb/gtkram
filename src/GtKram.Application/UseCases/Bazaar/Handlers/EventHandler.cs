@@ -9,11 +9,11 @@ using Mediator;
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class EventHandler :
-    IQueryHandler<FindBazaarEventQuery, Result<BazaarEvent>>,
-    IQueryHandler<GetBazaarEventsWithRegistrationCountQuery, BazaarEventWithRegistrationCount[]>,
-    ICommandHandler<CreateBazaarEventCommand, Result>,
-    ICommandHandler<UpdateBazaarEventCommand, Result>,
-    ICommandHandler<DeleteBazaarEventCommand, Result>
+    IQueryHandler<FindEventQuery, Result<BazaarEvent>>,
+    IQueryHandler<GetEventsWithRegistrationCountQuery, BazaarEventWithRegistrationCount[]>,
+    ICommandHandler<CreateEventCommand, Result>,
+    ICommandHandler<UpdateEventCommand, Result>,
+    ICommandHandler<DeleteEventCommand, Result>
 {
     private readonly IBazaarEventRepository _eventRepository;
     private readonly IBazaarSellerRegistrationRepository _sellerRegistrationRepository;
@@ -26,10 +26,10 @@ internal sealed class EventHandler :
         _sellerRegistrationRepository = sellerRegistrationRepository;
     }
 
-    public async ValueTask<Result<BazaarEvent>> Handle(FindBazaarEventQuery query, CancellationToken cancellationToken) =>
+    public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
         await _eventRepository.Find(query.Id, cancellationToken);
 
-    public async ValueTask<BazaarEventWithRegistrationCount[]> Handle(GetBazaarEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)
+    public async ValueTask<BazaarEventWithRegistrationCount[]> Handle(GetEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)
     {
         var events = await _eventRepository.GetAll(cancellationToken);
         if (events.Length == 0)
@@ -46,7 +46,7 @@ internal sealed class EventHandler :
         return results;
     }
 
-    public async ValueTask<Result> Handle(CreateBazaarEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(CreateEventCommand command, CancellationToken cancellationToken)
     {
         var result = Validate(command.Event);
 
@@ -55,7 +55,7 @@ internal sealed class EventHandler :
             : result;
     }
 
-    public async ValueTask<Result> Handle(UpdateBazaarEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(UpdateEventCommand command, CancellationToken cancellationToken)
     {
         var result = Validate(command.Event);
 
@@ -64,7 +64,7 @@ internal sealed class EventHandler :
             : result;
     }
 
-    public async ValueTask<Result> Handle(DeleteBazaarEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(DeleteEventCommand command, CancellationToken cancellationToken)
     {
         var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(command.Id, cancellationToken);
         if (registrations.Length > 0)

@@ -26,7 +26,7 @@ public class EditModel : PageModel
 
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindBazaarEventQuery(id), cancellationToken);
+        var result = await _mediator.Send(new FindEventQuery(id), cancellationToken);
         if (result.IsFailed)
         {
             IsDisabled = true;
@@ -53,7 +53,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new DeleteBazaarEventCommand(id), cancellationToken);
+        var result = await _mediator.Send(new DeleteEventCommand(id), cancellationToken);
         return new JsonResult(result.IsSuccess);
     }
 }

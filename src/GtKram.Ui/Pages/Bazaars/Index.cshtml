@@ -5,7 +5,7 @@
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
     var dateConverter = new GermanDateTimeConverter();
-    var eventConverter = new BazaarEventConverter();
+    var eventConverter = new EventConverter();
 }
 
 @await Html.PartialAsync("_Header")

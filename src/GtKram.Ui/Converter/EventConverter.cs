@@ -3,7 +3,7 @@ using GtKram.Domain.Models;
 
 namespace GtKram.Ui.Converter;
 
-public sealed class BazaarEventConverter
+public sealed class EventConverter
 {
     private readonly GermanDateTimeConverter _dateTimeConverter = new();
 
@@ -12,4 +12,7 @@ public sealed class BazaarEventConverter
         var nameAndDescription = model.Name + (string.IsNullOrEmpty(model.Description) ? string.Empty : (" - " + model.Description));
         return nameAndDescription + ", " + _dateTimeConverter.FormatShort(model.StartsOn, model.EndsOn);
     }
+
+    public bool IsExpired(BazaarEvent model, TimeProvider timeProvider) =>
+        _dateTimeConverter.ToLocal(timeProvider.GetUtcNow()) > model.EndsOn;
 }

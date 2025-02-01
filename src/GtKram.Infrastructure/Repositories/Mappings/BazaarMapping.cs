@@ -46,10 +46,10 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarSellerRegistration MapToDomain(this BazaarSellerRegistration entity, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
-        BazaarEventId = entity.BazaarEventId,
-        Email = entity.Email,
-        Name = entity.Name,
-        Phone = entity.Phone,
+        BazaarEventId = entity.BazaarEventId!.Value,
+        Email = entity.Email!,
+        Name = entity.Name!,
+        Phone = entity.Phone!,
         Clothing = entity.Clothing,
         Accepted = entity.Accepted,
         PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.PreferredType,
@@ -132,19 +132,14 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarSeller MapToDomain(this BazaarSeller entity) => new()
     {
         Id = entity.Id,
-        BazaarEventId = entity.BazaarEventId,
-        UserId = entity.UserId,
         SellerNumber = entity.SellerNumber,
         Role = (Domain.Models.SellerRole)entity.Role,
-        MaxArticleCount = entity.MaxArticleCount,
         CanCreateBillings = entity.CanCreateBillings,
     };
 
     public static BazaarSeller MapToEntity(this Domain.Models.BazaarSeller model, BazaarSeller entity)
     {
         entity.Id = model.Id;
-        entity.BazaarEventId = model.BazaarEventId;
-        entity.UserId = model.UserId;
         entity.SellerNumber = model.SellerNumber;
         entity.Role = (int)model.Role;
         entity.MaxArticleCount = model.MaxArticleCount;

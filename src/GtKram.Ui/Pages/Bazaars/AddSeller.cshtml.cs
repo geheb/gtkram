@@ -1,5 +1,7 @@
-using GtKram.Application.Repositories;
-using GtKram.Application.Services;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Ui.Converter;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,64 +12,43 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class AddSellerModel : PageModel
 {
-    private readonly IBazaarEvents _bazaarEvents;
-    private readonly ISellerRegistrations _sellerRegistrations;
-    private readonly IEmailValidatorService _emailValidator;
+    private readonly IMediator _mediator;
 
     [BindProperty]
     public AddSellerInput Input { get; set; } = new();
 
-    public Guid? EventId { get; set; }
     public bool IsDisabled { get; set; }
-    public string? Details { get; set; }
 
     public AddSellerModel(
-        IBazaarEvents bazaarEvents,
-        ISellerRegistrations sellerRegistrations,
-        IEmailValidatorService emailValidator)
+        IMediator mediator)
     {
-        _bazaarEvents = bazaarEvents;
-        _sellerRegistrations = sellerRegistrations;
-        _emailValidator = emailValidator;
+        _mediator = mediator;
     }
+
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        await UpdateView(eventId, cancellationToken);
+        var result = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
+        if (result.IsFailed)
+        {
+            IsDisabled = true;
+            ModelState.AddError(result.Errors);
+            return;
+        }
+
+        Input.Event = new EventConverter().Format(result.Value);
     }
 
     public async Task<IActionResult> OnPostAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        if (!await UpdateView(eventId, cancellationToken)) return Page();
+        if (!ModelState.IsValid) return Page();
 
-        if (!await _emailValidator.Validate(Input.Email!, cancellationToken))
+        var result = await _mediator.Send(Input.ToCommand(eventId), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, "Die E-Mail-Addresse ist ungültig.");
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
-        var created = await _sellerRegistrations.Register(eventId, Input.Email!, Input.Name!, Input.Phone!, cancellationToken);
-        if (!created)
-        {
-            ModelState.AddModelError(string.Empty, "Fehler beim Anlegen des Verkäufers.");
-            return Page();
-        }
-
-        return RedirectToPage("Sellers", new { EventId = eventId });
-    }
-
-    private async Task<bool> UpdateView(Guid id, CancellationToken cancellationToken)
-    {
-        EventId = id;
-        var dto = await _bazaarEvents.Find(id, cancellationToken);
-        if (dto == null)
-        {
-            IsDisabled = true;
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
-            return false;
-        }
-
-        Details = dto.FormatEvent(new());
-
-        return ModelState.IsValid;
+        return RedirectToPage("Sellers", new { eventId });
     }
 }

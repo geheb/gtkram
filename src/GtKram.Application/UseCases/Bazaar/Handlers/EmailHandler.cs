@@ -7,8 +7,8 @@ using Mediator;
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class EmailHandler :
-    ICommandHandler<SendAcceptSellerCommand, Result>,
-    ICommandHandler<SendDenySellerCommand, Result>
+    ICommandHandler<SendAcceptSellerEmailCommand, Result>,
+    ICommandHandler<SendDenySellerEmailCommand, Result>
 {
     private readonly IUserRepository _userRepository;
     private readonly IBazaarEventRepository _bazaarEventRepository;
@@ -24,7 +24,7 @@ internal sealed class EmailHandler :
         _emailService = emailService;
     }
 
-    public async ValueTask<Result> Handle(SendAcceptSellerCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(SendAcceptSellerEmailCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _userRepository.Find(command.UserId, cancellationToken);
         if (resultUser.IsFailed)
@@ -46,7 +46,7 @@ internal sealed class EmailHandler :
         return result;
     }
 
-    public async ValueTask<Result> Handle(SendDenySellerCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(SendDenySellerEmailCommand command, CancellationToken cancellationToken)
     {
         var resultEvent = await _bazaarEventRepository.Find(command.BazaarEventId, cancellationToken);
         if (resultEvent.IsFailed)

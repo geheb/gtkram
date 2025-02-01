@@ -4,7 +4,8 @@
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
-    var pageParam = new { eventId = Model.EventId };
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
 }
 
 @await Html.PartialAsync("_Header")
@@ -13,9 +14,9 @@
     <div class="container">
 
 
-        @Html.CreateBreadcrumb(pageParam, pageParam, new { id = Model.EventId })
+        @Html.CreateBreadcrumb(new { eventId }, new { eventId }, new { id = eventId })
 
-        <h2 class="subtitle">@(Model.Details ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Input.Event</h2>
 
         <div class="columns">
             <div class="column is-half">
@@ -29,6 +30,7 @@
 
                 <form method="post">
                     <fieldset disabled="@Model.IsDisabled">
+                    <input type="hidden" asp-for="Input.Event" />
                     <div class="field">
                         <label class="label" asp-for="Input.Name"></label>
                         <div class="control">

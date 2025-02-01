@@ -21,6 +21,6 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Events = await _mediator.Send(new GetBazaarEventsWithRegistrationCountQuery(), cancellationToken);
+        Events = await _mediator.Send(new GetEventsWithRegistrationCountQuery(), cancellationToken);
     }
 }
