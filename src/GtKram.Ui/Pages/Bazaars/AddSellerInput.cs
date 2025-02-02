@@ -6,7 +6,7 @@ namespace GtKram.Ui.Pages.Bazaars;
 
 public class AddSellerInput
 {
-    public string Event { get; set; } = "Unbekannt";
+    public string State_Event { get; set; } = "Unbekannt";
 
     [RequiredField, StringLength(64, MinimumLength = 2, ErrorMessage = "Das Feld '{0}' muss mindestens {2} und höchstens {1} Zeichen enthalten.")]
     public string? Name { get; set; }

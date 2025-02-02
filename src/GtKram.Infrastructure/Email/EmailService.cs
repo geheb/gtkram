@@ -112,7 +112,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueAcceptSeller(Domain.Models.BazaarEvent @event, Domain.Models.User user, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueAcceptSeller(Domain.Models.BazaarEvent @event, string email, string name, CancellationToken cancellationToken)
     {
         var editEndDate = @event.EditArticleEndsOn ?? @event.StartsOn;
         var pickUpStart = @event.PickUpLabelsStartsOn ?? @event.StartsOn;
@@ -122,7 +122,7 @@ internal sealed class EmailService : IEmailService
         var model = new
         {
             title = $"Registrierung zum {@event.Name}",
-            name = user.Name.Split(' ')[0],
+            name = name.Split(' ')[0],
             eventname = @event.Name,
             date = dc.FormatFull(@event.StartsOn, @event.EndsOn),
             address = @event.Address,
@@ -138,7 +138,7 @@ internal sealed class EmailService : IEmailService
         var entity = new EmailQueue
         {
             CreatedOn = _timeProvider.GetUtcNow(),
-            Recipient = user.Email,
+            Recipient = email,
             Subject = model.title,
             Body = message,
             AttachmentBlob = Encoding.UTF8.GetBytes(calendarEvent),

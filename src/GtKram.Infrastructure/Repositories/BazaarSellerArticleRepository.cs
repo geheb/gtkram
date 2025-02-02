@@ -57,6 +57,21 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         return entities.Select(e => e.MapToDomain()).ToArray();
     }
 
+    public async Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var result = new List<BazaarSellerArticle>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .Where(e => chunk.Contains(e.BazaarSellerId!.Value))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(result);
+        }
+
+        return [.. result];
+    }
+
     public async Task<Result> Update(BazaarSellerArticle model, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);

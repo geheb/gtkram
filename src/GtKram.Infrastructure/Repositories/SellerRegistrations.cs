@@ -234,7 +234,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
             entity.Accepted == true &&
             registerUserCallbackUrl is not null)
         {
-            var userResult = await _userRepository.Find(entity.Email!, cancellationToken);
+            var userResult = await _userRepository.FindByEmail(entity.Email!, cancellationToken);
             if (userResult.IsSuccess)
             {
                 entity.BazaarSeller.UserId = userResult.Value.Id;
@@ -257,11 +257,11 @@ internal sealed class SellerRegistrations : ISellerRegistrations, IDisposable
 
         if (entity.Accepted == true)
         {
-            await _mediator.Send(new SendAcceptSellerEmailCommand(entity.BazaarSeller.UserId!.Value, entity.BazaarEventId!.Value), cancellationToken);
+            // await _mediator.Send(new SendAcceptSellerEmailCommand(entity.BazaarSeller.UserId!.Value, entity.BazaarEventId!.Value), cancellationToken);
         }
         else
         {
-            await _mediator.Send(new SendDenySellerEmailCommand(entity.Email!, entity.Name!, entity.BazaarEventId!.Value), cancellationToken);
+           // await _mediator.Send(new SendDenySellerEmailCommand(entity.Email!, entity.Name!, entity.BazaarEventId!.Value), cancellationToken);
         }
 
         return true;

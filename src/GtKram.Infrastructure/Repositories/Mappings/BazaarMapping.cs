@@ -50,7 +50,7 @@ internal static class BazaarMapping
         Email = entity.Email!,
         Name = entity.Name!,
         Phone = entity.Phone!,
-        Clothing = entity.Clothing,
+        ClothingType = entity.Clothing?.Split(';').Select(c => int.Parse(c)).ToArray(),
         Accepted = entity.Accepted,
         PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.PreferredType,
         BazaarSellerId = entity.BazaarSellerId
@@ -63,7 +63,7 @@ internal static class BazaarMapping
         entity.Email = model.Email;
         entity.Name = model.Name;
         entity.Phone = model.Phone;
-        entity.Clothing = model.Clothing;
+        entity.Clothing = model.ClothingType is not null ? string.Join(';', model.ClothingType) : null;
         entity.Accepted = model.Accepted;
         entity.PreferredType = (int)model.PreferredType;
         entity.BazaarSellerId = model.BazaarSellerId;

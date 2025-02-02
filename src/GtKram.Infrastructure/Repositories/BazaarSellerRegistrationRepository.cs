@@ -49,6 +49,14 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         return entity.MapToDomain(new());
     }
 
+    public async Task<BazaarSellerRegistration[]> GetAll(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet.ToArrayAsync(cancellationToken);
+        var dc = new GermanDateTimeConverter();
+
+        return [.. entities.Select(e => e.MapToDomain(dc))];
+    }
+
     public async Task<BazaarSellerRegistration[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
@@ -81,15 +89,5 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isDeleted ? Result.Ok() : Result.Fail(_notFound);
-    }
-
-    public async Task<IReadOnlyDictionary<Guid, int>> GetCountByBazaarEventId(CancellationToken cancellationToken)
-    {
-        var result = await _dbSet
-            .GroupBy(e => e.BazaarEventId)
-            .Select(g => new { Id = g.Key!.Value, Count = g.Count() })
-            .ToArrayAsync(cancellationToken);
-
-        return result.ToDictionary(r => r.Id, r => r.Count);
     }
 }

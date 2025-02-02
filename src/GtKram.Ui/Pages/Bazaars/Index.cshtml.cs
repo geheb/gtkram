@@ -1,5 +1,5 @@
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Domain.Models;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +12,7 @@ public class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
-    public BazaarEventWithRegistrationCount[] Events { get; private set; } = [];
+    public BazaarEventWithRegistrationCount[] Items { get; private set; } = [];
 
     public IndexModel(IMediator mediator)
     {
@@ -21,6 +21,6 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Events = await _mediator.Send(new GetEventsWithRegistrationCountQuery(), cancellationToken);
+        Items = await _mediator.Send(new GetEventsWithRegistrationCountQuery(), cancellationToken);
     }
 }

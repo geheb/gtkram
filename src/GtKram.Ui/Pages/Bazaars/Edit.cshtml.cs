@@ -1,10 +1,12 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
@@ -12,6 +14,7 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class EditModel : PageModel
 {
+    private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
 
     public bool IsDisabled { get; set; }
@@ -19,8 +22,11 @@ public class EditModel : PageModel
     [BindProperty]
     public BazaarEventInput Input { get; set; } = new();
 
-    public EditModel(IMediator mediator)
+    public EditModel(
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
+        _timeProvider = timeProvider;
         _mediator = mediator;
     }
 
@@ -32,6 +38,13 @@ public class EditModel : PageModel
             IsDisabled = true;
             ModelState.AddError(result.Errors);
             return;
+        }
+
+        var converter = new EventConverter();
+        if (converter.IsExpired(result.Value, _timeProvider))
+        {
+            IsDisabled = true;
+            ModelState.AddModelError(string.Empty, I18n.LocalizedMessages.BazaarExpired);
         }
 
         Input.Init(result.Value);

@@ -1,15 +1,15 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Extensions;
 using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
-using GtKram.Ui.Converter;
-using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
 public class SellerRegistrationInput
 {
-    public string Event { get; set; } = "Unbekannt";
+    public string State_Event { get; set; } = "Unbekannt";
+    public Guid? State_SellerId { get; set; }
 
     [Display(Name = "Name")]
     public string? Name { get; set; }
@@ -55,7 +55,7 @@ public class SellerRegistrationInput
             SellerNumber = SellerNumber,
             Role = (SellerRole)Role,
             CanCreateBillings = CanCreateBillings,
-            MaxArticleCount = new SellerConverter().GetMaxArticleCount((SellerRole)Role),
+            MaxArticleCount = ((SellerRole)Role).GetMaxArticleCount()
         });
     }
 }

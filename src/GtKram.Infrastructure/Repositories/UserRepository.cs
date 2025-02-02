@@ -116,7 +116,7 @@ internal sealed class UserRepository : IUserRepository
         return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
     }
 
-    public async Task<Result<Domain.Models.User>> Find(string email, CancellationToken cancellationToken)
+    public async Task<Result<Domain.Models.User>> FindByEmail(string email, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
 
@@ -129,7 +129,7 @@ internal sealed class UserRepository : IUserRepository
         return Result.Ok(user.MapToDomain(new()));
     }
 
-    public async Task<Result<Domain.Models.User>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<Result<Domain.Models.User>> FindById(Guid id, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)

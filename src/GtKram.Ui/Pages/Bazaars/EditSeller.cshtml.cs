@@ -1,7 +1,4 @@
-using GtKram.Application.Converter;
-using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Domain.Models;
 using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
@@ -50,8 +47,10 @@ public class EditSellerModel : PageModel
             return;
         }
 
+        Input.State_SellerId = sellerResult.Value.Seller?.Id;
+
         var converter = new EventConverter();
-        Input.Event = converter.Format(@event.Value);
+        Input.State_Event = converter.Format(@event.Value);
 
         var isExpired = converter.IsExpired(@event.Value, _timeProvider);
         if (isExpired)

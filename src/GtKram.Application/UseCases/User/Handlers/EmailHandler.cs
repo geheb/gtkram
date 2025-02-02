@@ -31,7 +31,7 @@ internal sealed class EmailHandler :
 
     public async ValueTask<Result> Handle(SendConfirmRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.Find(command.Id, cancellationToken);
+        var resultUser = await _userRepository.FindById(command.Id, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();
@@ -61,13 +61,13 @@ internal sealed class EmailHandler :
 
     public async ValueTask<Result> Handle(SendChangeEmailCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.Find(command.Id, cancellationToken);
+        var resultUser = await _userRepository.FindById(command.Id, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();
         }
 
-        if ((await _userRepository.Find(command.NewEmail, cancellationToken)).IsSuccess)
+        if ((await _userRepository.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
         {
             return Result.Fail("Die neue E-Mail-Adresse ist bereits vergeben.");
         }
@@ -109,7 +109,7 @@ internal sealed class EmailHandler :
 
     public async ValueTask<Result> Handle(SendResetPasswordCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.Find(command.Email, cancellationToken);
+        var resultUser = await _userRepository.FindByEmail(command.Email, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();

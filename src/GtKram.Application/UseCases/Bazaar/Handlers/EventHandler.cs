@@ -1,6 +1,6 @@
 using FluentResults;
-using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
@@ -37,7 +37,11 @@ internal sealed class EventHandler :
             return [];
         }
 
-        var countByBazaarEventId = await _sellerRegistrationRepository.GetCountByBazaarEventId(cancellationToken);
+        var registrations = await _sellerRegistrationRepository.GetAll(cancellationToken);
+
+        var countByBazaarEventId = registrations
+            .GroupBy(r => r.BazaarEventId)
+            .ToDictionary(r => r.Key, r => r.Count());
 
         var results = events
             .Select(e => new BazaarEventWithRegistrationCount(e, countByBazaarEventId.TryGetValue(e.Id, out var count) ? count : 0))

@@ -7,10 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
-internal sealed class BazaarSellerRepository : IBazaarSellerRepository
+internal sealed class BazaarSellerRepository : IBazaarSellerRepository, IDisposable
 {
     private const string _notFound = "Der Verkäufer wurde nicht gefunden.";
     private const string _saveFailed = "Der Verkäufer konnte nicht gespeichert werden.";
+
+    private readonly SemaphoreSlim _sellerNumberSemaphore = new SemaphoreSlim(1, 1);
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
@@ -25,19 +27,53 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarSeller>();
     }
 
-    public async Task<Result> Create(BazaarSeller model, Guid eventId, Guid userId, CancellationToken cancellationToken)
+    public void Dispose()
+    {
+        _sellerNumberSemaphore.Dispose();
+    }
+
+    public async Task<Result<Guid>> Create(BazaarSeller model, Guid eventId, Guid userId, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new());
         entity.Id = _pkGenerator.Generate();
         entity.CreatedOn = _timeProvider.GetUtcNow();
         entity.BazaarEventId = eventId;
         entity.UserId = userId;
-        // TODO calc sellernumber
+
+        await _sellerNumberSemaphore.WaitAsync(cancellationToken);
+
+        try
+        {
+            if (entity.SellerNumber < 1)
+            {
+                var max = await _dbSet
+                    .Where(e => e.BazaarEventId == eventId)
+                    .MaxAsync(e => e.SellerNumber, cancellationToken);
+
+                entity.SellerNumber = max + 1;
+            }
+            else
+            {
+                var entities = await _dbSet
+                    .Where(e => e.BazaarEventId == eventId)
+                    .ToArrayAsync(cancellationToken);
+
+                var max = entities.Max(e => e.SellerNumber);
+                foreach (var e in entities.Where(e => e.SellerNumber == entity.SellerNumber))
+                {
+                    e.SellerNumber = ++max;
+                }
+            }
+        }
+        finally
+        {
+            _sellerNumberSemaphore.Release();
+        }
 
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
+        return isAdded ? Result.Ok(entity.Id) : Result.Fail(_saveFailed);
     }
 
     public async Task<Result<BazaarSeller>> Find(Guid id, CancellationToken cancellationToken)
@@ -67,11 +103,38 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         {
             return Result.Fail(_notFound);
         }
-        // TODO calc sellernumber
+
         model.MapToEntity(entity);
         entity.UpdatedOn = _timeProvider.GetUtcNow();
 
+        await _sellerNumberSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var entities = await _dbSet
+                .Where(e => e.BazaarEventId == entity.BazaarEventId)
+                .ToArrayAsync(cancellationToken);
+
+            var max = entities.Max(e => e.SellerNumber);
+
+            foreach (var e in entities.Where(e => e.Id != entity.Id && e.SellerNumber == entity.SellerNumber))
+            {
+                e.SellerNumber = ++max;
+            }
+        }
+        finally
+        {
+            _sellerNumberSemaphore.Release();
+        }
+
         var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isUpdated ? Result.Ok() : Result.Fail(_saveFailed);
+    }
+
+    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        _dbSet.Remove(new Persistence.Entities.BazaarSeller { Id = id });
+
+        var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+        return isDeleted ? Result.Ok() : Result.Fail(_notFound);
     }
 }

@@ -34,7 +34,7 @@ internal sealed class UserHandler :
         await _repository.GetAll(cancellationToken);
 
     public async ValueTask<Result<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken) =>
-        await _repository.Find(query.Id, cancellationToken);
+        await _repository.FindById(query.Id, cancellationToken);
 
     public async ValueTask<Result<Guid>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
     {

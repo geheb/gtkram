@@ -45,13 +45,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Events.Length < 1)
+                    @if (Model.Items.Length < 1)
                     {
                         <tr>
                             <td colspan="3"><div class="has-text-centered">Keine Kinderbasare gefunden.</div></td>
                         </tr>
                     }
-                    @foreach (var e in Model.Events)
+                    @foreach (var e in Model.Items)
                     {
                         <tr class="clickable-row" data-url="@(Url.PageLink("Edit", null, new { id = e.Event.Id }))">
                             <td>@eventConverter.Format(e.Event)</td>
