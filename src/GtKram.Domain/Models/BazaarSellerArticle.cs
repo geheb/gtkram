@@ -9,4 +9,5 @@ public sealed class BazaarSellerArticle
     public string? Size { get; set; }
     public decimal Price { get; set; }
     public SellerArticleStatus Status { get; set; }
+    public bool IsSold => Status == SellerArticleStatus.Sold;
 }

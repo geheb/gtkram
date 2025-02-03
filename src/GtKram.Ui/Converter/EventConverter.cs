@@ -15,4 +15,7 @@ public sealed class EventConverter
 
     public bool IsExpired(BazaarEvent model, TimeProvider timeProvider) =>
         _dateTimeConverter.ToLocal(timeProvider.GetUtcNow()) > model.EndsOn;
+
+    public decimal CalcPayout(BazaarEvent model, decimal total) =>
+        total - total * (model.Commission / 100.0M);
 }

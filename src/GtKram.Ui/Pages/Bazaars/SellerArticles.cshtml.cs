@@ -1,7 +1,8 @@
-using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Ui.I18n;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Models;
+using GtKram.Ui.Converter;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -11,14 +12,10 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class SellerArticlesModel : PageModel
 {
-    private readonly ILogger _logger;
-    private readonly IBazaarSellers _bazaarSellers;
-    private readonly IBazaarSellerArticles _bazaarSellerArticles;
+    private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
 
-    public Guid? EventId { get; set; }
-    public Guid? Id { get; set; }
-
-    public string? Event { get; set; }
+    public string Event { get; set; } = "Unbekannt";
     public string? SellerName { get; set; }
     public int SellerNumber { get; set; }
     public int MaxArticleCount { get; set; }
@@ -27,54 +24,46 @@ public class SellerArticlesModel : PageModel
     public int SoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
     public int Commission { get; set; }
-    public decimal PaymentTotalValue { get; set; }
-    public BazaarSellerArticleDto[] Articles { get; private set; } = [];
+    public decimal PayoutTotalValue { get; set; }
+    public BazaarSellerArticle[] Items { get; private set; } = [];
 
     public SellerArticlesModel(
-        ILogger<SellerArticlesModel> logger,
-        IBazaarSellers bazaarSellers, 
-        IBazaarSellerArticles bazaarSellerArticles)
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
-        _logger = logger;
-        _bazaarSellers = bazaarSellers;
-        _bazaarSellerArticles = bazaarSellerArticles;
+        _timeProvider = timeProvider;
+        _mediator = mediator;
     }
 
     public async Task OnGetAsync(Guid eventId, Guid id, CancellationToken cancellationToken)
     {
-        EventId = eventId;
-        Id = id;
-
-        if (eventId == Guid.Empty || id == Guid.Empty)
+        var @event = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
+        if (@event.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(@event.Errors);
             return;
         }
 
-        var dto = await _bazaarSellers.Find(id, cancellationToken);
-        if (dto == null)
+        var converter = new EventConverter();
+        Event = converter.Format(@event.Value);
+
+        var result = await _mediator.Send(new FindSellerWithRegistrationAndArticlesQuery(id), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, "Verkäufer wurde nicht gefunden.");
+            ModelState.AddError(@event.Errors);
             return;
         }
 
-        Event = dto.FormatEvent(new GermanDateTimeConverter());
-        SellerNumber = dto.SellerNumber;
-        MaxArticleCount = dto.MaxArticleCount;
-        SellerName = dto.RegistrationName;
-
-        if (dto.UserId.HasValue)
-        {
-            Articles = await _bazaarSellerArticles.GetAll(dto.Id!.Value, dto.UserId.Value, cancellationToken);
-        }
-
-        AvailableCount = Articles.Length;
-        AvailableTotalValue = Articles.Sum(a => a.Price);
-
-        Commission = dto.Commission;
-        var sold = Articles.Where(a => a.IsSold);
+        SellerNumber = result.Value.Seller.SellerNumber;
+        SellerName = result.Value.Registration.Name;
+        MaxArticleCount = result.Value.Seller.MaxArticleCount;
+        Items = result.Value.Articles;
+        AvailableCount = Items.Length;
+        AvailableTotalValue = Items.Sum(a => a.Price);
+        Commission =  @event.Value.Commission;
+        var sold = Items.Where(i => i.IsSold);
         SoldCount = sold.Count();
         SoldTotalValue = sold.Sum(a => a.Price);
-        PaymentTotalValue = SoldTotalValue - SoldTotalValue * (Commission / 100.0M);
+        PayoutTotalValue = converter.CalcPayout(@event.Value, SoldTotalValue);
     }
 }

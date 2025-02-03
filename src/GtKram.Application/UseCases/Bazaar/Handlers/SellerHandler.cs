@@ -12,8 +12,9 @@ using Mediator;
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class SellerHandler :
-    IQueryHandler<FindRegistrationAndSellerQuery, Result<BazaarSellerRegistrationCombined>>,
+    IQueryHandler<FindRegistrationWithSellerQuery, Result<BazaarSellerRegistrationWithSeller>>,
     IQueryHandler<GetSellerRegistrationWithArticleCountQuery, BazaarSellerRegistrationWithArticleCount[]>,
+    IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, Result<BazaarSellerWithRegistrationAndArticles>>,
     ICommandHandler<CreateSellerRegistrationCommand, Result>,
     ICommandHandler<UpdateSellerCommand, Result>,
     ICommandHandler<DeleteSellerRegistrationCommand, Result>,
@@ -49,7 +50,7 @@ internal sealed class SellerHandler :
         _eventRepository = eventRepository;
     }
 
-    public async ValueTask<Result<BazaarSellerRegistrationCombined>> Handle(FindRegistrationAndSellerQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<BazaarSellerRegistrationWithSeller>> Handle(FindRegistrationWithSellerQuery query, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrationRepository.Find(query.Id, cancellationToken);
         if (registration.IsFailed)
@@ -68,7 +69,7 @@ internal sealed class SellerHandler :
             seller = result.Value;
         }
 
-        return Result.Ok(new BazaarSellerRegistrationCombined(registration.Value, seller));
+        return Result.Ok(new BazaarSellerRegistrationWithSeller(registration.Value, seller));
     }
 
     public async ValueTask<BazaarSellerRegistrationWithArticleCount[]> Handle(GetSellerRegistrationWithArticleCountQuery query, CancellationToken cancellationToken)
@@ -228,5 +229,23 @@ internal sealed class SellerHandler :
             cancellationToken);
 
         return result;
+    }
+
+    public async ValueTask<Result<BazaarSellerWithRegistrationAndArticles>> Handle(FindSellerWithRegistrationAndArticlesQuery query, CancellationToken cancellationToken)
+    {
+        var seller = await _sellerRepository.Find(query.Id, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller.ToResult();
+        }
+
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.Id, cancellationToken);
+        if (registration.IsFailed)
+        {
+            return registration.ToResult();
+        }
+
+        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.Id, cancellationToken);
+        return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, articles));
     }
 }

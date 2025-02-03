@@ -3,7 +3,11 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { eventId = Model.EventId, id = Model.Id };
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+
+    var pageParam = new { eventId, id };
     Model.BuildHeaderMenu(pageParam);
     var printLink = Url.PageLink("PrintSellerArticles", null, pageParam);
 }
@@ -14,7 +18,7 @@
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, pageParam, new { eventId = Model.EventId }, new { id = Model.EventId })</div>
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, pageParam, new { eventId }, new { id = eventId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
@@ -31,7 +35,7 @@
                                 <div>Gesamtwert: @Model.AvailableTotalValue.ToString("0.00") €</div>
                                 <div>Verkauft: @Model.SoldCount</div>
                                 <div>Verkaufswert: @Model.SoldTotalValue.ToString("0.00") €</div>
-                                <div>Auszahlung: @Model.PaymentTotalValue.ToString("0.00") €</div>
+                                <div>Auszahlung: @Model.PayoutTotalValue.ToString("0.00") €</div>
                             </div>
                             <hr class="dropdown-divider" />
                             <a href="@printLink" class="dropdown-item" target="_blank" rel="noopener noreferrer">
@@ -43,7 +47,7 @@
             </div>
         </div>
 
-        <h2 class="title is-4">@(Model.Event == null ? "Kinderbasar wurde nicht gefunden" : $"{Model.Event}")</h2>
+        <h2 class="title is-4">@Model.Event</h2>
         <h2 class="subtitle">Verkäufer: @Model.SellerName (#@Model.SellerNumber)</h2>
 
         @if (!ModelState.IsValid)
@@ -66,13 +70,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Articles.Length < 1)
+                    @if (Model.Items.Length < 1)
                     {
                         <tr>
                             <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
                         </tr>
                     }
-                    @foreach (var a in Model.Articles)
+                    @foreach (var a in Model.Items)
                     {
                         <tr>
                             <td>@a.LabelNumber</td>

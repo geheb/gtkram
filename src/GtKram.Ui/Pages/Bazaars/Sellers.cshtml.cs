@@ -20,9 +20,6 @@ public class SellersModel : PageModel
     public string Event { get; set; } = "Unbekannt";
     public BazaarSellerRegistrationWithArticleCount[] Items { get; set; } = [];
 
-    [BindProperty]
-    public string[] SelectedRegistrations { get; set; } = [];
-
     public int AcceptedCount { get; set; }
     public int CancelledCount { get; set; }
     public int UnconfirmedCount { get; set; }

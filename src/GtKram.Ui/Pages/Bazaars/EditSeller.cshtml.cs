@@ -39,7 +39,7 @@ public class EditSellerModel : PageModel
             return;
         }
 
-        var sellerResult = await _mediator.Send(new FindRegistrationAndSellerQuery(id), cancellationToken);
+        var sellerResult = await _mediator.Send(new FindRegistrationWithSellerQuery(id), cancellationToken);
         if (sellerResult.IsFailed)
         {
             IsDisabled = true;

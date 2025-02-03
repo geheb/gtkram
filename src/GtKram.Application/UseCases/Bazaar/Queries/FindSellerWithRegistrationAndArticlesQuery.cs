@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Queries;
 
-public sealed record FindRegistrationAndSellerQuery(Guid Id) : IQuery<Result<BazaarSellerRegistrationCombined>>;
+public sealed record FindSellerWithRegistrationAndArticlesQuery(Guid Id) : IQuery<Result<BazaarSellerWithRegistrationAndArticles>>;
