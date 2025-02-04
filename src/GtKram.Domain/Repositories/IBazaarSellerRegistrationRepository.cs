@@ -12,4 +12,6 @@ public interface IBazaarSellerRegistrationRepository
     Task<BazaarSellerRegistration[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken);
     Task<Result> Update(BazaarSellerRegistration model, CancellationToken cancellationToken);
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
+    Task<Result<int>> GetCountByBazaarEventId(Guid id, CancellationToken cancellationToken);
+    Task<Result<BazaarSellerRegistration>> FindByEmail(string email, CancellationToken cancellationToken);
 }

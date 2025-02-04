@@ -1,7 +1,7 @@
+using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +37,7 @@ public class SellersModel : PageModel
 
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        var @event = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
+        var @event = await _mediator.Send(new FindEventQuery(eventId, false), cancellationToken);
         if (@event.IsFailed)
         {
             ModelState.AddError(@event.Errors);

@@ -1,7 +1,7 @@
-using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Ui.I18n;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Models;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -10,50 +10,27 @@ namespace GtKram.Ui.Pages.Bazaars;
 [Authorize(Roles = "manager,admin")]
 public class PrintSellerArticlesModel : PageModel
 {
-    private readonly ILogger _logger;
-    private readonly IBazaarSellers _bazaarSellers;
-    private readonly IBazaarSellerArticles _bazaarSellerArticles;
+    private readonly IMediator _mediator;
 
-    public string? Event { get; set; }
-    public string? SellerName { get; set; }
     public int SellerNumber { get; set; }
-    public int AvailableCount { get; set; }
-    public BazaarSellerArticleDto[] Articles { get; private set; } = [];
+    public BazaarSellerArticle[] Items { get; private set; } = [];
 
     public PrintSellerArticlesModel(
-        ILogger<PrintSellerArticlesModel> logger,
-        IBazaarSellers bazaarSellers, 
-        IBazaarSellerArticles bazaarSellerArticles)
+        IMediator mediator)
     {
-        _logger = logger;
-        _bazaarSellers = bazaarSellers;
-        _bazaarSellerArticles = bazaarSellerArticles;
+        _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid eventId, Guid id, CancellationToken cancellationToken)
+    public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
-        if (eventId == Guid.Empty || id == Guid.Empty)
-        { 
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+        var result = await _mediator.Send(new FindSellerWithRegistrationAndArticlesQuery(id), cancellationToken);
+        if (result.IsFailed)
+        {
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        var dto = await _bazaarSellers.Find(id, cancellationToken);
-        if (dto == null)
-        {
-            ModelState.AddModelError(string.Empty, "Verkäufer wurde nicht gefunden.");
-            return;
-        }
-
-        Event = dto.FormatEvent(new GermanDateTimeConverter());
-        SellerNumber = dto.SellerNumber;
-        SellerName = dto.RegistrationName;
-
-        if (dto.UserId.HasValue)
-        {
-            Articles = await _bazaarSellerArticles.GetAll(dto.Id!.Value, dto.UserId.Value, cancellationToken);
-        }
-
-        AvailableCount = Articles.Length;
+        Items = result.Value.Articles;
+        SellerNumber = result.Value.Seller.SellerNumber;
     }
 }

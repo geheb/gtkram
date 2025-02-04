@@ -1,13 +1,11 @@
 using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
-using GtKram.Application.Services;
-using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Ui.Annotations;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
@@ -16,132 +14,74 @@ namespace GtKram.Ui.Pages.Bazaars;
 public class RegisterModel : PageModel
 {
     private readonly ILogger _logger;
-    private readonly IBazaarEvents _bazaarEvents;
-    private readonly ISellerRegistrations _sellerRegistrations;
-    private readonly IEmailValidatorService _emailValidator;
-
-    private enum State { Success, RequestFailed, EventNotFound, RegisterClosed }
-
-    public string? BazaarNameAndDescription { get; set; }
-    public string? BazaarAddress { get; set; }
+    private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
 
     [BindProperty]
-    public string? SellerUserName { get; set; } // just for bots
-
-    [BindProperty, Display(Name = "Name")]
-    [RequiredField, StringLength(64, MinimumLength = 2, ErrorMessage = "Das Feld '{0}' muss mindestens {2} und höchstens {1} Zeichen enthalten.")]
-    public string? SellerName { get; set; }
-
-    [BindProperty, Display(Name = "E-Mail-Adresse")]
-    [RequiredField, EmailLengthField, EmailField]
-    public string? SellerEmail { get; set; }
-
-    [BindProperty, Display(Name = "Telefonnummer")]
-    [RequiredField, RegularExpression(@"^(\d{4,15})$", ErrorMessage = "Das Feld '{0}' muss zwischen 4 und 15 Zeichen liegen und darf nur Zahlen enthalten.")]
-    public string? SellerPhone { get; set; }
-
-    [BindProperty]
-    public int[] SellerClothing { get; set; } = [];
-
-    [BindProperty]
-    public bool HasKita { get; set; }
-    
-    [BindProperty, Display(Name = "Die goldenen Regeln gelesen")]
-    [RequireTrueField]
-    public bool HasGoldenRules { get; set; }
+    public RegisterSellerInput Input { get; set; } = new();
 
     public bool IsDisabled { get; set; }
     public string? Message { get; set; }
 
     public RegisterModel(
         ILogger<RegisterModel> logger,
-        IBazaarEvents bazaarEvents,
-        ISellerRegistrations sellerRegistrations, 
-        IEmailValidatorService emailValidator)
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
         _logger = logger;
-        _bazaarEvents = bazaarEvents;
-        _sellerRegistrations = sellerRegistrations;
-        _emailValidator = emailValidator;
+        _timeProvider = timeProvider;
+        _mediator = mediator;
     }
 
     public async Task OnGetAsync(Guid id, bool? success, CancellationToken cancellationToken)
     {
-        var state = await Update(id, cancellationToken);
-
-        if (state != State.Success)
+        var @event = await _mediator.Send(new FindEventQuery(id, true), cancellationToken);
+        if (@event.IsFailed)
         {
             IsDisabled = true;
-            switch (state)
-            {
-                case State.RequestFailed: ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest); break;
-                case State.EventNotFound: ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden."); break;
-                case State.RegisterClosed: ModelState.AddModelError(string.Empty, "Die Registrierung ist abgeschlossen. Es können keine weiteren Anfragen angenommen werden."); break;
-            }
+            ModelState.AddError(@event.Errors);
             return;
         }
 
-        if (success.HasValue)
+        var converter = new EventConverter();
+
+        Input.State_Event = converter.Format(@event.Value);
+        Input.State_Address = @event.Value.Address;
+
+        if (success == true)
         {
             IsDisabled = true;
-            Message = success.Value ?
-                "Vielen Dank für die unverbindliche Registrierung. Du erhältst bald eine Zu- oder Absage per E-Mail." :
-                "Es tut uns leid, aber die Registrierung kann nicht mehr angenommen werden.";
+            Message = "Vielen Dank für die unverbindliche Registrierung. Du erhältst bald eine Zu- oder Absage per E-Mail.";
             return;
         }
     }
 
     public async Task<IActionResult> OnPostAsync(Guid id, CancellationToken cancellationToken)
     {
-        var state = await Update(id, cancellationToken);
-        if (state != State.Success)
+        if (!string.IsNullOrEmpty(Input.SellerUserName))
         {
-            return RedirectToPage(string.Empty, state == State.RegisterClosed ? new { id, success = false } : new { id });
-        }
-
-        if (!ModelState.IsValid) return Page();
-
-        if (!await _emailValidator.Validate(SellerEmail!, cancellationToken))
-        {
-            ModelState.AddModelError(string.Empty, "Die E-Mail-Addresse ist ungültig."); 
+            IsDisabled = true;
+            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
+            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
             return Page();
         }
 
-        var registerId = await _sellerRegistrations.Register(id, new BazaarSellerRegistrationDto
+        var @event = await _mediator.Send(new FindEventQuery(id, true), cancellationToken);
+        if (@event.IsFailed)
         {
-            Name = SellerName,
-            Email = SellerEmail,
-            Phone = SellerPhone,
-            Clothing = SellerClothing,
-            HasKita = HasKita
-        }, cancellationToken);
-
-        return RedirectToPage(string.Empty, new { id, success = registerId.HasValue });
-    }
-
-    private async Task<State> Update(Guid id, CancellationToken cancellationToken)
-    {
-        if (id == Guid.Empty || !string.IsNullOrEmpty(SellerUserName) || SellerClothing?.Length > 7)
-        {
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
-            return State.RequestFailed;
+            IsDisabled = true;
+            ModelState.AddError(@event.Errors);
+            return Page();
         }
 
-        var dto = await _bazaarEvents.Find(id, cancellationToken);
-        if (dto == null)
+        var command = Input.ToCommand(id);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailed)
         {
-            _logger.LogWarning("Event with {Id} not found.", id);
-            return State.EventNotFound;
+            ModelState.AddError(result.Errors);
+            return Page();
         }
 
-        BazaarNameAndDescription = dto.FormatEvent(new GermanDateTimeConverter());
-        BazaarAddress = dto.Address;
-
-        if (!dto.CanRegister)
-        {
-            return State.RegisterClosed;
-        }
-
-        return State.Success;
+        return RedirectToPage(string.Empty, new { id, success = true });       
     }
 }

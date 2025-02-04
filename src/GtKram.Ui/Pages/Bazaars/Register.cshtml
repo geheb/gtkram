@@ -19,16 +19,14 @@
                     <strong>Wichtig:</strong> Diese Registrierung ist <u class="has-text-danger">keine</u> Garantie für einen Verkäuferplatz!
                 </h3>
 
-                @if (Model.BazaarNameAndDescription != null)
-                {
-                    <div class="has-text-centered">
-                        <p><strong>Kinderbasar:</strong> @Model.BazaarNameAndDescription</p>
-                        @if (Model.BazaarAddress != null)
-                        {
-                            <strong>Adresse:</strong> <a target="_blank" rel="noopener noreferrer" href="@("https://www.google.com/maps/dir/?api=1&destination=" + WebUtility.UrlEncode(Model.BazaarAddress))">@Model.BazaarAddress</a>
-                        }
-                    </div>
-                }
+
+                <div class="has-text-centered">
+                    <p><strong>Kinderbasar:</strong> @Model.Input.State_Event</p>
+                    @if (!string.IsNullOrEmpty(Model.Input.State_Address))
+                    {
+                        <strong>Adresse:</strong> <a target="_blank" rel="noopener noreferrer" href="@("https://www.google.com/maps/dir/?api=1&destination=" + WebUtility.UrlEncode(Model.Input.State_Address))">@Model.Input.State_Address</a>
+                    }
+                </div>
 
                 @if (!ModelState.IsValid)
                 {
@@ -62,38 +60,40 @@
 
                         <form method="post">
                             <fieldset disabled="@Model.IsDisabled">
-                                <input class="input is-hidden" type="text" asp-for="SellerUserName" />
+                                <input class="input is-hidden" type="text" asp-for="Input.SellerUserName" />
+                                <input type="hidden" asp-for="Input.State_Event" />
+                                <input type="hidden" asp-for="Input.State_Address" />
                                 <div class="field">
                                     <div class="control">
-                                        <input class="input" type="text" placeholder="Name" autofocus="" asp-for="SellerName" />
+                                        <input class="input" type="text" placeholder="Name" autofocus="" asp-for="Input.SellerName" />
                                     </div>
-                                    <span asp-validation-for="SellerName"></span>
+                                    <span asp-validation-for="Input.SellerName"></span>
                                 </div>
                                 <div class="field">
                                     <div class="control">
-                                        <input class="input" type="email" placeholder="E-Mail-Adresse" asp-for="SellerEmail" />
+                                        <input class="input" type="email" placeholder="E-Mail-Adresse" asp-for="Input.SellerEmail" />
                                     </div>
-                                    <span asp-validation-for="SellerEmail"></span>
+                                    <span asp-validation-for="Input.SellerEmail"></span>
                                 </div>
                                 <div class="field">
                                     <div class="control">
-                                        <input class="input" type="tel" placeholder="Telefonnummer" asp-for="SellerPhone" />
+                                        <input class="input" type="tel" placeholder="Telefonnummer" asp-for="Input.SellerPhone" />
                                     </div>
-                                    <span asp-validation-for="SellerPhone"></span>
+                                    <span asp-validation-for="Input.SellerPhone"></span>
                                 </div>
                                 <div class="field">
                                     <div class="control">
-                                        <input type="checkbox" asp-for="HasKita" />
-                                        <label asp-for="HasKita">Kind besucht das ev. Familienzentrum a.d. Friedenskirche</label>
+                                        <input type="checkbox" asp-for="Input.HasKita" />
+                                        <label asp-for="Input.HasKita">Kind besucht das ev. Familienzentrum a.d. Friedenskirche</label>
                                     </div>
                                 </div>
                                 <div class="field">
                                     <div class="control">
-                                        <input type="checkbox" asp-for="HasGoldenRules" />
-                                        <label asp-for="HasGoldenRules">@Html.DisplayNameFor(m => m.HasGoldenRules)</label>
+                                        <input type="checkbox" asp-for="Input.HasGoldenRules" />
+                                        <label asp-for="Input.HasGoldenRules">@Html.DisplayNameFor(m => m.Input.HasGoldenRules)</label>
                                         <a target="_blank" rel="noopener noreferrer" href="https://mein-kinderkram.de/die-goldenen-regeln/">(Link)</a>
                                     </div>
-                                    <span asp-validation-for="HasGoldenRules"></span>
+                                    <span asp-validation-for="Input.HasGoldenRules"></span>
                                 </div>
                                 <div class="field">
                                     Größe der Kleidungsstücke, die verkauft werden (optional):
@@ -164,13 +164,3 @@
     </div>
 
 </div>
-
-@section Scripts 
-{
-    <script type="text/javascript">
-        $(function () {
-            window.history.forward();
-            window.onload = function () { window.history.forward(); }
-        });
-    </script>
-}

@@ -1,4 +1,5 @@
 using FluentResults;
+using GtKram.Application.Converter;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Extensions;
@@ -21,6 +22,7 @@ internal sealed class SellerHandler :
     ICommandHandler<AcceptSellerRegistrationCommand, Result>,
     ICommandHandler<DenySellerRegistrationCommand, Result>
 {
+    private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
     private readonly IUserRepository _userRepository;
     private readonly IEmailService _emailService;
@@ -31,6 +33,7 @@ internal sealed class SellerHandler :
     private readonly IBazaarEventRepository _eventRepository;
 
     public SellerHandler(
+        TimeProvider timeProvider,
         IMediator mediator,
         IUserRepository userRepository,
         IEmailService emailService,
@@ -40,6 +43,7 @@ internal sealed class SellerHandler :
         IBazaarSellerArticleRepository sellerArticleRepository,
         IBazaarEventRepository eventRepository)
     {
+        _timeProvider = timeProvider;
         _mediator = mediator;
         _userRepository = userRepository;
         _emailService = emailService;
@@ -102,13 +106,57 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(CreateSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
-        if (!isValid)
+        var @event = await _eventRepository.Find(command.Registration.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
         {
-            return Result.Fail("Die E-Mail-Adresse ist ungültig.");
+            return @event.ToResult();
         }
 
-        return await _sellerRegistrationRepository.Create(command.Registration, cancellationToken);
+        if (command.ShouldValidateEvent)
+        {
+            var converter = new EventConverter();
+            if (converter.IsExpired(@event.Value, _timeProvider))
+            {
+                return Result.Fail("Der Kinderbasar ist bereits abgelaufen.");
+            }
+
+            if (converter.CanRegister(@event.Value, _timeProvider))
+            {
+                return Result.Fail("Aktuell können keine Anfragen angenommen werden.");
+            }
+
+            var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
+            if (count.IsFailed)
+            {
+                return count.ToResult();
+            }
+
+            if (count.Value >= @event.Value.MaxSellers)
+            {
+                return Result.Fail("Die maximale Anzahl von Registrierungen wurde erreicht.");
+            }
+        }
+
+        var seller = await _sellerRegistrationRepository.FindByEmail(command.Registration.Email, cancellationToken);
+        if (seller.IsFailed)
+        {
+            var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
+            if (!isValid)
+            {
+                return Result.Fail("Die E-Mail-Adresse ist ungültig.");
+            }
+
+            return await _sellerRegistrationRepository.Create(command.Registration, cancellationToken);
+        }
+        else
+        {
+            seller.Value.Name = command.Registration.Name;
+            seller.Value.Phone = command.Registration.Phone;
+            seller.Value.ClothingType = command.Registration.ClothingType;
+            seller.Value.PreferredType = command.Registration.PreferredType;
+
+            return await _sellerRegistrationRepository.Update(seller.Value, cancellationToken);
+        }
     }
 
     public async ValueTask<Result> Handle(UpdateSellerCommand command, CancellationToken cancellationToken) =>

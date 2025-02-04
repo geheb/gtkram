@@ -1,7 +1,6 @@
-using GtKram.Application.Converter;
 using GtKram.Domain.Models;
 
-namespace GtKram.Ui.Converter;
+namespace GtKram.Application.Converter;
 
 public sealed class EventConverter
 {
@@ -18,4 +17,13 @@ public sealed class EventConverter
 
     public decimal CalcPayout(BazaarEvent model, decimal total) =>
         total - total * (model.Commission / 100.0M);
+
+    public bool CanRegister(BazaarEvent model, TimeProvider timeProvider)
+    {
+        var now = _dateTimeConverter.ToLocal(timeProvider.GetUtcNow());
+
+        return !model.IsRegistrationsLocked 
+            && now >= model.RegisterStartsOn 
+            && now <= model.RegisterEndsOn;
+    }
 }

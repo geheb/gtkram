@@ -1,5 +1,5 @@
+using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -30,7 +30,7 @@ public class AddSellerModel : PageModel
 
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
+        var result = await _mediator.Send(new FindEventQuery(eventId, false), cancellationToken);
         if (result.IsFailed)
         {
             IsDisabled = true;

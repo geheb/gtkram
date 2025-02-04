@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public sealed record CreateSellerRegistrationCommand(BazaarSellerRegistration Registration) : ICommand<Result>;
+public sealed record CreateSellerRegistrationCommand(BazaarSellerRegistration Registration, bool ShouldValidateEvent) : ICommand<Result>;

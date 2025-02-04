@@ -1,4 +1,5 @@
 using FluentResults;
+using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
@@ -15,19 +16,57 @@ internal sealed class EventHandler :
     ICommandHandler<UpdateEventCommand, Result>,
     ICommandHandler<DeleteEventCommand, Result>
 {
+    private readonly TimeProvider _timeProvider;
     private readonly IBazaarEventRepository _eventRepository;
     private readonly IBazaarSellerRegistrationRepository _sellerRegistrationRepository;
 
     public EventHandler(
+        TimeProvider timeProvider,
         IBazaarEventRepository eventRepository,
         IBazaarSellerRegistrationRepository sellerRegistrationRepository)
     {
+        _timeProvider = timeProvider;
         _eventRepository = eventRepository;
         _sellerRegistrationRepository = sellerRegistrationRepository;
     }
 
-    public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
-        await _eventRepository.Find(query.Id, cancellationToken);
+    public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken)
+    {
+        var @event = await _eventRepository.Find(query.Id, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return @event;
+        }
+
+        if (!query.ShouldValidate)
+        {
+            return @event;
+        }
+
+        var converter = new EventConverter();
+        if (converter.IsExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail("Der Kinderbasar ist bereits abgelaufen.");
+        }
+
+        if (converter.CanRegister(@event.Value, _timeProvider))
+        {
+            return Result.Fail("Aktuell können keine Anfragen angenommen werden.");
+        }
+
+        var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
+        if (count.IsFailed)
+        {
+            return count.ToResult();
+        }
+
+        if (count.Value >= @event.Value.MaxSellers)
+        {
+            return Result.Fail("Die maximale Anzahl von Registrierungen wurde erreicht.");
+        }
+        
+        return @event;
+    }
 
     public async ValueTask<BazaarEventWithRegistrationCount[]> Handle(GetEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)
     {

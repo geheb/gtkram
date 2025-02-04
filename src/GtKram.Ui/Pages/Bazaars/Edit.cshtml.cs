@@ -1,12 +1,11 @@
+using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
@@ -32,7 +31,7 @@ public class EditModel : PageModel
 
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindEventQuery(id), cancellationToken);
+        var result = await _mediator.Send(new FindEventQuery(id, false), cancellationToken);
         if (result.IsFailed)
         {
             IsDisabled = true;

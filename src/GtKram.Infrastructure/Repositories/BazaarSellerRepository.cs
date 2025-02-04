@@ -7,12 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
-internal sealed class BazaarSellerRepository : IBazaarSellerRepository, IDisposable
+internal sealed class BazaarSellerRepository : IBazaarSellerRepository
 {
+    private static readonly SemaphoreSlim _sellerNumberSemaphore = new SemaphoreSlim(1, 1);
+
     private const string _notFound = "Der Verkäufer wurde nicht gefunden.";
     private const string _saveFailed = "Der Verkäufer konnte nicht gespeichert werden.";
 
-    private readonly SemaphoreSlim _sellerNumberSemaphore = new SemaphoreSlim(1, 1);
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
@@ -25,11 +26,6 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository, IDisposa
         _dbContext = dbContext;
         _timeProvider = timeProvider;
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarSeller>();
-    }
-
-    public void Dispose()
-    {
-        _sellerNumberSemaphore.Dispose();
     }
 
     public async Task<Result<Guid>> Create(BazaarSeller model, Guid eventId, Guid userId, CancellationToken cancellationToken)

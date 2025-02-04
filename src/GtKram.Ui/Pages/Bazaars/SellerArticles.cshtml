@@ -9,7 +9,7 @@
 
     var pageParam = new { eventId, id };
     Model.BuildHeaderMenu(pageParam);
-    var printLink = Url.PageLink("PrintSellerArticles", null, pageParam);
+    var printLink = Url.PageLink("PrintSellerArticles", null, new { id });
 }
 
 @await Html.PartialAsync("_Header")
