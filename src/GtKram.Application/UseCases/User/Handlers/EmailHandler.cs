@@ -1,9 +1,10 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Domain.Repositories;
 using Mediator;
 using System.Web;
+using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Application.UseCases.User.Handlers;
 
@@ -12,17 +13,20 @@ internal sealed class EmailHandler :
     ICommandHandler<SendChangeEmailCommand, Result>,
     ICommandHandler<SendResetPasswordCommand, Result>
 {
+    private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IUserRepository _userRepository;
     private readonly IUserAuthenticator _userAuthenticator;
     private readonly IEmailValidatorService _emailValidatorService;
     private readonly IEmailService _emailService;
 
     public EmailHandler(
+        IdentityErrorDescriber errorDescriber,
         IUserRepository userRepository,
         IUserAuthenticator userAuthenticator,
         IEmailValidatorService emailValidatorService,
         IEmailService emailService)
     {
+        _errorDescriber = errorDescriber;
         _userRepository = userRepository;
         _userAuthenticator = userAuthenticator;
         _emailValidatorService = emailValidatorService;
@@ -69,12 +73,14 @@ internal sealed class EmailHandler :
 
         if ((await _userRepository.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
         {
-            return Result.Fail("Die neue E-Mail-Adresse ist bereits vergeben.");
+            var error = _errorDescriber.DuplicateEmail(command.NewEmail);
+            return Result.Fail(error.Code, error.Description);
         }
 
         if (!await _emailValidatorService.Validate(command.NewEmail , cancellationToken))
         {
-            return Result.Fail("Die neue E-Mail-Adresse ist ungültig.");
+            var error = _errorDescriber.InvalidEmail(command.NewEmail);
+            return Result.Fail(error.Code, error.Description);
         }
 
         var resultVerify = await _userAuthenticator.VerifyPassword(command.Id, command.Password, cancellationToken);

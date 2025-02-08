@@ -1,4 +1,3 @@
-using FluentResults;
 using GtKram.Application.Converter;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.Bazaar.Commands;
@@ -6,9 +5,12 @@ using GtKram.Application.UseCases.Bazaar.Extensions;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Commands;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
+using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
@@ -23,6 +25,7 @@ internal sealed class SellerHandler :
     ICommandHandler<DenySellerRegistrationCommand, Result>
 {
     private readonly TimeProvider _timeProvider;
+    private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
     private readonly IUserRepository _userRepository;
     private readonly IEmailService _emailService;
@@ -34,6 +37,7 @@ internal sealed class SellerHandler :
 
     public SellerHandler(
         TimeProvider timeProvider,
+        IdentityErrorDescriber errorDescriber,
         IMediator mediator,
         IUserRepository userRepository,
         IEmailService emailService,
@@ -44,6 +48,7 @@ internal sealed class SellerHandler :
         IBazaarEventRepository eventRepository)
     {
         _timeProvider = timeProvider;
+        _errorDescriber = errorDescriber;
         _mediator = mediator;
         _userRepository = userRepository;
         _emailService = emailService;
@@ -117,12 +122,12 @@ internal sealed class SellerHandler :
             var converter = new EventConverter();
             if (converter.IsExpired(@event.Value, _timeProvider))
             {
-                return Result.Fail("Der Kinderbasar ist bereits abgelaufen.");
+                return Result.Fail(Event.Expired);
             }
 
-            if (converter.CanRegister(@event.Value, _timeProvider))
+            if (!converter.CanRegister(@event.Value, _timeProvider))
             {
-                return Result.Fail("Aktuell können keine Anfragen angenommen werden.");
+                return Result.Fail(EventRegistration.NotReady);
             }
 
             var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
@@ -133,7 +138,7 @@ internal sealed class SellerHandler :
 
             if (count.Value >= @event.Value.MaxSellers)
             {
-                return Result.Fail("Die maximale Anzahl von Registrierungen wurde erreicht.");
+                return Result.Fail(EventRegistration.LimitExceeded);
             }
         }
 
@@ -143,7 +148,8 @@ internal sealed class SellerHandler :
             var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
             if (!isValid)
             {
-                return Result.Fail("Die E-Mail-Adresse ist ungültig.");
+                var error = _errorDescriber.InvalidEmail(command.Registration.Email);
+                return Result.Fail(error.Code, error.Description);
             }
 
             return await _sellerRegistrationRepository.Create(command.Registration, cancellationToken);

@@ -78,6 +78,10 @@ public class RegisterModel : PageModel
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsFailed)
         {
+            IsDisabled = result.Errors!.Any(e => 
+                e == Domain.Errors.Event.Expired ||
+                e == Domain.Errors.EventRegistration.LimitExceeded);
+
             ModelState.AddError(result.Errors);
             return Page();
         }

@@ -1,4 +1,4 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Application.Converter;
 using GtKram.Application.Options;
 using GtKram.Application.Services;

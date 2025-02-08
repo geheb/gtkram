@@ -1,5 +1,6 @@
-using FluentResults;
 using GtKram.Application.Converter;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -11,10 +12,6 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistrationRepository
 {
     private static readonly SemaphoreSlim _registerSemaphore = new SemaphoreSlim(1, 1);
-
-    private const string _notFound = "Die Registrierung wurde nicht gefunden.";
-    private const string _saveFailed = "Die Registrierung konnte nicht gespeichert werden.";
-    private const string _notProcessed = "Die Registrierung konnte leider nicht bearbeitet werden. Bitte erneut versuchen.";
 
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
@@ -34,7 +31,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
     {
         if (!await _registerSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
         {
-            return Result.Fail(_notProcessed);
+            return Result.Fail(EventRegistration.Timeout);
         }
 
         try
@@ -46,7 +43,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
             await _dbSet.AddAsync(entity, cancellationToken);
 
             var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-            return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
+            return isAdded ? Result.Ok() : Result.Fail(EventRegistration.SaveFailed);
         }
         finally
         {
@@ -59,7 +56,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(EventRegistration.NotFound);
         }
 
         return entity.MapToDomain(new());
@@ -70,7 +67,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.BazaarSellerId == id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(EventRegistration.NotFound);
         }
 
         return entity.MapToDomain(new());
@@ -81,7 +78,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Email == email, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(EventRegistration.NotFound);
         }
 
         return entity.MapToDomain(new());
@@ -111,14 +108,14 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(EventRegistration.NotFound);
         }
 
         model.MapToEntity(entity, new());
         entity.UpdatedOn = _timeProvider.GetUtcNow();
 
         var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isUpdated ? Result.Ok() : Result.Fail(_saveFailed);
+        return isUpdated ? Result.Ok() : Result.Fail(EventRegistration.SaveFailed);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
@@ -126,14 +123,14 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         _dbSet.Remove(new Persistence.Entities.BazaarSellerRegistration { Id = id });
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(_notFound);
+        return isDeleted ? Result.Ok() : Result.Fail(EventRegistration.NotFound);
     }
 
     public async Task<Result<int>> GetCountByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         if (!await _registerSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
         {
-            return Result.Fail(_notProcessed);
+            return Result.Fail(EventRegistration.Timeout);
         }
 
         try

@@ -1,4 +1,4 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;

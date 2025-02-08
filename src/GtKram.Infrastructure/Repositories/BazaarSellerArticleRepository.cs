@@ -1,4 +1,5 @@
-using FluentResults;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -9,8 +10,6 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleRepository
 {
-    private const string _notFound = "Der Artikel wurde nicht gefunden.";
-    private const string _saveFailed = "Der Artikel konnte nicht gespeichert werden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
@@ -34,7 +33,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
+        return isAdded ? Result.Ok() : Result.Fail(SellerArticle.SaveFailed);
     }
 
     public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)
@@ -42,7 +41,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(SellerArticle.NotFound);
         }
 
         return entity.MapToDomain();
@@ -77,13 +76,13 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(SellerArticle.NotFound);
         }
 
         model.MapToEntity(entity);
         entity.UpdatedOn = _timeProvider.GetUtcNow();
 
         var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isUpdated ? Result.Ok() : Result.Fail(_saveFailed);
+        return isUpdated ? Result.Ok() : Result.Fail(SellerArticle.SaveFailed);
     }
 }

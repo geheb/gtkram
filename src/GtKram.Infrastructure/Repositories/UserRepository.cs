@@ -1,6 +1,5 @@
-using FluentResults;
 using GtKram.Application.Converter;
-using GtKram.Application.UseCases.User.Models;
+using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -13,7 +12,6 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class UserRepository : IUserRepository
 {
-    private const string _userNotFound = "Der Benutzer wurde nicht gefunden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly TimeProvider _timeProvider;
     private readonly UserManager<IdentityUserGuid> _userManager;
@@ -41,7 +39,8 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByEmailAsync(email);
         if (user is not null)
         {
-            return Result.Fail(_errorDescriber.DuplicateEmail(email).Description);
+            var error = _errorDescriber.DuplicateEmail(email);
+            return Result.Fail(error.Code, error.Description);
         }
 
         var entity = new IdentityUserGuid()
@@ -55,13 +54,13 @@ internal sealed class UserRepository : IUserRepository
         var result = await _userManager.CreateAsync(entity);
         if (!result.Succeeded)
         {
-            return Result.Fail(result.Errors.Select(e => e.Description));
+            return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
         result = await _userManager.AddToRolesAsync(entity, roles.Select(r => r.MapToRole()));
         if (!result.Succeeded)
         {
-            return Result.Fail(result.Errors.Select(e => e.Description));
+            return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
         return Result.Ok(entity.Id);
@@ -72,7 +71,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_userNotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
         if (!string.IsNullOrWhiteSpace(newName) && user.Name != newName)
@@ -81,7 +80,7 @@ internal sealed class UserRepository : IUserRepository
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                return Result.Fail(result.Errors.Select(e => e.Description));
+                return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
             }
         }
 
@@ -102,7 +101,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_userNotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
         user.Email = $"{user.UserName}@deactivated";
@@ -113,7 +112,7 @@ internal sealed class UserRepository : IUserRepository
         user.LastLogin = null;
 
         var result = await _userManager.UpdateAsync(user);
-        return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
+        return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
     }
 
     public async Task<Result<Domain.Models.User>> FindByEmail(string email, CancellationToken cancellationToken)
@@ -123,7 +122,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return Result.Fail(_userNotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
         return Result.Ok(user.MapToDomain(new()));
@@ -134,7 +133,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_userNotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound);
         }
         return Result.Ok(user.MapToDomain(new()));
     }
@@ -156,7 +155,7 @@ internal sealed class UserRepository : IUserRepository
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(_userNotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
         var mappedRole = role.MapToRole();
@@ -164,7 +163,7 @@ internal sealed class UserRepository : IUserRepository
         if (!currentStringRoles.Contains(mappedRole))
         {
             var result = await _userManager.AddToRoleAsync(user, mappedRole);
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
+            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
         return Result.Ok();
@@ -177,7 +176,7 @@ internal sealed class UserRepository : IUserRepository
         if (currentStringRoles.Count == 0)
         {
             result = await _userManager.AddToRolesAsync(user, roles.Select(r => r.MapToRole()));
-            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => e.Description));
+            return result.Succeeded ? Result.Ok() : Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
         var currentRoles = currentStringRoles.Select(r => r.MapToRole()).ToArray();
@@ -189,7 +188,7 @@ internal sealed class UserRepository : IUserRepository
             result = await _userManager.RemoveFromRolesAsync(user, removeRoles.Select(r => r.MapToRole()));
             if (!result.Succeeded)
             {
-                return Result.Fail(result.Errors.Select(e => e.Description));
+                return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
             }
         }
 
@@ -198,7 +197,7 @@ internal sealed class UserRepository : IUserRepository
             result = await _userManager.AddToRolesAsync(user, addRoles.Select(r => r.MapToRole()));
             if (!result.Succeeded)
             {
-                return Result.Fail(result.Errors.Select(e => e.Description));
+                return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
             }
         }
 

@@ -1,4 +1,4 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using Mediator;
 

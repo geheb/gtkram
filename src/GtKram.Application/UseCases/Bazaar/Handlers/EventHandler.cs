@@ -1,8 +1,9 @@
-using FluentResults;
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
@@ -46,12 +47,12 @@ internal sealed class EventHandler :
         var converter = new EventConverter();
         if (converter.IsExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail("Der Kinderbasar ist bereits abgelaufen.");
+            return Result.Fail(Event.Expired);
         }
 
-        if (converter.CanRegister(@event.Value, _timeProvider))
+        if (!converter.CanRegister(@event.Value, _timeProvider))
         {
-            return Result.Fail("Aktuell können keine Anfragen angenommen werden.");
+            return Result.Fail(EventRegistration.NotReady);
         }
 
         var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
@@ -62,7 +63,7 @@ internal sealed class EventHandler :
 
         if (count.Value >= @event.Value.MaxSellers)
         {
-            return Result.Fail("Die maximale Anzahl von Registrierungen wurde erreicht.");
+            return Result.Fail(EventRegistration.LimitExceeded);
         }
         
         return @event;
@@ -112,7 +113,7 @@ internal sealed class EventHandler :
         var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(command.Id, cancellationToken);
         if (registrations.Length > 0)
         {
-            return Result.Fail("Der Kinderbasar kann nicht gelöscht werden, da Registrierungen vorliegen.");
+            return Result.Fail(Event.ValidationDeleteNotPossibleDueToRegistrations);
         }
         return await _eventRepository.Delete(command.Id, cancellationToken);
     }
@@ -121,35 +122,35 @@ internal sealed class EventHandler :
     {
         if (model.StartsOn >= model.EndsOn)
         {
-            return Result.Fail("Das Datum für den Kinderbasar ist ungültig.");
+            return Result.Fail(Event.ValidationDateFailed);
         }
 
         if (model.RegisterStartsOn >= model.RegisterEndsOn || 
             model.RegisterStartsOn > model.StartsOn)
         {
-            return Result.Fail("Die Registrierung der Verkäufer sollte vor dem Datum des Kinderbasars stattfinden.");
+            return Result.Fail(Event.ValidationRegisterDateFailed);
         }
 
         if (model.EditArticleEndsOn >= model.StartsOn)
         {
-            return Result.Fail("Die Bearbeitung der Artikel sollte vor dem Datum des Kinderbasars stattfinden.");
+            return Result.Fail(Event.ValidationEditArticleDateBeforeFailed);
         }
         else if (model.EditArticleEndsOn <= model.RegisterEndsOn)
         {
-            return Result.Fail("Die Bearbeitung der Artikel sollte nach dem Datum für die Registrierung liegen.");
+            return Result.Fail(Event.ValidationEditArticleDateAfterFailed);
         }
 
         if (model.PickUpLabelsStartsOn >= model.PickUpLabelsEndsOn)
         {
-            return Result.Fail("Das Datum für die Abholung der Etiketten ist ungültig.");
+            return Result.Fail(Event.ValidationPickUpLabelDateFailed);
         }
         else if (model.PickUpLabelsStartsOn >= model.StartsOn)
         {
-            return Result.Fail("Die Abholung der Etiketten sollte vor dem Kinderbasar stattfinden.");
+            return Result.Fail(Event.ValidationPickupLabelDateBeforeFailed);
         }
         else if (model.PickUpLabelsStartsOn <= model.EditArticleEndsOn)
         {
-            return Result.Fail("Die Abholung der Etiketten sollte nach dem Datum für die Bearbeitung der Artikel liegen.");
+            return Result.Fail(Event.ValidationPickupLabelDateAfterFailed);
         }
 
         return Result.Ok();

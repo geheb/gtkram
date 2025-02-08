@@ -1,16 +1,16 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Application.Converter;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Repositories.Mappings;
 using Microsoft.EntityFrameworkCore;
+using GtKram.Domain.Errors;
 
 namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepository
 {
-    private const string _saveFailed = "Der Kassenartikel konnte nicht gespeichert werden.";
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
@@ -34,7 +34,7 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(_saveFailed);
+        return isAdded ? Result.Ok() : Result.Fail(BillingArticle.SaveFailed);
     }
 
     public async Task<BazaarBillingArticle[]> GetByBazaarBillingId(Guid id, CancellationToken cancellationToken)

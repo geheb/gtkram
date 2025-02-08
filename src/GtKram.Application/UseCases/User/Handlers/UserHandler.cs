@@ -1,9 +1,10 @@
-using FluentResults;
+using GtKram.Domain.Base;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Domain.Repositories;
 using Mediator;
+using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Application.UseCases.User.Handlers;
 
@@ -13,17 +14,20 @@ internal sealed class UserHandler :
     ICommandHandler<CreateUserCommand, Result<Guid>>,
     ICommandHandler<UpdateUserCommand, Result>
 {
+    private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
     private readonly IUserRepository _repository;
     private readonly IUserAuthenticator _userAuthenticator;
     private readonly IEmailValidatorService _emailValidatorService;
 
     public UserHandler(
+        IdentityErrorDescriber errorDescriber,
         IMediator mediator,
         IUserRepository repository, 
         IUserAuthenticator userAuthenticator,
         IEmailValidatorService emailValidatorService)
     {
+        _errorDescriber = errorDescriber;
         _mediator = mediator;
         _repository = repository;
         _userAuthenticator = userAuthenticator;
@@ -40,7 +44,8 @@ internal sealed class UserHandler :
     {
         if (!await _emailValidatorService.Validate(command.Email, cancellationToken))
         {
-            return Result.Fail("Die E-Mail-Adresse ist ungültig.");
+            var error = _errorDescriber.InvalidEmail(command.Email);
+            return Result.Fail(error.Code, error.Description);
         }
         
         var idResult = await _repository.Create(command.Name, command.Email, command.Roles, cancellationToken);

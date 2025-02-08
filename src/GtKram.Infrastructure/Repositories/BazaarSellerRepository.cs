@@ -1,4 +1,5 @@
-using FluentResults;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -10,9 +11,6 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class BazaarSellerRepository : IBazaarSellerRepository
 {
     private static readonly SemaphoreSlim _sellerNumberSemaphore = new SemaphoreSlim(1, 1);
-
-    private const string _notFound = "Der Verkäufer wurde nicht gefunden.";
-    private const string _saveFailed = "Der Verkäufer konnte nicht gespeichert werden.";
 
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
@@ -69,7 +67,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok(entity.Id) : Result.Fail(_saveFailed);
+        return isAdded ? Result.Ok(entity.Id) : Result.Fail(Seller.SaveFailed);
     }
 
     public async Task<Result<BazaarSeller>> Find(Guid id, CancellationToken cancellationToken)
@@ -77,7 +75,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(Seller.NotFound);
         }
 
         return entity.MapToDomain();
@@ -97,7 +95,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(_notFound);
+            return Result.Fail(Seller.NotFound);
         }
 
         model.MapToEntity(entity);
@@ -123,7 +121,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         }
 
         var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isUpdated ? Result.Ok() : Result.Fail(_saveFailed);
+        return isUpdated ? Result.Ok() : Result.Fail(Seller.SaveFailed);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
@@ -131,6 +129,6 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         _dbSet.Remove(new Persistence.Entities.BazaarSeller { Id = id });
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(_notFound);
+        return isDeleted ? Result.Ok() : Result.Fail(Seller.NotFound);
     }
 }
