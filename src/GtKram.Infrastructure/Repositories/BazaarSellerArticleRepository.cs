@@ -10,6 +10,8 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleRepository
 {
+    private static readonly SemaphoreSlim _labelSemaphore = new SemaphoreSlim(1, 1);
+
     private readonly UuidPkGenerator _pkGenerator = new();
     private readonly AppDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
@@ -26,14 +28,64 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
 
     public async Task<Result> Create(BazaarSellerArticle model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new());
-        entity.Id = _pkGenerator.Generate();
-        entity.CreatedOn = _timeProvider.GetUtcNow();
+        if (!await _labelSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        {
+            return Result.Fail(SellerArticle.SaveFailed);
+        }
 
-        await _dbSet.AddAsync(entity, cancellationToken);
+        try
+        {
+            var maxLabelNumber = await _dbSet
+                .Where(e => e.BazaarSellerId == model.BazaarSellerId)
+                .MaxAsync(e => e.LabelNumber, cancellationToken);
 
-        var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(SellerArticle.SaveFailed);
+            var entity = model.MapToEntity(new());
+            entity.Id = _pkGenerator.Generate();
+            entity.CreatedOn = _timeProvider.GetUtcNow();
+            entity.LabelNumber = ++maxLabelNumber;
+
+            await _dbSet.AddAsync(entity, cancellationToken);
+
+            var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+            return isAdded ? Result.Ok() : Result.Fail(SellerArticle.SaveFailed);
+        }
+        finally
+        {
+            _labelSemaphore.Release();
+        }
+    }
+
+    public async Task<Result> Create(BazaarSellerArticle[] models, Guid sellerId, CancellationToken cancellationToken)
+    {
+        if (!await _labelSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        {
+            return Result.Fail(SellerArticle.SaveFailed);
+        }
+
+        try
+        {
+            var maxLabelNumber = await _dbSet
+                .Where(e => e.BazaarSellerId == sellerId)
+                .MaxAsync(e => e.LabelNumber, cancellationToken);
+
+            foreach (var model in models)
+            {
+                var entity = model.MapToEntity(new());
+                entity.Id = _pkGenerator.Generate();
+                entity.CreatedOn = _timeProvider.GetUtcNow();
+                entity.BazaarSellerId = sellerId;
+                entity.LabelNumber = ++maxLabelNumber;
+
+                await _dbSet.AddAsync(entity, cancellationToken);
+            }
+
+            var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+            return isAdded ? Result.Ok() : Result.Fail(SellerArticle.MulitpleSaveFailed);
+        }
+        finally
+        {
+            _labelSemaphore.Release();
+        }
     }
 
     public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)
@@ -65,7 +117,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
                 .Where(e => chunk.Contains(e.BazaarSellerId!.Value))
                 .ToArrayAsync(cancellationToken);
 
-            result.AddRange(result);
+            result.AddRange(entities.Select(e => e.MapToDomain()));
         }
 
         return [.. result];

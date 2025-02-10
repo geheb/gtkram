@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Queries;
 
-public sealed record GetOtpQuery(Guid Id) : IQuery<Result<UserOtp>>;
+public record struct GetOtpQuery(Guid Id) : IQuery<Result<UserOtp>>;

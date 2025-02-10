@@ -4,7 +4,8 @@
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
-    var dateConverter = new GermanDateTimeConverter();
+
+    var eventConverter = new EventConverter();
 }
 
 @await Html.PartialAsync("_Header")
@@ -25,21 +26,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Events.Length < 1)
+                    @if (Model.Items.Length < 1)
                     {
                         <tr>
-                            <td colspan="4"><div class="has-text-centered">Keine Kinderbasare gefunden.</div></td>
+                            <td colspan="4"><div class="has-text-centered">Keine Teilnahme gefunden.</div></td>
                         </tr>
                     }
 
-                    @foreach (var e in Model.Events)
+                    @foreach (var e in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { bazaarId = e.Id }))">
-                            <td>@e.FormatEvent(dateConverter)</td>
-                            <td>@e.ArticleCount / @e.MaxArticleCount</td>
-                            <td>@e.SellerNumber</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { sellerId = e.Seller.Id }))">
+                            <td>@eventConverter.Format(e.Event)</td>
+                            <td>@e.ArticleCount / @e.Seller.MaxArticleCount</td>
+                            <td>@e.Seller.SellerNumber</td>
                             <td>
-                                <a href="@(Url.PageLink("Articles", null, new { bazaarId = e.Id }))">Artikel bearbeiten</a>
+                                <a href="@(Url.PageLink("Articles", null, new { sellerId = e.Seller.Id }))">Artikel bearbeiten</a>
                             </td>
                         </tr>
                     }

@@ -26,12 +26,11 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarSeller>();
     }
 
-    public async Task<Result<Guid>> Create(BazaarSeller model, Guid eventId, Guid userId, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Create(BazaarSeller model, Guid userId, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new());
         entity.Id = _pkGenerator.Generate();
         entity.CreatedOn = _timeProvider.GetUtcNow();
-        entity.BazaarEventId = eventId;
         entity.UserId = userId;
 
         await _sellerNumberSemaphore.WaitAsync(cancellationToken);
@@ -41,7 +40,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
             if (entity.SellerNumber < 1)
             {
                 var max = await _dbSet
-                    .Where(e => e.BazaarEventId == eventId)
+                    .Where(e => e.BazaarEventId == model.BazaarEventId)
                     .MaxAsync(e => e.SellerNumber, cancellationToken);
 
                 entity.SellerNumber = max + 1;
@@ -49,7 +48,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
             else
             {
                 var entities = await _dbSet
-                    .Where(e => e.BazaarEventId == eventId)
+                    .Where(e => e.BazaarEventId == model.BazaarEventId)
                     .ToArrayAsync(cancellationToken);
 
                 var max = entities.Max(e => e.SellerNumber);
@@ -85,6 +84,15 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
     {
         var entities = await _dbSet
             .Where(e => e.BazaarEventId == id)
+            .ToArrayAsync(cancellationToken);
+
+        return entities.Select(e => e.MapToDomain()).ToArray();
+    }
+
+    public async Task<BazaarSeller[]> GetByUserId(Guid id, CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .Where(e => e.UserId == id)
             .ToArrayAsync(cancellationToken);
 
         return entities.Select(e => e.MapToDomain()).ToArray();

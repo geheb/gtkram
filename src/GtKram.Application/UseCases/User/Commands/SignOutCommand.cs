@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record SignOutCommand(Guid Id) : ICommand<Result>;
+public record struct SignOutCommand(Guid Id) : ICommand<Result>;

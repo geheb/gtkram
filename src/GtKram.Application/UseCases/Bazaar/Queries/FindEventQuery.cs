@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Queries;
 
-public sealed record FindEventQuery(Guid Id, bool ShouldValidate) : IQuery<Result<BazaarEvent>>;
+public record struct FindEventQuery(Guid Id, bool ShouldValidate) : IQuery<Result<BazaarEvent>>;

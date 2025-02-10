@@ -1,4 +1,4 @@
-﻿@page "/MyBazaars/{bazaarId:guid}/Articles/Add"
+﻿@page "/MyBazaars/{sellerId:guid}/Articles/Add"
 
 @model GtKram.Ui.Pages.MyBazaars.AddArticleModel
 @{
@@ -15,7 +15,7 @@
 
         @Html.CreateBreadcrumb(pageParam, pageParam)
 
-        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Event</h2>
 
         @if (!ModelState.IsValid)
         {

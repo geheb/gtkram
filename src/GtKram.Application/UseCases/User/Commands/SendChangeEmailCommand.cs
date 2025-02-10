@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record SendChangeEmailCommand(Guid Id, string NewEmail, string Password, string CallbackUrl) : ICommand<Result>;
+public record struct SendChangeEmailCommand(Guid Id, string NewEmail, string Password, string CallbackUrl) : ICommand<Result>;

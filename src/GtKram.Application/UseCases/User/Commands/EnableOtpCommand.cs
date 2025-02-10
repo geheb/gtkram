@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record EnableOtpCommand(Guid Id, string Code) : ICommand<Result>;
+public record struct EnableOtpCommand(Guid Id, string Code) : ICommand<Result>;

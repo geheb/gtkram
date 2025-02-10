@@ -1,7 +1,10 @@
 using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
+using GtKram.Domain.Models;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,10 +15,9 @@ namespace GtKram.Ui.Pages.MyBazaars;
 [Authorize(Roles = "seller,admin")]
 public class ArticlesModel : PageModel
 {
-    private readonly IBazaarSellerArticles _bazaarSellerArticles;
-    private readonly IBazaarSellers _bazaarSellers;
+    private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
 
-    public Guid? BazaarId { get; set; }
     public string? Event { get; set; }
     public string? EditArticleEndDate { get; set; }
     public int MaxArticleCount { get; set; }
@@ -26,60 +28,56 @@ public class ArticlesModel : PageModel
     public decimal AvailableTotalValue { get; set; }
     public int SoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
-    public BazaarSellerArticleDto[] Articles { get; set; } = [];
-    public decimal PaymentTotalValue { get; set; }
+    public decimal PayoutTotalValue { get; set; }
+    public BazaarSellerArticle[] Items { get; set; } = [];
 
-    public ArticlesModel(IBazaarSellerArticles bazaarSellerArticles, IBazaarSellers bazaarSellers)
+    public ArticlesModel(
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
-        _bazaarSellerArticles = bazaarSellerArticles;
-        _bazaarSellers = bazaarSellers;
+        _timeProvider = timeProvider;
+        _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid bazaarId, CancellationToken cancellationToken)
+    public async Task OnGetAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        BazaarId = bazaarId;
-        var currentUserId = User.GetId();
-
-        var seller = await _bazaarSellers.Find(bazaarId, cancellationToken);
-        if (seller == null || seller.UserId != currentUserId)
+        var result = await _mediator.Send(new FindSellerWithEventAndArticlesQuery(sellerId, User.GetId()), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        var dc = new GermanDateTimeConverter();
-
-        Event = seller.FormatEvent(dc);
-        MaxArticleCount = seller.MaxArticleCount;
-        EditArticleEndDate = dc.ToDateTime(seller.EditArticleEndDate);
-        CanEdit = seller.IsRegisterAccepted && !seller.EditArticleExpired;
-        CanAdd = seller.IsRegisterAccepted && !seller.EditArticleExpired && seller.CanAddArticle;
+        var eventConverter = new EventConverter();
+        var @event = result.Value.Event;
         
+        Items = result.Value.Articles;
+        Event = eventConverter.Format(@event);
+        MaxArticleCount = result.Value.Seller.MaxArticleCount;
+        EditArticleEndDate = @event.EditArticleEndsOn is not null 
+            ? new GermanDateTimeConverter().ToDateTime(@event.EditArticleEndsOn.Value)
+            : null;
+        CanEdit = 
+            !eventConverter.IsExpired(@event, _timeProvider) &&
+            !eventConverter.IsEditArticlesExpired(@event, _timeProvider);
+        CanAdd = CanEdit && Items.Length < MaxArticleCount;
 
-        if (!seller.IsRegisterAccepted)
+        if (!CanEdit)
         {
-            ModelState.AddModelError(string.Empty, "Die Teilnahme wurde nicht zugesagt.");
-        }
-        else if (seller.EditArticleExpired)
-        {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung ist abgelaufen.");
+            ModelState.AddModelError(string.Empty, "Die Bearbeitung der Artikel ist abgelaufen.");
         }
 
-        Articles = await _bazaarSellerArticles.GetAll(bazaarId, currentUserId, cancellationToken);
-
-        AvailableCount = Articles.Length;
-        AvailableTotalValue = Articles.Sum(a => a.Price);
-
-        var commission = seller.Commission;
-        var sold = Articles.Where(a => a.IsSold);
+        AvailableCount = Items.Length;
+        AvailableTotalValue = Items.Sum(a => a.Price);
+        var sold = Items.Where(a => a.IsSold);
         SoldCount = sold.Count();
         SoldTotalValue = sold.Sum(a => a.Price);
-        PaymentTotalValue = SoldTotalValue - SoldTotalValue * (commission / 100.0M);
+        PayoutTotalValue = eventConverter.CalcPayout(@event, SoldTotalValue);
     }
 
-    public async Task<IActionResult> OnPostTakeOverArticlesAsync(Guid bazaarId, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostTakeOverArticlesAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        var result = await _bazaarSellerArticles.TakeOverArticles(bazaarId, User.GetId(), cancellationToken);
-        return new JsonResult(result);
+        var result = await _mediator.Send(new TakeOverSellerArticlesCommand(sellerId, User.GetId()), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }

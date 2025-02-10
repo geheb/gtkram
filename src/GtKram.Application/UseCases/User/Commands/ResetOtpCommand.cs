@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record ResetOtpCommand(Guid Id) : ICommand<Result>;
+public record struct ResetOtpCommand(Guid Id) : ICommand<Result>;

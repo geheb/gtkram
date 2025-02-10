@@ -48,6 +48,22 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return entity.MapToDomain(new());
     }
 
+    public async Task<BazaarEvent[]> Get(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var dc = new GermanDateTimeConverter();
+        var result = new List<BazaarEvent>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .Where(e => chunk.Contains(e.Id))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain(dc)));
+        }
+
+        return [.. result];
+    }
+
     public async Task<BazaarEvent[]> GetAll(CancellationToken cancellationToken)
     {
         var entities = await _dbSet

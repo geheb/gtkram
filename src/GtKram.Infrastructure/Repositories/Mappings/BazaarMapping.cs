@@ -109,7 +109,7 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarSellerArticle MapToDomain(this BazaarSellerArticle entity) => new()
     {
         Id = entity.Id,
-        BazaarSellerId = entity.BazaarSellerId,
+        BazaarSellerId = entity.BazaarSellerId!.Value,
         LabelNumber = entity.LabelNumber,
         Name = entity.Name,
         Size = entity.Size,
@@ -132,14 +132,19 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarSeller MapToDomain(this BazaarSeller entity) => new()
     {
         Id = entity.Id,
+        CreatedOn = entity.CreatedOn,
+        BazaarEventId = entity.BazaarEventId!.Value,
         SellerNumber = entity.SellerNumber,
         Role = (Domain.Models.SellerRole)entity.Role,
+        MaxArticleCount = entity.MaxArticleCount,
         CanCreateBillings = entity.CanCreateBillings,
     };
 
     public static BazaarSeller MapToEntity(this Domain.Models.BazaarSeller model, BazaarSeller entity)
     {
         entity.Id = model.Id;
+        entity.CreatedOn = model.CreatedOn;
+        entity.BazaarEventId = model.BazaarEventId;
         entity.SellerNumber = model.SellerNumber;
         entity.Role = (int)model.Role;
         entity.MaxArticleCount = model.MaxArticleCount;

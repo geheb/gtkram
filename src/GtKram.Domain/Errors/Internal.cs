@@ -6,6 +6,12 @@ public static class Internal
 {
     private const string _prefix = "internal";
 
+    public static Error InvalidRequest { get; } =
+        new($"{_prefix}.invalid.request", "Ungültige Anfrage.");
+
+    public static Error InvalidData { get; } =
+        new($"{_prefix}.invalid.data", "Ungültige Datenkonsistenz festgestellt.");
+
     public static Error EmailNotFound { get; } =
         new($"{_prefix}.not.found", "Die Email wurde nicht gefunden.");
 

@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record ConfirmRegistrationCommand(Guid Id, string Password, string Token): ICommand<Result>;
+public record struct ConfirmRegistrationCommand(Guid Id, string Password, string Token): ICommand<Result>;

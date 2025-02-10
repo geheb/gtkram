@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record CreateOtpCommand(Guid Id) : ICommand<Result<UserOtp>>;
+public record struct CreateOtpCommand(Guid Id) : ICommand<Result<UserOtp>>;

@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public sealed record SendResetPasswordCommand(string Email, string CallbackUrl) : ICommand<Result>;
+public record struct SendResetPasswordCommand(string Email, string CallbackUrl) : ICommand<Result>;

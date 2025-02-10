@@ -103,6 +103,22 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
+    public async Task<BazaarSellerRegistration[]> GetByBazaarSellerId(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var dc = new GermanDateTimeConverter();
+        var result = new List<BazaarSellerRegistration>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .Where(e => chunk.Contains(e.BazaarSellerId!.Value))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain(dc)));
+        }
+
+        return result.ToArray();
+    }
+
     public async Task<Result> Update(BazaarSellerRegistration model, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
