@@ -15,8 +15,8 @@ public static class Identity
     public static Error AlreadyActivated { get; } =
         new($"{_prefix}.already.activated", "Der Nutzer wurde bereits bestätigt.");
 
-    public static Error IsLocked { get; } =
-        new($"{_prefix}.is.locked", "Der Nutzer ist gesperrt.");
+    public static Error Locked { get; } =
+        new($"{_prefix}.locked", "Der Nutzer ist gesperrt.");
 
     public static Error LoginNotAllowed { get; } =
         new($"{_prefix}.login.not.allowed", "Der Nutzer darf sich nicht anmelden.");

@@ -11,4 +11,7 @@ public static class Seller
 
     public static Error NotFound { get; } =
         new($"{_prefix}.not.found", "Der Verkäufer wurde nicht gefunden.");
+
+    public static Error Locked { get; } =
+        new($"{_prefix}.locked", "Der Verkäufer ist gesperrt.");
 }

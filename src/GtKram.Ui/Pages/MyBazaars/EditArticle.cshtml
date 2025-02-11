@@ -1,11 +1,15 @@
-﻿@page "/MyBazaars/{bazaarId:guid}/Articles/{id:guid}/Edit"
+﻿@page "/MyBazaars/{sellerId:guid}/Articles/{id:guid}/Edit"
 @model GtKram.Ui.Pages.MyBazaars.EditArticleModel
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { bazaarId = Model.BazaarId, id = Model.Id };
+
+    Guid.TryParse(Request.RouteValues["sellerId"] as string, out var sellerId);
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+
+    var pageParam = new { sellerId, id };
     Model.BuildHeaderMenu(pageParam);
-    var articlesLink = Url.PageLink("Articles", null, new { bazaarId = Model.BazaarId });
+    var articlesLink = Url.PageLink("Articles", null, new { sellerId });
 }
 
 @await Html.PartialAsync("_Header")
@@ -14,7 +18,7 @@
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { bazaarId = Model.BazaarId })</div>
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { sellerId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
@@ -29,7 +33,7 @@
                         {
                             <div class="dropdown-content">
                                 <a class="dropdown-item open-modal" href="#" data-target="#deleteArticleModal"
-                                   data-url="@(Url.PageLink(string.Empty, "delete", pageParam))">
+                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id }))">
                                     Artikel löschen
                                 </a>
                             </div>
@@ -39,7 +43,7 @@
             </div>
         </div>
 
-        <h2 class="subtitle">@(Model.Event ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Input.State_Event</h2>
 
         @if (!ModelState.IsValid)
         {
@@ -53,6 +57,7 @@
             <div class="column is-half">
 
                 <form method="post">
+                    <input type="hidden" asp-for="Input.State_Event" />
                     <fieldset disabled="@Model.IsDisabled">
                         <div class="field">
                             <label class="label" asp-for="Input.LabelNumber"></label>

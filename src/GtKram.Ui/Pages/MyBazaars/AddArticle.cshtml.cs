@@ -110,7 +110,7 @@ public class AddArticleModel : PageModel
         }
 
         var article = new BazaarSellerArticleDto();
-        Input.To(article);
+        //Input.To(article);
 
         var result = await _bazaarSellerArticles.Create(bazaarId, User.GetId(), article, cancellationToken);
         if (!result)

@@ -11,6 +11,7 @@ using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
@@ -19,13 +20,16 @@ internal sealed class SellerHandler :
     IQueryHandler<GetSellerRegistrationWithArticleCountQuery, BazaarSellerRegistrationWithArticleCount[]>,
     IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, Result<BazaarSellerWithRegistrationAndArticles>>,
     IQueryHandler<GetEventsByUserWithSellerAndAricleCountQuery, BazaarEventWithSellerAndArticleCount[]>,
-    IQueryHandler<FindSellerWithEventAndArticlesQuery, Result<BazaarSellerWithEventAndArticles>>,
+    IQueryHandler<FindSellerWithEventAndArticlesByUserQuery, Result<BazaarSellerWithEventAndArticles>>,
+    IQueryHandler<FindSellerArticleByUserQuery, Result<BazaarSellerArticleWithEvent>>,
     ICommandHandler<CreateSellerRegistrationCommand, Result>,
     ICommandHandler<UpdateSellerCommand, Result>,
     ICommandHandler<DeleteSellerRegistrationCommand, Result>,
     ICommandHandler<AcceptSellerRegistrationCommand, Result>,
     ICommandHandler<DenySellerRegistrationCommand, Result>,
-    ICommandHandler<TakeOverSellerArticlesCommand, Result>
+    ICommandHandler<TakeOverSellerArticlesByUserCommand, Result>,
+    ICommandHandler<UpdateSellerArticleByUserCommand, Result>,
+    ICommandHandler<DeleteSellerArticleByUserCommand, Result>
 {
     private readonly TimeProvider _timeProvider;
     private readonly IdentityErrorDescriber _errorDescriber;
@@ -355,20 +359,20 @@ internal sealed class SellerHandler :
         return result.ToArray();
     }
 
-    public async ValueTask<Result<BazaarSellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<BazaarSellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
     {
         // sanity check
-        var sellers = await _sellerRepository.GetByUserId(query.UserId, cancellationToken);
-        if (!sellers.Any(s => s.Id == query.Id))
+        var seller = await _sellerRepository.Find(query.Id, query.UserId, cancellationToken);
+        if (seller.IsFailed)
         {
-            return Result.Fail(Seller.NotFound);
+            return seller.ToResult();
         }
 
         var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.Id, cancellationToken);
         if (registration.IsFailed ||
             !registration.Value.Accepted.GetValueOrDefault())
         {
-            return Result.Fail(Seller.NotFound);
+            return Result.Fail(Seller.Locked);
         }
 
         var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.Id, cancellationToken);
@@ -377,19 +381,18 @@ internal sealed class SellerHandler :
             return Result.Fail(SellerArticle.NotAvailable);
         }
 
-        var seller = sellers.First(s => s.Id == query.Id);
-        var eventId = seller.BazaarEventId;
-        var @event = await _eventRepository.Find(eventId, cancellationToken);
+        var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Internal.InvalidData);
         }
 
-        return Result.Ok(new BazaarSellerWithEventAndArticles(seller, @event.Value, articles));
+        return Result.Ok(new BazaarSellerWithEventAndArticles(seller.Value, @event.Value, articles));
     }
 
-    public async ValueTask<Result> Handle(TakeOverSellerArticlesCommand command, CancellationToken cancellationToken)
+    public async ValueTask<Result> Handle(TakeOverSellerArticlesByUserCommand command, CancellationToken cancellationToken)
     {
+        // sanity check
         var sellers = await _sellerRepository.GetByUserId(command.UserId, cancellationToken);
         if (!sellers.Any(s => s.Id == command.Id))
         {
@@ -400,7 +403,7 @@ internal sealed class SellerHandler :
         if (registration.IsFailed ||
             !registration.Value.Accepted.GetValueOrDefault())
         {
-            return Result.Fail(Seller.NotFound);
+            return Result.Fail(Seller.Locked);
         }
 
         BazaarSellerArticle[] articles = [];
@@ -443,5 +446,121 @@ internal sealed class SellerHandler :
         }
 
         return await _sellerArticleRepository.Create(takeOverArticles.ToArray(), command.Id, cancellationToken);
+    }
+
+    public async ValueTask<Result<BazaarSellerArticleWithEvent>> Handle(FindSellerArticleByUserQuery query, CancellationToken cancellationToken)
+    {
+        var article = await _sellerArticleRepository.Find(query.Id, cancellationToken);
+        if (article.IsFailed)
+        {
+            return article.ToResult();
+        }
+
+        var seller = await _sellerRepository.Find(article.Value.BazaarSellerId, query.UserId, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller.ToResult();
+        }
+
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(article.Value.BazaarSellerId, cancellationToken);
+        if (registration.IsFailed ||
+            !registration.Value.Accepted.GetValueOrDefault())
+        {
+            return Result.Fail(Seller.Locked);
+        }
+
+        var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        return Result.Ok(new BazaarSellerArticleWithEvent(article.Value, @event.Value));
+    }
+
+    public async ValueTask<Result> Handle(UpdateSellerArticleByUserCommand command, CancellationToken cancellationToken)
+    {
+        var article = await _sellerArticleRepository.Find(command.Id, cancellationToken);
+        if (article.IsFailed)
+        {
+            return article.ToResult();
+        }
+
+        if (!article.Value.CanEdit)
+        {
+            return Result.Fail(SellerArticle.EditFailedDueToBooked);
+        }
+
+        var seller = await _sellerRepository.Find(article.Value.BazaarSellerId, command.UserId, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller.ToResult();
+        }
+
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(article.Value.BazaarSellerId, cancellationToken);
+        if (registration.IsFailed ||
+            !registration.Value.Accepted.GetValueOrDefault())
+        {
+            return Result.Fail(Seller.Locked);
+        }
+
+        var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var converter = new EventConverter();
+        if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail(SellerArticle.EditExpired);
+        }
+
+        article.Value.Name = command.Name;
+        article.Value.Size = command.Size;
+        article.Value.Price = command.Price;
+
+        return await _sellerArticleRepository.Update(article.Value, cancellationToken);
+    }
+
+    public async ValueTask<Result> Handle(DeleteSellerArticleByUserCommand command, CancellationToken cancellationToken)
+    {
+        var article = await _sellerArticleRepository.Find(command.Id, cancellationToken);
+        if (article.IsFailed)
+        {
+            return article.ToResult();
+        }
+
+        if (!article.Value.CanEdit)
+        {
+            return Result.Fail(SellerArticle.EditFailedDueToBooked);
+        }
+
+        var seller = await _sellerRepository.Find(article.Value.BazaarSellerId, command.UserId, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller.ToResult();
+        }
+
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(article.Value.BazaarSellerId, cancellationToken);
+        if (registration.IsFailed ||
+            !registration.Value.Accepted.GetValueOrDefault())
+        {
+            return Result.Fail(Seller.Locked);
+        }
+
+        var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var converter = new EventConverter();
+        if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail(SellerArticle.EditExpired);
+        }
+
+        return await _sellerArticleRepository.Delete(command.Id, cancellationToken);
     }
 }

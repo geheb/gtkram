@@ -10,4 +10,5 @@ public sealed class BazaarSellerArticle
     public decimal Price { get; set; }
     public SellerArticleStatus Status { get; set; }
     public bool IsSold => Status == SellerArticleStatus.Sold;
+    public bool CanEdit => Status == SellerArticleStatus.Created;
 }

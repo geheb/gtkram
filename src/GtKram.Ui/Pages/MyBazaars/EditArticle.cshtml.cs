@@ -1,7 +1,10 @@
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.Converter;
+using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
-using GtKram.Ui.I18n;
+using GtKram.Domain.Errors;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,94 +15,52 @@ namespace GtKram.Ui.Pages.MyBazaars;
 [Authorize(Roles = "seller,admin")]
 public class EditArticleModel : PageModel
 {
-    private readonly IBazaarSellerArticles _bazaarSellerArticles;
-    private readonly IBazaarSellers _bazaarSellers;
+    private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
 
-    public Guid? BazaarId { get; set; }
-    public Guid? Id { get; set; }
-    public string? Event { get; set; }
     public bool IsDisabled { get; set; }
 
     [BindProperty]
     public ArticleInput Input { get; set; } = new();
 
     public EditArticleModel(
-        IBazaarSellerArticles bazaarSellerArticles, 
-        IBazaarSellers bazaarSellers)
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
-        _bazaarSellerArticles = bazaarSellerArticles;
-        _bazaarSellers = bazaarSellers;
+        _timeProvider = timeProvider;
+        _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid bazaarId, Guid id, CancellationToken cancellationToken)
+    public async Task OnGetAsync(Guid sellerId, Guid id, CancellationToken cancellationToken)
     {
-        BazaarId = bazaarId;
-        Id = id;
-
-        var seller = await _bazaarSellers.Find(bazaarId, cancellationToken);
-        if (seller == null || seller.UserId != User.GetId())
+        var result = await _mediator.Send(new FindSellerArticleByUserQuery(User.GetId(), id), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
             IsDisabled = true;
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        Event = seller.FormatEvent(new());
+        var eventConverter = new EventConverter();
+        Input.State_Event = eventConverter.Format(result.Value.Event);
+        Input.Init(result.Value.Article);
 
-        if (!seller.IsRegisterAccepted)
+        if (eventConverter.IsExpired(result.Value.Event, _timeProvider) ||
+            eventConverter.IsEditArticlesExpired(result.Value.Event, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, "Die Teilnahme wurde nicht zugesagt.");
             IsDisabled = true;
-            return;
+            ModelState.AddModelError(string.Empty, SellerArticle.EditExpired.Message);
         }
 
-        if (seller.EditArticleExpired)
+        if (!result.Value.Article.CanEdit)
         {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung ist abgelaufen.");
             IsDisabled = true;
-            return;
+            ModelState.AddModelError(string.Empty, SellerArticle.EditFailedDueToBooked.Message);
         }
-
-        var article = await _bazaarSellerArticles.Find(User.GetId(), id, cancellationToken);
-        if (article == null)
-        {
-            ModelState.AddModelError(string.Empty, "Artikel wurde nicht gefunden.");
-            IsDisabled = true;
-            return;
-        }
-
-        if (!article.CanEdit)
-        {
-            ModelState.AddModelError(string.Empty, "Artikel ist bereits gebucht.");
-            IsDisabled = true;
-        }
-
-        Input = new ArticleInput();
-        Input.From(article);
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid bazaarId, Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAsync(Guid sellerId, Guid id, CancellationToken cancellationToken)
     {
-        BazaarId = bazaarId;
-        Id = id;
-
-        var seller = await _bazaarSellers.Find(bazaarId, cancellationToken);
-        if (seller == null)
-        {
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
-            IsDisabled = true;
-            return Page();
-        }
-
-        Event = seller.FormatEvent(new());
-
-        if (seller.EditArticleExpired)
-        {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung ist abgelaufen.");
-            IsDisabled = true;
-            return Page();
-        }
-
         if (!ModelState.IsValid) return Page();
 
         if (!Input.HasPriceClosestToFifty)
@@ -108,23 +69,19 @@ public class EditArticleModel : PageModel
             return Page();
         }
 
-        var article = new BazaarSellerArticleDto();
-        Input.Id = id;
-        Input.To(article);
-
-        var result = await _bazaarSellerArticles.Update(bazaarId, User.GetId(), article, cancellationToken);
-        if (!result)
+        var result = await _mediator.Send(Input.ToCommand(User.GetId(), id), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.SaveFailed);
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
-        return RedirectToPage("Articles", new { bazaarId });
+        return RedirectToPage("Articles", new { sellerId });
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _bazaarSellerArticles.Delete(User.GetId(), id, cancellationToken);
-        return new JsonResult(result);
+        var result = await _mediator.Send(new DeleteSellerArticleByUserCommand(User.GetId(), id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }

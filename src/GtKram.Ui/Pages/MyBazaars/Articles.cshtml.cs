@@ -2,6 +2,7 @@ using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Ui.Extensions;
 using Mediator;
@@ -41,7 +42,7 @@ public class ArticlesModel : PageModel
 
     public async Task OnGetAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindSellerWithEventAndArticlesQuery(sellerId, User.GetId()), cancellationToken);
+        var result = await _mediator.Send(new FindSellerWithEventAndArticlesByUserQuery(User.GetId(), sellerId), cancellationToken);
         if (result.IsFailed)
         {
             ModelState.AddError(result.Errors);
@@ -64,7 +65,7 @@ public class ArticlesModel : PageModel
 
         if (!CanEdit)
         {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung der Artikel ist abgelaufen.");
+            ModelState.AddModelError(string.Empty, SellerArticle.EditExpired.Message);
         }
 
         AvailableCount = Items.Length;
@@ -77,7 +78,7 @@ public class ArticlesModel : PageModel
 
     public async Task<IActionResult> OnPostTakeOverArticlesAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new TakeOverSellerArticlesCommand(sellerId, User.GetId()), cancellationToken);
+        var result = await _mediator.Send(new TakeOverSellerArticlesByUserCommand(User.GetId(), sellerId), cancellationToken);
         return new JsonResult(result.IsSuccess);
     }
 }

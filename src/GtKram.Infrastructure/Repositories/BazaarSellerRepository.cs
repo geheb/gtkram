@@ -80,6 +80,17 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         return entity.MapToDomain();
     }
 
+    public async Task<Result<BazaarSeller>> Find(Guid id, Guid userId, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(Seller.NotFound);
+        }
+
+        return entity.MapToDomain();
+    }
+
     public async Task<BazaarSeller[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

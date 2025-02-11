@@ -80,12 +80,20 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
             }
 
             var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-            return isAdded ? Result.Ok() : Result.Fail(SellerArticle.MulitpleSaveFailed);
+            return isAdded ? Result.Ok() : Result.Fail(SellerArticle.MultipleSaveFailed);
         }
         finally
         {
             _labelSemaphore.Release();
         }
+    }
+
+    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        _dbSet.Remove(new Persistence.Entities.BazaarSellerArticle { Id = id });
+
+        var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+        return isDeleted ? Result.Ok() : Result.Fail(SellerArticle.NotFound);
     }
 
     public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)

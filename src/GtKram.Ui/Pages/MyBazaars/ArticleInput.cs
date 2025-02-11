@@ -1,12 +1,15 @@
+using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
+using Mediator;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.Ui.Pages.MyBazaars;
 
 public class ArticleInput
 {
-    public Guid? Id { get; set; }
+    public string State_Event { get; set; } = "Unbekannt";
 
     [Display(Name = "Artikelnummer")]
     public int LabelNumber { get; set; }
@@ -28,20 +31,14 @@ public class ArticleInput
 
     public bool HasPriceClosestToFifty => Price.HasValue && Price.Value == Math.Ceiling(2 * Price.Value) / 2;
 
-    public void To(BazaarSellerArticleDto dto)
+    public void Init(BazaarSellerArticle model)
     {
-        dto.Id = Id;
-        dto.Name = Name;
-        dto.Size = Size;
-        dto.Price = Price!.Value;
+        LabelNumber = model.LabelNumber;
+        Name = model.Name;
+        Size = model.Size;
+        Price = model.Price;
     }
 
-    public void From(BazaarSellerArticleDto dto)
-    {
-        Id = dto.Id;
-        LabelNumber = dto.LabelNumber;
-        Name = dto.Name;
-        Size = dto.Size;
-        Price = dto.Price;
-    }
+    internal UpdateSellerArticleByUserCommand ToCommand(Guid userId, Guid id) =>
+        new(userId, id, Name!, Size!, Price!.Value);
 }

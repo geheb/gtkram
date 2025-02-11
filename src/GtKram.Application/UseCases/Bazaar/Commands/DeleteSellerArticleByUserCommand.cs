@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public record struct TakeOverSellerArticlesCommand(Guid Id, Guid UserId) : ICommand<Result>;
+public record struct DeleteSellerArticleByUserCommand(Guid UserId, Guid Id) : ICommand<Result>;

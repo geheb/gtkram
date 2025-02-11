@@ -450,7 +450,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         else if (result.IsLockedOut)
         {
             _logger.LogWarning("Der Benutzer {Id} ist gesperrt", user.Id);
-            return Result.Fail(Domain.Errors.Identity.IsLocked);
+            return Result.Fail(Domain.Errors.Identity.Locked);
         }
         else if (result.IsNotAllowed)
         {
