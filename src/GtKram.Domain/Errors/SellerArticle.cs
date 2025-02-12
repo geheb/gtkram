@@ -26,4 +26,10 @@ public static class SellerArticle
 
     public static Error EditFailedDueToBooked { get; } =
         new($"{_prefix}.edit.failed.due.to.booked", "Der Artikel ist bereits gebucht und kann nicht bearbeitet werden.");
+
+    public static Error InvalidPriceRange { get; } =
+        new($"{_prefix}.invalid.price.range", "Der Preis sollte in 50-Cent-Schritten angegeben werden.");
+
+    public static Error Timeout { get; } =
+        new($"{_prefix}.timeout", "Zeitüberschreitung beim Bearbeiten der Artikel. Bitte erneut versuchen.");
 }

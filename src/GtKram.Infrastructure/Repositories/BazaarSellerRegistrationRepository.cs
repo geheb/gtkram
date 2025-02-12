@@ -53,7 +53,10 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
     public async Task<Result<BazaarSellerRegistration>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(EventRegistration.NotFound);
@@ -64,7 +67,10 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
     public async Task<Result<BazaarSellerRegistration>> FindByBazaarSellerId(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.BazaarSellerId == id, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.BazaarSellerId == id, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(EventRegistration.NotFound);
@@ -75,7 +81,10 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
     public async Task<Result<BazaarSellerRegistration>> FindByEmail(string email, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Email == email, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Email == email, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(EventRegistration.NotFound);
@@ -86,7 +95,10 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
     public async Task<BazaarSellerRegistration[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _dbSet.ToArrayAsync(cancellationToken);
+        var entities = await _dbSet
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
+
         var dc = new GermanDateTimeConverter();
 
         return [.. entities.Select(e => e.MapToDomain(dc))];
@@ -95,6 +107,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
     public async Task<BazaarSellerRegistration[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.BazaarEventId == id)
             .ToArrayAsync(cancellationToken);
 
@@ -110,6 +123,7 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         foreach (var chunk in ids.Chunk(100))
         {
             var entities = await _dbSet
+                .AsNoTracking()
                 .Where(e => chunk.Contains(e.BazaarSellerId!.Value))
                 .ToArrayAsync(cancellationToken);
 
@@ -151,7 +165,9 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
         try
         {
-            return await _dbSet.CountAsync(e => e.BazaarEventId == id, cancellationToken);
+            return await _dbSet
+                .AsNoTracking()
+                .CountAsync(e => e.BazaarEventId == id, cancellationToken);
         }
         finally
         {

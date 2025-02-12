@@ -65,11 +65,12 @@ public class EditArticleModel : PageModel
 
         if (!Input.HasPriceClosestToFifty)
         {
-            ModelState.AddModelError(string.Empty, "Der Preis sollte in 50 Cent Schritten angegeben werden.");
+            ModelState.AddModelError(string.Empty, SellerArticle.InvalidPriceRange.Message);
             return Page();
         }
 
-        var result = await _mediator.Send(Input.ToCommand(User.GetId(), id), cancellationToken);
+        var command = Input.ToUpdateCommand(User.GetId(), id);
+        var result = await _mediator.Send(command, cancellationToken);
         if (result.IsFailed)
         {
             ModelState.AddError(result.Errors);

@@ -71,7 +71,10 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
 
     public async Task<Result<BazaarSeller>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(Seller.NotFound);
@@ -82,7 +85,10 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
 
     public async Task<Result<BazaarSeller>> Find(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(Seller.NotFound);
@@ -94,6 +100,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
     public async Task<BazaarSeller[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.BazaarEventId == id)
             .ToArrayAsync(cancellationToken);
 
@@ -103,6 +110,7 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
     public async Task<BazaarSeller[]> GetByUserId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.UserId == id)
             .ToArrayAsync(cancellationToken);
 

@@ -1,7 +1,9 @@
-using GtKram.Application.Repositories;
-using GtKram.Application.UseCases.Bazaar.Models;
+using GtKram.Application.Converter;
+using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
-using GtKram.Ui.I18n;
+using GtKram.Domain.Errors;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,113 +14,50 @@ namespace GtKram.Ui.Pages.MyBazaars;
 [Authorize(Roles = "seller,admin")]
 public class AddArticleModel : PageModel
 {
-    private readonly IBazaarSellerArticles _bazaarSellerArticles;
-    private readonly IBazaarSellers _bazaarSellers;
+    private readonly IMediator _mediator;
 
-    public Guid? BazaarId { get; set; }
     public bool IsDisabled { get; set; }
-    public string? Event { get; set; }
 
     [BindProperty]
     public ArticleInput Input { get; set; } = new();
 
-    public AddArticleModel(
-        IBazaarSellerArticles bazaarSellerArticles, 
-        IBazaarSellers bazaarSellers)
+    public AddArticleModel(IMediator mediator)
     {
-        _bazaarSellerArticles = bazaarSellerArticles;
-        _bazaarSellers = bazaarSellers;
+        _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid bazaarId, CancellationToken cancellationToken)
+    public async Task OnGetAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        BazaarId = bazaarId;
-
-        var seller = await _bazaarSellers.Find(bazaarId, cancellationToken);
-        if (seller == null)
+        var result = await _mediator.Send(new FindSellerEventByUserQuery(User.GetId(), sellerId), cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
             IsDisabled = true;
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        Event = seller.FormatEvent(new());
-
-        if (seller.EditArticleExpired)
-        {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung ist bereits abgeschlossen.");
-            IsDisabled = true;
-            return;
-        }
-
-        if (!seller.IsRegisterAccepted)
-        {
-            ModelState.AddModelError(string.Empty, "Die Teilnahme wurde nicht zugesagt.");
-            IsDisabled = true;
-            return;
-        }
-
-        if (!seller.CanAddArticle)
-        {
-            ModelState.AddModelError(string.Empty, $"Die Anzahl der Artikel ist ausgeschöpft. Es können nur {seller.MaxArticleCount} Artikel verwaltet werden.");
-            IsDisabled = true;
-            return;
-        }
+        var eventConverter = new EventConverter();
+        Input.State_Event = eventConverter.Format(result.Value);
     }
 
-    public async Task<IActionResult> OnPostAsync(Guid bazaarId, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAsync(Guid sellerId, CancellationToken cancellationToken)
     {
-        BazaarId = bazaarId;
-
-        var seller = await _bazaarSellers.Find(bazaarId, cancellationToken);
-        if (seller == null)
-        {
-            ModelState.AddModelError(string.Empty, "Kinderbasar wurde nicht gefunden.");
-            IsDisabled = true;
-            return Page();
-        }
-
-        Event = seller.FormatEvent(new());
-
-        if (seller.EditArticleExpired)
-        {
-            ModelState.AddModelError(string.Empty, "Die Bearbeitung ist abgelaufen.");
-            IsDisabled = true;
-            return Page();
-        }
-
-        if (!seller.IsRegisterAccepted)
-        {
-            ModelState.AddModelError(string.Empty, "Die Teilnahme wurde nicht zugesagt.");
-            IsDisabled = true;
-            return Page();
-        }
-
-        if (!seller.CanAddArticle)
-        {
-            ModelState.AddModelError(string.Empty, $"Die Anzahl der Artikel ist ausgeschöpft. Es können nur {seller.MaxArticleCount} Artikel verwaltet werden.");
-            IsDisabled = true;
-            return Page();
-        }
-
         if (!ModelState.IsValid) return Page();
 
         if (!Input.HasPriceClosestToFifty)
         {
-            ModelState.AddModelError(string.Empty, "Der Preis sollte in 50 Cent Schritten angegeben werden.");
+            ModelState.AddModelError(string.Empty, SellerArticle.InvalidPriceRange.Message);
             return Page();
         }
 
-        var article = new BazaarSellerArticleDto();
-        //Input.To(article);
-
-        var result = await _bazaarSellerArticles.Create(bazaarId, User.GetId(), article, cancellationToken);
-        if (!result)
+        var command = Input.ToCreateCommand(User.GetId(), sellerId);
+        var result = await _mediator.Send(command, cancellationToken);
+        if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.SaveFailed);
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
-        return RedirectToPage("Articles", new { bazaarId });
+        return RedirectToPage("Articles", new { sellerId });
     }
 }

@@ -38,6 +38,7 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
     public async Task<BazaarBilling[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.BazaarEventId == id)
             .ToArrayAsync(cancellationToken);
 

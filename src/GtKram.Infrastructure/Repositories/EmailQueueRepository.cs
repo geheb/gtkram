@@ -35,7 +35,7 @@ internal sealed class EmailQueueRepository
         return Result.Ok();
     }
 
-    public async Task<EmailQueue[]> GetPending(CancellationToken cancellationToken)
+    public async Task<EmailQueue[]> GetBySentOnIsNull(CancellationToken cancellationToken)
     {
         var dbSet = _dbContext.Set<EmailQueue>();
 

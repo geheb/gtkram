@@ -4,8 +4,10 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { bazaarId = Model.BazaarId };
-    Model.BuildHeaderMenu(pageParam);
+
+    Guid.TryParse(Request.RouteValues["sellerId"] as string, out var sellerId);
+
+    Model.BuildHeaderMenu(new { sellerId });
 }
 
 @await Html.PartialAsync("_Header")
@@ -13,9 +15,9 @@
 <section class="section">
     <div class="container">
 
-        @Html.CreateBreadcrumb(pageParam, pageParam)
+        @Html.CreateBreadcrumb(new { sellerId }, new { sellerId })
 
-        <h2 class="subtitle">@Model.Event</h2>
+        <h2 class="subtitle">@Model.Input.State_Event</h2>
 
         @if (!ModelState.IsValid)
         {
@@ -29,6 +31,7 @@
             <div class="column is-half">
 
                 <form method="post">
+                    <input type="hidden" asp-for="Input.State_Event" />
                     <fieldset disabled="@Model.IsDisabled">
                         <div class="field">
                             <label class="label" asp-for="Input.Name"></label>

@@ -39,7 +39,10 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
 
     public async Task<Result<BazaarEvent>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(Event.NotFound);
@@ -55,6 +58,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         foreach (var chunk in ids.Chunk(100))
         {
             var entities = await _dbSet
+                .AsNoTracking()
                 .Where(e => chunk.Contains(e.Id))
                 .ToArrayAsync(cancellationToken);
 
@@ -67,6 +71,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
     public async Task<BazaarEvent[]> GetAll(CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .OrderByDescending(e => e.StartDate)
             .ToArrayAsync(cancellationToken);
 

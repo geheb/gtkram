@@ -43,6 +43,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
             entity.Id = _pkGenerator.Generate();
             entity.CreatedOn = _timeProvider.GetUtcNow();
             entity.LabelNumber = ++maxLabelNumber;
+            entity.Status = (int)SellerArticleStatus.Created;
 
             await _dbSet.AddAsync(entity, cancellationToken);
 
@@ -75,6 +76,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
                 entity.CreatedOn = _timeProvider.GetUtcNow();
                 entity.BazaarSellerId = sellerId;
                 entity.LabelNumber = ++maxLabelNumber;
+                entity.Status = (int)SellerArticleStatus.Created;
 
                 await _dbSet.AddAsync(entity, cancellationToken);
             }
@@ -98,7 +100,10 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
 
     public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
         if (entity is null)
         {
             return Result.Fail(SellerArticle.NotFound);
@@ -110,6 +115,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
     public async Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.BazaarSellerId == id)
             .ToArrayAsync(cancellationToken);
 
@@ -122,6 +128,7 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         foreach (var chunk in ids.Chunk(100))
         {
             var entities = await _dbSet
+                .AsNoTracking()
                 .Where(e => chunk.Contains(e.BazaarSellerId!.Value))
                 .ToArrayAsync(cancellationToken);
 
@@ -129,6 +136,26 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         }
 
         return [.. result];
+    }
+
+    public async Task<Result<int>> GetCountByBazaarSellerId(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await _labelSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        {
+            return Result.Fail(SellerArticle.Timeout);
+        }
+
+        try
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(e => e.BazaarSellerId == id)
+                .CountAsync(cancellationToken);
+        }
+        finally
+        {
+            _labelSemaphore.Release();
+        }
     }
 
     public async Task<Result> Update(BazaarSellerArticle model, CancellationToken cancellationToken)

@@ -39,6 +39,9 @@ public class ArticleInput
         Price = model.Price;
     }
 
-    internal UpdateSellerArticleByUserCommand ToCommand(Guid userId, Guid id) =>
-        new(userId, id, Name!, Size!, Price!.Value);
+    internal CreateSellerArticleByUserCommand ToCreateCommand(Guid userId, Guid sellerId) =>
+        new(userId, sellerId, Name!, Size!, Price!.Value);
+
+    internal UpdateSellerArticleByUserCommand ToUpdateCommand(Guid userId, Guid articleId) =>
+        new(userId, articleId, Name!, Size!, Price!.Value);
 }

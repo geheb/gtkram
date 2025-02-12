@@ -13,7 +13,7 @@ public static class EventRegistration
         new($"{_prefix}.save.failed", "Die Registrierung konnte nicht gespeichert werden.");
 
     public static Error Timeout { get; } =
-        new($"{_prefix}.timeout", "Die Registrierung konnte leider nicht bearbeitet werden. Bitte erneut versuchen.");
+        new($"{_prefix}.timeout", "Zeitüberschreitung beim Beareiten der Registrierung. Bitte erneut versuchen.");
 
     public static Error NotReady { get; } =
         new($"{_prefix}.not.ready", "Aktuell können keine Anfragen angenommen werden.");

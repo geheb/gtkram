@@ -40,6 +40,7 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
     public async Task<BazaarBillingArticle[]> GetByBazaarBillingId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
+            .AsNoTracking()
             .Where(e => e.BazaarBillingId == id)
             .ToArrayAsync(cancellationToken);
 

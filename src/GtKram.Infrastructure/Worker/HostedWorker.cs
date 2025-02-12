@@ -47,7 +47,7 @@ internal sealed class HostedWorker : BackgroundService
         var emailQueueRepository = scope.ServiceProvider.GetRequiredService<EmailQueueRepository>();
         var smtpDispatcher = scope.ServiceProvider.GetRequiredService<SmtpDispatcher>();
 
-        var emailEntities = await emailQueueRepository.GetPending(cancellationToken);
+        var emailEntities = await emailQueueRepository.GetBySentOnIsNull(cancellationToken);
 
         foreach (var entity in emailEntities)
         {
