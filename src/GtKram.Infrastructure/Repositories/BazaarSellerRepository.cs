@@ -158,4 +158,13 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isDeleted ? Result.Ok() : Result.Fail(Seller.NotFound);
     }
+
+    public async Task<BazaarSeller[]> GetAll(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
+
+        return entities.Select(e => e.MapToDomain()).ToArray();
+    }
 }

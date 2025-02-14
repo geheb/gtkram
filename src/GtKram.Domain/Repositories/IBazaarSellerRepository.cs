@@ -12,4 +12,5 @@ public interface IBazaarSellerRepository
     Task<BazaarSeller[]> GetByUserId(Guid id, CancellationToken cancellationToken);
     Task<Result> Update(BazaarSeller model, CancellationToken cancellationToken);
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
+    Task<BazaarSeller[]> GetAll(CancellationToken cancellationToken);
 }

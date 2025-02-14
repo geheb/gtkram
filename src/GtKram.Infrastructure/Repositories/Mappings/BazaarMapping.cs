@@ -74,9 +74,8 @@ internal static class BazaarMapping
     {
         Id = entity.Id,
         Status = (Domain.Models.BillingStatus)entity.Status,
-        BazaarEventId = entity.BazaarEventId,
-        UserId = entity.UserId,
-        Total = entity.Total,
+        BazaarEventId = entity.BazaarEventId!.Value,
+        UserId = entity.UserId!.Value,
     };
 
     public static BazaarBilling MapToEntity(this Domain.Models.BazaarBilling model, BazaarBilling entity)
@@ -85,7 +84,6 @@ internal static class BazaarMapping
         entity.Status = (int)model.Status;
         entity.BazaarEventId = model.BazaarEventId;
         entity.UserId = model.UserId;
-        entity.Total = model.Total;
         return entity;
     }
 
@@ -93,8 +91,8 @@ internal static class BazaarMapping
     {
         Id = entity.Id,
         CreatedOn = dc.ToLocal(entity.CreatedOn),
-        BazaarBillingId = entity.BazaarBillingId,
-        BazaarSellerArticleId = entity.BazaarSellerArticleId,
+        BazaarBillingId = entity.BazaarBillingId!.Value,
+        BazaarSellerArticleId = entity.BazaarSellerArticleId!.Value,
     };
 
     public static BazaarBillingArticle MapToEntity(this Domain.Models.BazaarBillingArticle model, BazaarBillingArticle entity)

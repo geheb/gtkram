@@ -8,6 +8,8 @@ public sealed class BazaarSellerArticle
     public string? Name { get; set; }
     public string? Size { get; set; }
     public decimal Price { get; set; }
+
+    //TODO remove 
     public SellerArticleStatus Status { get; set; }
     public bool IsSold => Status == SellerArticleStatus.Sold;
     public bool CanEdit => Status == SellerArticleStatus.Created;

@@ -35,6 +35,15 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         return isAdded ? Result.Ok() : Result.Fail(Domain.Errors.Billing.SaveFailed);
     }
 
+    public async Task<BazaarBilling[]> GetAll(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
+
+        return entities.Select(e => e.MapToDomain()).ToArray();
+    }
+
     public async Task<BazaarBilling[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

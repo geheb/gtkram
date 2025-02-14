@@ -13,9 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GtKram.Infrastructure", "src\GtKram.Infrastructure\GtKram.Infrastructure.csproj", "{8D45147F-E828-4574-BDDE-B68BD715CD91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Infrastructure", "src\GtKram.Infrastructure\GtKram.Infrastructure.csproj", "{8D45147F-E828-4574-BDDE-B68BD715CD91}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GtKram.Application", "src\GtKram.Application\GtKram.Application.csproj", "{AB31F818-CBEF-4110-AAC4-F0D1FBC52C02}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Application", "src\GtKram.Application\GtKram.Application.csproj", "{AB31F818-CBEF-4110-AAC4-F0D1FBC52C02}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Domain", "src\GtKram.Domain\GtKram.Domain.csproj", "{BC7287AB-6EA3-4560-BAFC-01F8A1180001}"
 EndProject

@@ -5,6 +5,8 @@
     ViewData["HasFooter"] = true;
     ViewData["IsHome"] = true;
     Model.BuildHeaderMenu();
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
 }
 
 @await Html.PartialAsync("_Header")
@@ -13,7 +15,7 @@
     <div class="container">
 
 
-        @if (!User.Identity?.IsAuthenticated ?? false)
+        @if (!isAuthenticated)
         {
             <div class="has-text-centered">
                 <h3 class="title is-3">Willkommen !</h3>
@@ -25,24 +27,50 @@
             </figure>
         }
 
-        @if (Model.HasNodeAccess(typeof(MyBazaars.IndexModel), typeof(Bazaars.IndexModel), typeof(Billings.IndexModel)))
+        @if (Model.HasNodeAccess(
+            typeof(MyBazaars.IndexModel), 
+            typeof(MyBillings.IndexModel)))
         {
-            <p class="title">Kinderbasare</p>
+            <p class="title">Meine Teilnahme</p>
             <nav class="bd-links">
-            @if (Model.HasNodeAccess(typeof(MyBazaars.IndexModel)))
-            {
-                <a href="/MyBazaars" class="bd-link has-text-grey">
-                    <span class="icon bd-link-icon has-text-info">
-                        <i class="fa-solid fa-boxes-packing"></i>
-                    </span>
-                    <div>
-                        <h2 class="bd-link-title">Meine Teilnahme</h2>
-                        <div class="bd-link-subtitle">
-                            Meine Teilnahme an Kinderbasaren.
+                @if (Model.HasNodeAccess(typeof(MyBazaars.IndexModel)))
+                {
+                    <a href="/MyBazaars" class="bd-link has-text-grey">
+                        <span class="icon bd-link-icon has-text-info">
+                            <i class="fa-solid fa-boxes-packing"></i>
+                        </span>
+                        <div>
+                            <h2 class="bd-link-title">Meine Kinderbasare</h2>
+                            <div class="bd-link-subtitle">
+                                Meine Teilnahme als Verkäufer.
+                            </div>
                         </div>
-                    </div>
-                </a>
-            }
+                    </a>
+                }
+                @if (Model.HasNodeAccess(typeof(MyBillings.IndexModel)))
+                {
+                    <a href="/MyBillings" class="bd-link has-text-grey">
+                        <span class="icon bd-link-icon has-text-info">
+                            <i class="fa-solid fa-cash-register"></i>
+                        </span>
+                        <div>
+                            <h2 class="bd-link-title">Meine Kasse</h2>
+                            <div class="bd-link-subtitle">
+                                Meine Teilnahme als Kassierer.
+                            </div>
+                        </div>
+                    </a>
+                }
+            </nav>
+        }
+
+        @if (Model.HasNodeAccess(
+            typeof(Bazaars.IndexModel), 
+            typeof(Billings.IndexModel),
+            typeof(Users.IndexModel)))
+        {
+            <p class="title">Verwaltung</p>
+            <nav class="bd-links">
             @if (Model.HasNodeAccess(typeof(Bazaars.IndexModel)))
             {
                 <a href="/Bazaars" class="bd-link has-text-grey">
@@ -50,7 +78,7 @@
                         <i class="fa-solid fa-calendar-days"></i>
                     </span>
                     <div>
-                        <h2 class="bd-link-title">Verwaltung</h2>
+                        <h2 class="bd-link-title">Kinderbasare</h2>
                         <div class="bd-link-subtitle">
                             Kinderbasare anlegen und bearbeiten.
                         </div>
@@ -66,18 +94,13 @@
                     <div>
                         <h2 class="bd-link-title">Kasse</h2>
                         <div class="bd-link-subtitle">
-                            Artikel für Kinderbasare kassieren.
+                            Kassenartikel Kinderbasare abrechnen.
                         </div>
                     </div>
                 </a>
             }
-            </nav>
-        }
-
-        @if (Model.HasNodeAccess(typeof(Users.IndexModel)))
-        {
-            <p class="title">Administration</p>
-            <nav class="bd-links">
+            @if (Model.HasNodeAccess(typeof(Users.IndexModel)))
+            {
                 <a href="/Users" class="bd-link has-text-grey">
                     <span class="icon bd-link-icon has-text-info">
                         <i class="fas fa-users"></i>
@@ -89,9 +112,9 @@
                         </div>
                     </div>
                 </a>
+            }
             </nav>
         }
-
     </div>
 </section>
 

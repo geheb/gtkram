@@ -104,6 +104,18 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         return [.. entities.Select(e => e.MapToDomain(dc))];
     }
 
+    public async Task<BazaarSellerRegistration[]> GetAllByAccepted(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .Where(e => e.Accepted == true)
+            .ToArrayAsync(cancellationToken);
+
+        var dc = new GermanDateTimeConverter();
+
+        return [.. entities.Select(e => e.MapToDomain(dc))];
+    }
+
     public async Task<BazaarSellerRegistration[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

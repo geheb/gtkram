@@ -37,6 +37,16 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
         return isAdded ? Result.Ok() : Result.Fail(BillingArticle.SaveFailed);
     }
 
+    public async Task<BazaarBillingArticle[]> GetAll(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
+
+        var dc = new GermanDateTimeConverter();
+        return entities.Select(e => e.MapToDomain(dc)).ToArray();
+    }
+
     public async Task<BazaarBillingArticle[]> GetByBazaarBillingId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

@@ -112,6 +112,14 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         return entity.MapToDomain();
     }
 
+    public async Task<BazaarSellerArticle[]> GetAll(CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .ToArrayAsync(cancellationToken);
+        return entities.Select(e => e.MapToDomain()).ToArray();
+    }
+
     public async Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

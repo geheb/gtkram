@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.Billings;
 
 [Node("Kasse", FromPage = typeof(Pages.IndexModel))]
-[Authorize(Roles = "billing,admin")]
+[Authorize(Roles = "admin")]
 public class IndexModel : PageModel
 {
     private readonly IBazaarEvents _bazaarEvents;

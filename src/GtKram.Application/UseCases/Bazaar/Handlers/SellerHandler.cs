@@ -211,6 +211,12 @@ internal sealed class SellerHandler :
             return @event.ToResult();
         }
 
+        var eventConverter = new EventConverter();
+        if (eventConverter.IsExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail(Event.Expired);
+        }
+
         if (registration.Value.BazaarSellerId is null)
         {
             Guid userId;
@@ -272,18 +278,24 @@ internal sealed class SellerHandler :
             return registration.ToResult();
         }
 
+        var @event = await _eventRepository.Find(registration.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return @event.ToResult();
+        }
+
+        var eventConverter = new EventConverter();
+        if (eventConverter.IsExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail(Event.Expired);
+        }
+
         registration.Value.Accepted = false;
 
         var regResult = await _sellerRegistrationRepository.Update(registration.Value, cancellationToken);
         if (regResult.IsFailed)
         {
             return regResult;
-        }
-
-        var @event = await _eventRepository.Find(registration.Value.BazaarEventId, cancellationToken);
-        if (@event.IsFailed)
-        {
-            return @event.ToResult();
         }
 
         var result = await _emailService.EnqueueDenySeller(
