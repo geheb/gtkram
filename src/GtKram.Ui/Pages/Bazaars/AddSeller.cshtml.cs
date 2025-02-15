@@ -1,5 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Errors;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -44,7 +45,7 @@ public class AddSellerModel : PageModel
         if (converter.IsExpired(result.Value, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, I18n.LocalizedMessages.BazaarExpired);
+            ModelState.AddModelError(string.Empty, Event.Expired.Message);
         }
     }
 

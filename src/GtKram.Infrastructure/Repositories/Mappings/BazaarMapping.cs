@@ -70,9 +70,10 @@ internal static class BazaarMapping
         return entity;
     }
 
-    public static Domain.Models.BazaarBilling MapToDomain(this BazaarBilling entity) => new()
+    public static Domain.Models.BazaarBilling MapToDomain(this BazaarBilling entity, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
+        CreatedOn = dc.ToLocal(entity.CreatedOn),
         Status = (Domain.Models.BillingStatus)entity.Status,
         BazaarEventId = entity.BazaarEventId!.Value,
         UserId = entity.UserId!.Value,
@@ -81,6 +82,7 @@ internal static class BazaarMapping
     public static BazaarBilling MapToEntity(this Domain.Models.BazaarBilling model, BazaarBilling entity)
     {
         entity.Id = model.Id;
+        entity.CreatedOn = model.CreatedOn.ToUniversalTime();
         entity.Status = (int)model.Status;
         entity.BazaarEventId = model.BazaarEventId;
         entity.UserId = model.UserId;

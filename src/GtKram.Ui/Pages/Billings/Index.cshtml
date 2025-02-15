@@ -5,7 +5,7 @@
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
 
-    var dateConverter = new GermanDateTimeConverter();
+    var eventConverter = new EventConverter();
 }
 
 @await Html.PartialAsync("_Header")
@@ -20,7 +20,7 @@
                 <thead>
                     <tr>
                         <th>Kinderbasar</th>
-                        <th>Kassen-Vorgänge</th>
+                        <th>Kassenvorgänge</th>
                         <th>Summe / Provision</th>
                         <th>Aktion</th>
                     </tr>
@@ -34,16 +34,14 @@
                     }
                     @foreach (var i in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">
-                            <td>@i.FormatEvent(dateConverter)</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id }))">
+                            <td>@eventConverter.Format(@i.Event)</td>
                             <td>@i.BillingCount</td>
                             <td>
-                                @(Model.IsAdminOrManager ? i.SoldTotal.ToString("0.00 €") : string.Empty) 
-                                / 
-                                @(Model.IsAdminOrManager ? i.CommissionTotal.ToString("0.00 €") : string.Empty)
+                                @i.SoldTotal.ToString("0.00 €") / @i.CommissionTotal.ToString("0.00 €")
                             </td>
                             <td>
-                                <a href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

@@ -1,3 +1,4 @@
+using GtKram.Application.Converter;
 using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
@@ -41,7 +42,9 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
             .AsNoTracking()
             .ToArrayAsync(cancellationToken);
 
-        return entities.Select(e => e.MapToDomain()).ToArray();
+        var dc = new GermanDateTimeConverter();
+
+        return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
     public async Task<BazaarBilling[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken)
@@ -51,6 +54,8 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
             .Where(e => e.BazaarEventId == id)
             .ToArrayAsync(cancellationToken);
 
-        return entities.Select(e => e.MapToDomain()).ToArray();
+        var dc = new GermanDateTimeConverter();
+
+        return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 }

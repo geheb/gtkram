@@ -3,12 +3,13 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { eventId = Model.EventId };
-    Model.BuildHeaderMenu(pageParam);
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+
+    Model.BuildHeaderMenu(new { eventId });
 
     var statusConverter = new BillingStatusConverter();
     var dateConverter = new GermanDateTimeConverter();
-    var createUrl = Url.PageLink(string.Empty, "create", pageParam);
 }
 
 @await Html.PartialAsync("_Header")
@@ -16,41 +17,9 @@
 <section class="section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam)</div>
-            <div class="column is-narrow">
-                <div class="dropdown is-hoverable is-right">
-                    <div class="dropdown-trigger">
-                        <button class="button" aria-haspopup="true" aria-controls="user-action">
-                            <span class="icon is-small">
-                                <i class="fas fa-ellipsis-vertical"></i>
-                            </span>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="user-action" role="menu">
-                        @if (ModelState.IsValid)
-                        {
-                            <div class="dropdown-content">
-                                <a class="dropdown-item" href="@createUrl">
-                                    Kassenvorgang starten
-                                </a>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+        @Html.CreateBreadcrumb(new { eventId })
 
-        <h2 class="subtitle">@(Model.EventNameAndDescription ?? "Unbekannt")</h2>
-
-        @if (ModelState.IsValid)
-        {
-            <div>
-                <a href="@createUrl" class="button is-floating is-link">
-                    <i class="fas fa-cart-plus"></i>
-                </a>
-            </div>
-        }
+        <h2 class="subtitle">@Model.Event</h2>
 
         @if (!ModelState.IsValid)
         {
@@ -76,19 +45,19 @@
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="6"><div class="has-text-centered">Keine Kassen-Vorgänge gefunden.</div></td>
+                            <td colspan="6"><div class="has-text-centered">Keine Kassenvorgänge gefunden.</div></td>
                         </tr>
                     }
                     @foreach (var i in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { eventId = Model.EventId, billingId = @i.Id }))">
-                            <td>@dateConverter.ToDateTime(i.CreatedOn)</td>
-                            <td>@i.User</td>
-                            <td>@statusConverter.StatusToString(i.Status)</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">
+                            <td>@dateConverter.ToDateTime(i.Billing.CreatedOn)</td>
+                            <td>@i.CreatedBy</td>
+                            <td>@statusConverter.StatusToString(i.Billing.Status)</td>
                             <td>@i.ArticleCount</td>
                             <td>@i.Total.ToString("0.00") €</td>
                             <td>
-                                <a href="@(Url.PageLink("Articles", null, new { eventId = Model.EventId, billingId = @i.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

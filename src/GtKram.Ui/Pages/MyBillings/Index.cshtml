@@ -1,4 +1,68 @@
 ﻿@page
 @model GtKram.Ui.Pages.MyBillings.IndexModel
 @{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    Model.BuildHeaderMenu();
+
+    var dateConverter = new GermanDateTimeConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="section">
+    <div class="container">
+
+        @Html.CreateBreadcrumb()
+
+        <div class="table-container">
+            <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Kinderbasar</th>
+                        <th>Kassen-Vorgänge</th>
+                        <th>Summe / Provision</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="4"><div class="has-text-centered">Keine Kinderbasare gefunden.</div></td>
+                        </tr>
+                    }
+                    @foreach (var i in Model.Items)
+                    {
+                        <tr class="clickable-row" data-url="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">
+                            <td>@i.FormatEvent(dateConverter)</td>
+                            <td>@i.BillingCount</td>
+                            <td>
+                                @(Model.IsAdminOrManager ? i.SoldTotal.ToString("0.00 €") : string.Empty) 
+                                / 
+                                @(Model.IsAdminOrManager ? i.CommissionTotal.ToString("0.00 €") : string.Empty)
+                            </td>
+                            <td>
+                                <a href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">Bearbeiten</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts {
+    <script type="text/javascript">
+        $(function () {
+            $(".clickable-row").click(function (e) {
+                e.stopPropagation();
+                window.location = $(this).data("url");
+            });
+        });
+    </script>
 }

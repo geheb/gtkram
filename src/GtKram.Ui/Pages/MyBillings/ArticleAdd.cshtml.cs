@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 
-namespace GtKram.Ui.Pages.Billings;
+namespace GtKram.Ui.Pages.MyBillings;
 
 [Node("Artikel anlegen", FromPage = typeof(ArticlesModel))]
 [Authorize(Roles = "billing,admin")]

@@ -11,7 +11,6 @@ using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
@@ -363,9 +362,9 @@ internal sealed class SellerHandler :
         var result = new List<BazaarEventWithSellerAndArticleCount>(sellers.Length);
 
         foreach (var seller in sellers)
-        {
-            if (!eventsById.TryGetValue(seller.BazaarEventId, out var @event)) continue;
-            if (!countBySellerId.TryGetValue(seller.Id, out var count)) count = 0;
+        { 
+            var @event = eventsById[seller.BazaarEventId];
+            var count = countBySellerId[seller.Id];
 
             result.Add(new(@event, seller, count));
         }

@@ -1,10 +1,9 @@
-using GtKram.Application.Repositories;
+using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Application.UseCases.User.Extensions;
-using GtKram.Application.UseCases.User.Models;
-using GtKram.Ui.I18n;
+using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Ui.Extensions;
+using Mediator;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Billings;
@@ -13,95 +12,39 @@ namespace GtKram.Ui.Pages.Billings;
 [Authorize(Roles = "billing,admin")]
 public class BazaarBillingModel : PageModel
 {
-    private readonly ILogger _logger;
-    private readonly IBazaarEvents _bazaarEvents;
-    private readonly IBazaarBillings _bazaarBillings;
-    private readonly IBazaarSellers _bazaarSellers;
+    private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
 
-    public Guid? EventId { get; set; }
-    public string? EventNameAndDescription { get; private set; }
-    public BazaarBillingDto[] Items { get; private set; } = [];
-    public bool CanCreateBilling { get; private set; }
+    public string Event { get; set; } = "Unbekannt";
+
+    public BazaarBillingWithTotals[] Items { get; private set; } = [];
 
     public BazaarBillingModel(
-        ILogger<BazaarBillingModel> logger,
-        IBazaarEvents bazaarEvents, 
-        IBazaarBillings bazaarBillings,
-        IBazaarSellers bazaarSellers)
+        TimeProvider timeProvider,
+        IMediator mediator)
     {
-        _logger = logger;
-        _bazaarEvents = bazaarEvents;
-        _bazaarBillings = bazaarBillings;
-        _bazaarSellers = bazaarSellers;
+        _timeProvider = timeProvider;
+        _mediator = mediator;
     }
 
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        EventId = eventId;
-        if (eventId == Guid.Empty)
+        var result = await _mediator.Send(new GetBazaarBillingsWithTotalsAndEventQuery(eventId), cancellationToken);
+        if(result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
-            return;
-        }
-        var @event = await _bazaarEvents.Find(eventId, cancellationToken);
-        if (@event == null)
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.BazaarNotFound);
+            ModelState.AddError(result.Errors);
             return;
         }
 
-        EventNameAndDescription = @event.FormatEvent(new());
+        var eventConverter = new EventConverter();
+        Event = eventConverter.Format(result.Value.Event);
 
-        if (!User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.Manager))
+        if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
-            var seller = await _bazaarSellers.Find(eventId, User.GetId(), cancellationToken);
-            if (seller == null)
-            {
-                ModelState.AddModelError(string.Empty, LocalizedMessages.SellerNotFound);
-                return;
-            }
-            if (!seller.CanCreateBillings)
-            {
-                ModelState.AddModelError(string.Empty, LocalizedMessages.CreateBillingsForbidden);
-            }
+            ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
+            return;
         }
 
-        if (@event.IsBillingExpired)
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.BazaarExpired);
-        }
-
-        if (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Manager))
-        {
-            Items = await _bazaarBillings.GetAll(eventId, cancellationToken);
-        }
-        else
-        {
-            Items = await _bazaarBillings.GetAll(User.GetId(), eventId, cancellationToken);
-        }
-    }
-
-    public async Task<IActionResult> OnGetCreateAsync(Guid eventId, CancellationToken cancellationToken)
-    {
-        if (eventId == Guid.Empty)
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
-            return Page();
-        }
-        var @event = await _bazaarEvents.Find(eventId, cancellationToken);
-        if (@event == null)
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.BazaarNotFound);
-            return Page();
-        }
-
-        if (@event.IsBillingExpired)
-        {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.BazaarExpired);
-            return Page();
-        }
-
-        var billingId = await _bazaarBillings.Create(eventId, User.GetId(), cancellationToken);
-        return RedirectToPage("Articles", new { eventId, billingId });
+        Items = result.Value.Billings;
     }
 }
