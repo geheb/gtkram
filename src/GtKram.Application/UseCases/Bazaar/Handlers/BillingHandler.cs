@@ -6,7 +6,6 @@ using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
-using System.Security.Cryptography;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
@@ -15,6 +14,7 @@ internal sealed class BillingHandler :
     IQueryHandler<GetBillingsWithTotalsAndEventQuery, Result<BazaarBillingsWithTotalsAndEvent>>,
     IQueryHandler<GetBillingArticlesWithBillingAndEventQuery, Result<BazaarSellerArticlesWithBillingAndEvent>>,
     IQueryHandler<FindBillingTotalQuery, Result<BazaarBillingTotal>>,
+    IQueryHandler<GetEventsWithBillingByUserQuery, BazaarEventWithBillingCount[]>,
     ICommandHandler<DeleteBillingArticleCommand, Result>,
     ICommandHandler<CancelBillingCommand, Result>,
     ICommandHandler<CompleteBillingCommand, Result>
@@ -240,5 +240,45 @@ internal sealed class BillingHandler :
         var ids = billingArticles.Select(x => x.BazaarSellerArticleId).ToArray();
         var articles = await _sellerArticleRepository.GetById(ids, cancellationToken);
         return Result.Ok(new BazaarBillingTotal(articles.Length, articles.Sum(a => a.Price)));
+    }
+
+    public async ValueTask<BazaarEventWithBillingCount[]> Handle(GetEventsWithBillingByUserQuery query, CancellationToken cancellationToken)
+    {
+        var sellers = await _sellerRepository.GetByUserId(query.UserId, cancellationToken);
+        sellers = sellers.Where(s => s.CanCreateBillings).ToArray();
+        if (sellers.Length == 0)
+        {
+            return [];
+        }
+
+        var ids = sellers.Select(s => s.Id).ToArray();
+        {
+            var registrations = await _sellerRegistrationRepository.GetByBazaarSellerId(ids, cancellationToken);
+            var registrationsBySellerId = new HashSet<Guid>(registrations.Where(r => r.Accepted == true).Select(r => r.BazaarSellerId!.Value));
+            sellers = sellers.Where(s => registrationsBySellerId.Contains(s.Id)).ToArray();
+        }
+
+        if (sellers.Length == 0)
+        {
+            return [];
+        }
+
+        ids = sellers.Select(s => s.BazaarEventId).ToArray();
+        var events = await _eventRepository.GetById(ids, cancellationToken);
+
+        Dictionary<Guid, int> billingsByEventId;
+        {
+            var userBillings = await _billingRepository.GetByUserId(query.UserId, cancellationToken);
+            billingsByEventId = userBillings.GroupBy(a => a.BazaarEventId).ToDictionary(a => a.Key, a => a.Count());
+        }
+
+        var result = new List<BazaarEventWithBillingCount>();
+        foreach (var @event in events)
+        {
+            var count = billingsByEventId[@event.Id];
+            result.Add(new(@event, count));
+        }
+
+        return [.. result];
     }
 }

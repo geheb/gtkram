@@ -10,4 +10,5 @@ public interface IBazaarBillingArticleRepository
     Task<Result> DeleteByBillingId(Guid id, CancellationToken cancellationToken);
     Task<BazaarBillingArticle[]> GetAll(CancellationToken cancellationToken);
     Task<BazaarBillingArticle[]> GetByBazaarBillingId(Guid id, CancellationToken cancellationToken);
+    Task<BazaarBillingArticle[]> GetByBazaarBillingId(Guid[] ids, CancellationToken cancellationToken);
 }

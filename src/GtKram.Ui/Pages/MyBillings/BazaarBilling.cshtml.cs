@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.MyBillings;
 
-[Node("Kassen-Vorgänge", FromPage = typeof(IndexModel))]
-[Authorize(Roles = "billing,admin")]
+[Node("Kassenvorgänge", FromPage = typeof(IndexModel))]
+[Authorize(Roles = "billing")]
 public class BazaarBillingModel : PageModel
 {
     private readonly ILogger _logger;

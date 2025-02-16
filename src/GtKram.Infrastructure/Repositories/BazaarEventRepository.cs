@@ -51,7 +51,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         return entity.MapToDomain(new());
     }
 
-    public async Task<BazaarEvent[]> Get(Guid[] ids, CancellationToken cancellationToken)
+    public async Task<BazaarEvent[]> GetById(Guid[] ids, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
         var result = new List<BazaarEvent>(ids.Length);

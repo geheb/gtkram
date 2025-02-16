@@ -5,6 +5,7 @@
     ViewData["HasFooter"] = true;
     Model.BuildHeaderMenu();
 
+    var eventConverter = new EventConverter();
     var dateConverter = new GermanDateTimeConverter();
 }
 
@@ -20,30 +21,24 @@
                 <thead>
                     <tr>
                         <th>Kinderbasar</th>
-                        <th>Kassen-Vorgänge</th>
-                        <th>Summe / Provision</th>
+                        <th>Kassenvorgänge</th>
                         <th>Aktion</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.Items.Any())
+                    @if (Model.Items.Length == 0)
                     {
                         <tr>
-                            <td colspan="4"><div class="has-text-centered">Keine Kinderbasare gefunden.</div></td>
+                            <td colspan="3"><div class="has-text-centered">Keine Kinderbasare gefunden.</div></td>
                         </tr>
                     }
                     @foreach (var i in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">
-                            <td>@i.FormatEvent(dateConverter)</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id }))">
+                            <td>@eventConverter.Format(i.Event)</td>
                             <td>@i.BillingCount</td>
                             <td>
-                                @(Model.IsAdminOrManager ? i.SoldTotal.ToString("0.00 €") : string.Empty) 
-                                / 
-                                @(Model.IsAdminOrManager ? i.CommissionTotal.ToString("0.00 €") : string.Empty)
-                            </td>
-                            <td>
-                                <a href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }
