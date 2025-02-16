@@ -5,6 +5,7 @@ using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Repositories.Mappings;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace GtKram.Infrastructure.Repositories;
 
@@ -166,5 +167,21 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
             .ToArrayAsync(cancellationToken);
 
         return entities.Select(e => e.MapToDomain()).ToArray();
+    }
+
+    public async Task<BazaarSeller[]> GetById(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var result = new List<BazaarSeller>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .AsNoTracking()
+                .Where(e => chunk.Contains(e.Id))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain()));
+        }
+
+        return [.. result];
     }
 }

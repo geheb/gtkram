@@ -1,15 +1,23 @@
+using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
+using System.Security.Cryptography;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class BillingHandler :
     IQueryHandler<GetEventsWithBillingTotalsQuery, BazaarEventWithBillingTotals[]>,
-    IQueryHandler<GetBazaarBillingsWithTotalsAndEventQuery, Result<BazaarBillingsWithTotalsAndEvent>>
+    IQueryHandler<GetBillingsWithTotalsAndEventQuery, Result<BazaarBillingsWithTotalsAndEvent>>,
+    IQueryHandler<GetBillingArticlesWithBillingAndEventQuery, Result<BazaarSellerArticlesWithBillingAndEvent>>,
+    IQueryHandler<FindBillingTotalQuery, Result<BazaarBillingTotal>>,
+    ICommandHandler<DeleteBillingArticleCommand, Result>,
+    ICommandHandler<CancelBillingCommand, Result>,
+    ICommandHandler<CompleteBillingCommand, Result>
 {
     private readonly IUserRepository _userRepository;
     private readonly IBazaarEventRepository _eventRepository;
@@ -38,7 +46,7 @@ internal sealed class BillingHandler :
         _sellerArticleRepository = sellerArticleRepository;
     }
 
-    public async ValueTask<Result<BazaarBillingsWithTotalsAndEvent>> Handle(GetBazaarBillingsWithTotalsAndEventQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<BazaarBillingsWithTotalsAndEvent>> Handle(GetBillingsWithTotalsAndEventQuery query, CancellationToken cancellationToken)
     {
         var @event = await _eventRepository.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
@@ -136,5 +144,101 @@ internal sealed class BillingHandler :
         }
 
         return [.. result];
+    }
+
+    public async ValueTask<Result<BazaarSellerArticlesWithBillingAndEvent>> Handle(GetBillingArticlesWithBillingAndEventQuery query, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(query.BillingId, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing.ToResult();
+        }
+
+        var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var billingArticles = await _billingArticleRepository.GetByBazaarBillingId(query.BillingId, cancellationToken);
+        if (billingArticles.Length == 0)
+        {
+            return Result.Ok(new BazaarSellerArticlesWithBillingAndEvent(@event.Value, billing.Value, []));
+        }
+
+        Dictionary<Guid, BazaarSeller> sellersById;
+        Dictionary<Guid, BazaarSellerArticle> articlesById;
+        {
+            var ids = billingArticles.Select(b => b.BazaarSellerArticleId).ToArray();
+            var sellerArticles = await _sellerArticleRepository.GetById(ids, cancellationToken);
+            articlesById = sellerArticles.ToDictionary(s => s.Id);
+
+            ids = sellerArticles.Select(s => s.BazaarSellerId).Distinct().ToArray();
+            var sellers = await _sellerRepository.GetById(ids, cancellationToken);
+            sellersById = sellers.ToDictionary(s => s.Id);
+        }
+
+        var result = new List<BazaarSellerArticleWithBilling>(billingArticles.Length);
+        foreach (var billingArticle in billingArticles)
+        {
+            var article = articlesById[billingArticle.BazaarSellerArticleId];
+            result.Add(new(
+                article,
+                billingArticle,
+                sellersById[article.BazaarSellerId].SellerNumber));
+        }
+
+        return Result.Ok(new BazaarSellerArticlesWithBillingAndEvent(@event.Value, billing.Value, [.. result]));
+    }
+
+    public async ValueTask<Result> Handle(DeleteBillingArticleCommand command, CancellationToken cancellationToken) =>
+        await _billingArticleRepository.Delete(command.Id, cancellationToken);
+
+    public async ValueTask<Result> Handle(CancelBillingCommand command, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(command.Id, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing;
+        }
+
+        var result = await _billingArticleRepository.DeleteByBillingId(command.Id, cancellationToken);
+        if (result.IsFailed)
+        {
+            return result;
+        }
+
+        return await _billingRepository.Delete(command.Id, cancellationToken);
+    }
+
+    public async ValueTask<Result> Handle(CompleteBillingCommand command, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(command.Id, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing;
+        }
+
+        billing.Value.Status = BillingStatus.Completed;
+        return await _billingRepository.Update(billing.Value, cancellationToken); 
+    }
+
+    public async ValueTask<Result<BazaarBillingTotal>> Handle(FindBillingTotalQuery query, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(query.Id, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing.ToResult();
+        }
+
+        var billingArticles = await _billingArticleRepository.GetByBazaarBillingId(query.Id, cancellationToken);
+        if (billingArticles.Length == 0)
+        {
+            return Result.Ok(new BazaarBillingTotal(0, 0));
+        }
+
+        var ids = billingArticles.Select(x => x.BazaarSellerArticleId).ToArray();
+        var articles = await _sellerArticleRepository.GetById(ids, cancellationToken);
+        return Result.Ok(new BazaarBillingTotal(articles.Length, articles.Sum(a => a.Price)));
     }
 }

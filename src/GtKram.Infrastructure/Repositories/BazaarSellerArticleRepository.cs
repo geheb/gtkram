@@ -146,6 +146,22 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         return [.. result];
     }
 
+    public async Task<BazaarSellerArticle[]> GetById(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var result = new List<BazaarSellerArticle>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .AsNoTracking()
+                .Where(e => chunk.Contains(e.Id))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain()));
+        }
+
+        return [.. result];
+    }
+
     public async Task<Result<int>> GetCountByBazaarSellerId(Guid id, CancellationToken cancellationToken)
     {
         if (!await _labelSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))

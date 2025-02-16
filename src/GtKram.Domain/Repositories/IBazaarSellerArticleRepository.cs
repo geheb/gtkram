@@ -8,6 +8,7 @@ public interface IBazaarSellerArticleRepository
     Task<Result> Create(BazaarSellerArticle model, CancellationToken cancellationToken);
     Task<Result> Create(BazaarSellerArticle[] models, Guid sellerId, CancellationToken cancellationToken);
     Task<BazaarSellerArticle[]> GetAll(CancellationToken cancellationToken);
+    Task<BazaarSellerArticle[]> GetById(Guid[] ids, CancellationToken cancellationToken);
     Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid id, CancellationToken cancellationToken);
     Task<BazaarSellerArticle[]> GetByBazaarSellerId(Guid[] ids, CancellationToken cancellationToken);
     Task<Result<int>> GetCountByBazaarSellerId(Guid id, CancellationToken cancellationToken);

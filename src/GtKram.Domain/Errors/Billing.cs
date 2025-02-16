@@ -6,6 +6,9 @@ public static class Billing
 {
     private const string _prefix = "billing";
 
+    public static Error NotFound { get; } =
+        new($"{_prefix}.not.found", "Der Kassenvorgang wurde nicht gefunden.");
+
     public static Error SaveFailed { get; } =
         new($"{_prefix}.save.failed", "Der Kassenvorgang konnte nicht gespeichert werden.");
 }

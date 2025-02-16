@@ -1,5 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Persistence;
@@ -33,7 +34,29 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(Domain.Errors.Billing.SaveFailed);
+        return isAdded ? Result.Ok() : Result.Fail(Billing.SaveFailed);
+    }
+
+    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        _dbSet.Remove(new Persistence.Entities.BazaarBilling { Id = id });
+
+        var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+        return isDeleted ? Result.Ok() : Result.Fail(Billing.NotFound);
+    }
+
+    public async Task<Result<BazaarBilling>> Find(Guid id, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Fail(Billing.NotFound);
+        }
+
+        return entity.MapToDomain(new());
     }
 
     public async Task<BazaarBilling[]> GetAll(CancellationToken cancellationToken)
@@ -57,5 +80,20 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         var dc = new GermanDateTimeConverter();
 
         return entities.Select(e => e.MapToDomain(dc)).ToArray();
+    }
+
+    public async Task<Result> Update(BazaarBilling model, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(Billing.NotFound);
+        }
+
+        model.MapToEntity(entity);
+        entity.UpdatedOn = _timeProvider.GetUtcNow();
+
+        var isUpdated = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
+        return isUpdated ? Result.Ok() : Result.Fail(Billing.SaveFailed);
     }
 }

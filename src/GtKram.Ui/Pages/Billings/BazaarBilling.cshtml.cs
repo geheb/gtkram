@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Billings;
 
-[Node("Kassen-Vorgänge", FromPage = typeof(IndexModel))]
+[Node("Kassenvorgänge", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "billing,admin")]
 public class BazaarBillingModel : PageModel
 {
@@ -29,8 +29,8 @@ public class BazaarBillingModel : PageModel
 
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetBazaarBillingsWithTotalsAndEventQuery(eventId), cancellationToken);
-        if(result.IsFailed)
+        var result = await _mediator.Send(new GetBillingsWithTotalsAndEventQuery(eventId), cancellationToken);
+        if (result.IsFailed)
         {
             ModelState.AddError(result.Errors);
             return;
@@ -42,7 +42,6 @@ public class BazaarBillingModel : PageModel
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
             ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
-            return;
         }
 
         Items = result.Value.Billings;
