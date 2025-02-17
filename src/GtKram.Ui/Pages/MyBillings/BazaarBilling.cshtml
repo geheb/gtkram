@@ -3,12 +3,14 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { eventId = Model.EventId };
-    Model.BuildHeaderMenu(pageParam);
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+
+    Model.BuildHeaderMenu(new { eventId });
 
     var statusConverter = new BillingStatusConverter();
     var dateConverter = new GermanDateTimeConverter();
-    var createUrl = Url.PageLink(string.Empty, "create", pageParam);
+    var createUrl = Url.PageLink(string.Empty, "create", new { eventId });
 }
 
 @await Html.PartialAsync("_Header")
@@ -17,7 +19,7 @@
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam)</div>
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
@@ -41,7 +43,7 @@
             </div>
         </div>
 
-        <h2 class="subtitle">@(Model.EventNameAndDescription ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Event</h2>
 
         @if (ModelState.IsValid)
         {
@@ -65,7 +67,6 @@
                 <thead>
                     <tr>
                         <th>Erstellt am</th>
-                        <th>Kassierer</th>
                         <th>Status</th>
                         <th>Anzahl Artikel</th>
                         <th>Summe</th>
@@ -76,19 +77,18 @@
                     @if (!Model.Items.Any())
                     {
                         <tr>
-                            <td colspan="6"><div class="has-text-centered">Keine Kassen-Vorgänge gefunden.</div></td>
+                            <td colspan="5"><div class="has-text-centered">Keine Kassenvorgänge gefunden.</div></td>
                         </tr>
                     }
                     @foreach (var i in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { eventId = Model.EventId, billingId = @i.Id }))">
-                            <td>@dateConverter.ToDateTime(i.CreatedOn)</td>
-                            <td>@i.User</td>
-                            <td>@statusConverter.StatusToString(i.Status)</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">
+                            <td>@dateConverter.ToDateTime(i.Billing.CreatedOn)</td>
+                            <td>@statusConverter.StatusToString(i.Billing.Status)</td>
                             <td>@i.ArticleCount</td>
                             <td>@i.Total.ToString("0.00") €</td>
                             <td>
-                                <a href="@(Url.PageLink("Articles", null, new { eventId = Model.EventId, billingId = @i.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

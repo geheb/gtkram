@@ -5,8 +5,9 @@ namespace GtKram.Domain.Repositories;
 
 public interface IBazaarBillingRepository
 {
-    Task<Result> Create(BazaarBilling model, CancellationToken cancellationToken);
+    Task<Result<Guid>> Create(Guid eventId, Guid userId, CancellationToken cancellationToken);
     Task<BazaarBilling[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken);
+    Task<BazaarBilling[]> GetByBazaarEventIdAndUserId(Guid eventId, Guid userId, CancellationToken cancellationToken);
     Task<BazaarBilling[]> GetByUserId(Guid id, CancellationToken cancellationToken);
     Task<BazaarBilling[]> GetAll(CancellationToken cancellationToken);
     Task<Result<BazaarBilling>> Find(Guid id, CancellationToken cancellationToken);

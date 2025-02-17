@@ -10,6 +10,8 @@ internal sealed class BazaarBilling
     public BazaarEvent? BazaarEvent { get; set; }
     public Guid? UserId { get; set; }
     public IdentityUserGuid? User { get; set; }
+    
+    // TODO remove
     public decimal Total { get; set; }
 
     public ICollection<BazaarBillingArticle>? BazaarBillingArticles { get; set; }

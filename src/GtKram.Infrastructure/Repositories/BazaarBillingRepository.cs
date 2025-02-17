@@ -25,16 +25,21 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarBilling>();
     }
 
-    public async Task<Result> Create(BazaarBilling model, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Create(Guid eventId, Guid userId, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new());
-        entity.Id = _pkGenerator.Generate();
-        entity.CreatedOn = _timeProvider.GetUtcNow();
+        var entity = new Persistence.Entities.BazaarBilling
+        {
+            Id = _pkGenerator.Generate(),
+            CreatedOn = _timeProvider.GetUtcNow(),
+            BazaarEventId = eventId,
+            UserId = userId,
+            Status = (int)BillingStatus.InProgress
+        };
 
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(Billing.SaveFailed);
+        return isAdded ? Result.Ok(entity.Id) : Result.Fail(Billing.SaveFailed);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
@@ -75,6 +80,18 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         var entities = await _dbSet
             .AsNoTracking()
             .Where(e => e.BazaarEventId == id)
+            .ToArrayAsync(cancellationToken);
+
+        var dc = new GermanDateTimeConverter();
+
+        return entities.Select(e => e.MapToDomain(dc)).ToArray();
+    }
+
+    public async Task<BazaarBilling[]> GetByBazaarEventIdAndUserId(Guid eventId, Guid userId, CancellationToken cancellationToken)
+    {
+        var entities = await _dbSet
+            .AsNoTracking()
+            .Where(e => e.BazaarEventId == eventId && e.UserId == userId)
             .ToArrayAsync(cancellationToken);
 
         var dc = new GermanDateTimeConverter();

@@ -15,9 +15,11 @@ internal sealed class BillingHandler :
     IQueryHandler<GetBillingArticlesWithBillingAndEventQuery, Result<BazaarSellerArticlesWithBillingAndEvent>>,
     IQueryHandler<FindBillingTotalQuery, Result<BazaarBillingTotal>>,
     IQueryHandler<GetEventsWithBillingByUserQuery, BazaarEventWithBillingCount[]>,
+    IQueryHandler<GetBillingsWithTotalsAndEventByUserQuery, Result<BazaarBillingsWithTotalsAndEvent>>,
     ICommandHandler<DeleteBillingArticleCommand, Result>,
     ICommandHandler<CancelBillingCommand, Result>,
-    ICommandHandler<CompleteBillingCommand, Result>
+    ICommandHandler<CompleteBillingCommand, Result>,
+    ICommandHandler<CreateBillingByUserCommand, Result<Guid>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IBazaarEventRepository _eventRepository;
@@ -281,4 +283,52 @@ internal sealed class BillingHandler :
 
         return [.. result];
     }
+
+    public async ValueTask<Result<BazaarBillingsWithTotalsAndEvent>> Handle(GetBillingsWithTotalsAndEventByUserQuery query, CancellationToken cancellationToken)
+    {
+        var @event = await _eventRepository.Find(query.EventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return @event.ToResult();
+        }
+
+        var billings = await _billingRepository.GetByBazaarEventIdAndUserId(query.EventId, query.UserId, cancellationToken);
+        if (billings.Length == 0)
+        {
+            return Result.Ok(new BazaarBillingsWithTotalsAndEvent([], @event.Value));
+        }
+
+        var user = await _userRepository.FindById(query.UserId, cancellationToken);
+        if (user.IsFailed)
+        {
+            return user.ToResult();
+        }
+
+        Dictionary<Guid, BazaarBillingArticle[]> billingArticlesByBillingId;
+        {
+            var billingArticles = await _billingArticleRepository.GetAll(cancellationToken);
+            billingArticlesByBillingId = billingArticles.GroupBy(b => b.BazaarBillingId).ToDictionary(b => b.Key, b => b.ToArray());
+        }
+
+        Dictionary<Guid, BazaarSellerArticle> articlesById;
+        {
+            var articles = await _sellerArticleRepository.GetAll(cancellationToken);
+            articlesById = articles.ToDictionary(a => a.Id);
+        }
+
+        var result = new List<BazaarBillingWithTotals>();
+
+        foreach (var billing in billings)
+        {
+            var billingArticles = billingArticlesByBillingId[billing.Id];
+            var total = billingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+
+            result.Add(new(billing, user.Value.Name, billingArticles.Length, total));
+        }
+
+        return Result.Ok(new BazaarBillingsWithTotalsAndEvent([.. result], @event.Value));
+    }
+
+    public async ValueTask<Result<Guid>> Handle(CreateBillingByUserCommand command, CancellationToken cancellationToken) =>
+        await _billingRepository.Create(command.EventId, command.UserId, cancellationToken);
 }
