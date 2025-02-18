@@ -69,7 +69,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result<BazaarSellerRegistrationWithSeller>> Handle(FindRegistrationWithSellerQuery query, CancellationToken cancellationToken)
     {
-        var registration = await _sellerRegistrationRepository.Find(query.BazaarSellerRegistrationId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.Find(query.SellerRegistrationId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
@@ -91,13 +91,13 @@ internal sealed class SellerHandler :
 
     public async ValueTask<BazaarSellerRegistrationWithArticleCount[]> Handle(GetSellerRegistrationWithArticleCountQuery query, CancellationToken cancellationToken)
     {
-        var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(query.BazaarEventId, cancellationToken);
+        var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(query.EventId, cancellationToken);
         if (registrations.Length == 0)
         {
             return [];
         }
 
-        var sellers = await _sellerRepository.GetByBazaarEventId(query.BazaarEventId, cancellationToken);
+        var sellers = await _sellerRepository.GetByBazaarEventId(query.EventId, cancellationToken);
         if (sellers.Length == 0)
         {
             return registrations
@@ -178,7 +178,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var registration = await _sellerRegistrationRepository.Find(command.BazaarSellerRegistrationId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.Find(command.SellerRegistrationId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
@@ -193,12 +193,12 @@ internal sealed class SellerHandler :
             }
         }
 
-        return await _sellerRegistrationRepository.Delete(command.BazaarSellerRegistrationId, cancellationToken);
+        return await _sellerRegistrationRepository.Delete(command.SellerRegistrationId, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(AcceptSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var registration = await _sellerRegistrationRepository.Find(command.BazaarSellerRegistrationId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.Find(command.SellerRegistrationId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
@@ -271,7 +271,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(DenySellerRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var registration = await _sellerRegistrationRepository.Find(command.BazaarSellerRegistrationId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.Find(command.SellerRegistrationId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
@@ -308,19 +308,19 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result<BazaarSellerWithRegistrationAndArticles>> Handle(FindSellerWithRegistrationAndArticlesQuery query, CancellationToken cancellationToken)
     {
-        var seller = await _sellerRepository.Find(query.BazaarSellerId, cancellationToken);
+        var seller = await _sellerRepository.Find(query.SellerId, cancellationToken);
         if (seller.IsFailed)
         {
             return seller.ToResult();
         }
 
-        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.BazaarSellerId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.SellerId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
         }
 
-        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.BazaarSellerId, cancellationToken);
+        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
         return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, articles));
     }
 
@@ -375,20 +375,20 @@ internal sealed class SellerHandler :
     public async ValueTask<Result<BazaarSellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
     {
         // sanity check
-        var seller = await _sellerRepository.Find(query.BazaarSellerId, query.UserId, cancellationToken);
+        var seller = await _sellerRepository.Find(query.SellerId, query.UserId, cancellationToken);
         if (seller.IsFailed)
         {
             return seller.ToResult();
         }
 
-        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.BazaarSellerId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.SellerId, cancellationToken);
         if (registration.IsFailed ||
             !registration.Value.Accepted.GetValueOrDefault())
         {
             return Result.Fail(Seller.Locked);
         }
 
-        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.BazaarSellerId, cancellationToken);
+        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
         if (articles.Length == 0)
         {
             return Result.Fail(SellerArticle.NotAvailable);
@@ -407,12 +407,12 @@ internal sealed class SellerHandler :
     {
         // sanity check
         var sellers = await _sellerRepository.GetByUserId(command.UserId, cancellationToken);
-        if (!sellers.Any(s => s.Id == command.BazaarSellerId))
+        if (!sellers.Any(s => s.Id == command.SellerId))
         {
             return Result.Fail(Seller.NotFound);
         }
 
-        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(command.BazaarSellerId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(command.SellerId, cancellationToken);
         if (registration.IsFailed ||
             !registration.Value.Accepted.GetValueOrDefault())
         {
@@ -423,7 +423,7 @@ internal sealed class SellerHandler :
 
         // find the latest articles to take over
         foreach (var seller in sellers
-            .Where(s => s.Id != command.BazaarSellerId)
+            .Where(s => s.Id != command.SellerId)
             .OrderByDescending(s => s.CreatedOn))
         {
             articles = await _sellerArticleRepository.GetByBazaarSellerId(seller.Id, cancellationToken);
@@ -435,8 +435,8 @@ internal sealed class SellerHandler :
             return Result.Fail(SellerArticle.NotAvailable);
         }
 
-        var currentSeller = sellers.First(s => s.Id == command.BazaarSellerId);
-        var currentCountResult = await _sellerArticleRepository.GetCountByBazaarSellerId(command.BazaarSellerId, cancellationToken);
+        var currentSeller = sellers.First(s => s.Id == command.SellerId);
+        var currentCountResult = await _sellerArticleRepository.GetCountByBazaarSellerId(command.SellerId, cancellationToken);
         if (currentCountResult.IsFailed)
         {
             return currentCountResult.ToResult();
@@ -461,12 +461,12 @@ internal sealed class SellerHandler :
             if (++currentCount >= currentSeller.MaxArticleCount) break;
         }
 
-        return await _sellerArticleRepository.Create(takeOverArticles.ToArray(), command.BazaarSellerId, cancellationToken);
+        return await _sellerArticleRepository.Create(takeOverArticles.ToArray(), command.SellerId, cancellationToken);
     }
 
     public async ValueTask<Result<BazaarSellerArticleWithEvent>> Handle(FindSellerArticleByUserQuery query, CancellationToken cancellationToken)
     {
-        var article = await _sellerArticleRepository.Find(query.BazaarSellerArticleId, cancellationToken);
+        var article = await _sellerArticleRepository.Find(query.SellerArticleId, cancellationToken);
         if (article.IsFailed)
         {
             return article.ToResult();
@@ -496,7 +496,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(UpdateSellerArticleByUserCommand command, CancellationToken cancellationToken)
     {
-        var article = await _sellerArticleRepository.Find(command.BazaarSellerArticleId, cancellationToken);
+        var article = await _sellerArticleRepository.Find(command.SellerArticleId, cancellationToken);
         if (article.IsFailed)
         {
             return article.ToResult();
@@ -541,7 +541,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(DeleteSellerArticleByUserCommand command, CancellationToken cancellationToken)
     {
-        var article = await _sellerArticleRepository.Find(command.BazaarSellerArticleId, cancellationToken);
+        var article = await _sellerArticleRepository.Find(command.SellerArticleId, cancellationToken);
         if (article.IsFailed)
         {
             return article.ToResult();
@@ -577,12 +577,12 @@ internal sealed class SellerHandler :
             return Result.Fail(SellerArticle.EditExpired);
         }
 
-        return await _sellerArticleRepository.Delete(command.BazaarSellerArticleId, cancellationToken);
+        return await _sellerArticleRepository.Delete(command.SellerArticleId, cancellationToken);
     }
 
     public async ValueTask<Result<BazaarEvent>> Handle(FindSellerEventByUserQuery query, CancellationToken cancellationToken)
     {
-        var seller = await _sellerRepository.Find(query.BazaarSellerId, query.UserId, cancellationToken);
+        var seller = await _sellerRepository.Find(query.SellerId, query.UserId, cancellationToken);
         if (seller.IsFailed)
         {
             return seller.ToResult();
@@ -628,7 +628,7 @@ internal sealed class SellerHandler :
 
     public async ValueTask<Result> Handle(CreateSellerArticleByUserCommand command, CancellationToken cancellationToken)
     {
-        var seller = await _sellerRepository.Find(command.BazaarSellerId, command.UserId, cancellationToken);
+        var seller = await _sellerRepository.Find(command.SellerId, command.UserId, cancellationToken);
         if (seller.IsFailed)
         {
             return seller.ToResult();
@@ -671,7 +671,7 @@ internal sealed class SellerHandler :
 
         var model = new BazaarSellerArticle
         {
-            BazaarSellerId = command.BazaarSellerId,
+            BazaarSellerId = command.SellerId,
             Name = command.Name,
             Size = command.Size,
             Price = command.Price

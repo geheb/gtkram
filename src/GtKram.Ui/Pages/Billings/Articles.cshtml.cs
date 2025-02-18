@@ -31,9 +31,6 @@ public class ArticlesModel : PageModel
         _mediator = mediator;
     }
 
-    public string Format(BazaarSellerArticleWithBilling item) =>
-        $"{item.SellerArticle.Name} #{item.SellerArticle.LabelNumber} für {item.SellerArticle.Price:0.00} € (Verkäufernummer {item.SellerNumber})";
-
     public async Task OnGetAsync(Guid eventId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetBillingArticlesWithBillingAndEventQuery(id), cancellationToken);
@@ -54,7 +51,7 @@ public class ArticlesModel : PageModel
         else
         {
             CanEdit = true;
-            CanComplete = !result.Value.Billing.IsCompleted;
+            CanComplete = Items.Length > 0 && !result.Value.Billing.IsCompleted;
         }
     }
 

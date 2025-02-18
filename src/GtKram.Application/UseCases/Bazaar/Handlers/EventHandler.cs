@@ -35,7 +35,7 @@ internal sealed class EventHandler :
 
     public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken)
     {
-        var @event = await _eventRepository.Find(query.BazaarEventId, cancellationToken);
+        var @event = await _eventRepository.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return @event;
@@ -112,12 +112,12 @@ internal sealed class EventHandler :
 
     public async ValueTask<Result> Handle(DeleteEventCommand command, CancellationToken cancellationToken)
     {
-        var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(command.BazaarEventId, cancellationToken);
+        var registrations = await _sellerRegistrationRepository.GetByBazaarEventId(command.EventId, cancellationToken);
         if (registrations.Length > 0)
         {
             return Result.Fail(Event.ValidationDeleteNotPossibleDueToRegistrations);
         }
-        return await _eventRepository.Delete(command.BazaarEventId, cancellationToken);
+        return await _eventRepository.Delete(command.EventId, cancellationToken);
     }
 
     private static Result Validate(BazaarEvent model)

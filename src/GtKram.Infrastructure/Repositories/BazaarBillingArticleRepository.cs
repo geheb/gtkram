@@ -25,16 +25,20 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarBillingArticle>();
     }
 
-    public async Task<Result> Create(BazaarBillingArticle model, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Create(Guid billingId, Guid sellerArticleId, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new());
-        entity.Id = _pkGenerator.Generate();
-        entity.CreatedOn = _timeProvider.GetUtcNow();
+        var entity = new Persistence.Entities.BazaarBillingArticle
+        {
+            Id = _pkGenerator.Generate(),
+            CreatedOn = _timeProvider.GetUtcNow(),
+            BazaarBillingId = billingId,
+            BazaarSellerArticleId = sellerArticleId
+        };
 
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(BillingArticle.SaveFailed);
+        return isAdded ? Result.Ok(entity.Id) : Result.Fail(BillingArticle.SaveFailed);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
@@ -55,6 +59,34 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
         _dbSet.RemoveRange(entities);
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
         return isDeleted ? Result.Ok() : Result.Fail(BillingArticle.DeleteFailed);
+    }
+
+    public async Task<Result<BazaarBillingArticle>> Find(Guid id, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Fail(BillingArticle.NotFound);
+        }
+
+        return Result.Ok(entity.MapToDomain(new()));
+    }
+
+    public async Task<Result<BazaarBillingArticle>> FindBySellerArticleId(Guid sellerArticleId, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.BazaarSellerArticleId == sellerArticleId, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Fail(BillingArticle.NotFound);
+        }
+
+        return Result.Ok(entity.MapToDomain(new()));
     }
 
     public async Task<BazaarBillingArticle[]> GetAll(CancellationToken cancellationToken)

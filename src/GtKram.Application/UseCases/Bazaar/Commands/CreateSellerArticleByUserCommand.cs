@@ -6,7 +6,7 @@ namespace GtKram.Application.UseCases.Bazaar.Commands;
 
 public record struct CreateSellerArticleByUserCommand(
     Guid UserId,
-    Guid BazaarSellerId,
+    Guid SellerId,
     string Name,
     string Size,
     decimal Price) : ICommand<Result>;

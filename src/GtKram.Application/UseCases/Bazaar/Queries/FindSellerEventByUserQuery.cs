@@ -4,4 +4,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Queries;
 
-public record struct FindSellerEventByUserQuery(Guid UserId, Guid BazaarSellerId) : IQuery<Result<BazaarEvent>>;
+public record struct FindSellerEventByUserQuery(Guid UserId, Guid SellerId) : IQuery<Result<BazaarEvent>>;

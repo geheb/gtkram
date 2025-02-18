@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Queries;
 
-public record struct GetSellerRegistrationWithArticleCountQuery(Guid BazaarEventId) : IQuery<BazaarSellerRegistrationWithArticleCount[]>;
+public record struct GetSellerRegistrationWithArticleCountQuery(Guid EventId) : IQuery<BazaarSellerRegistrationWithArticleCount[]>;

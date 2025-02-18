@@ -5,7 +5,7 @@ namespace GtKram.Application.UseCases.Bazaar.Commands;
 
 public record struct UpdateSellerArticleByUserCommand(
     Guid UserId,
-    Guid BazaarSellerArticleId,
+    Guid SellerArticleId,
     string Name,
     string Size,
     decimal Price) : ICommand<Result>;

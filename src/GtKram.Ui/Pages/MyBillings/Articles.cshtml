@@ -4,18 +4,22 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { eventId = Model.EventId, billingId = Model.BillingId };
-    Model.BuildHeaderMenu(pageParam);
 
-    var urlWorker = Html.AppendVersion("/lib/qr-scanner/qr-scanner-worker.min.js");
-    var urlAudioBeep = Html.AppendVersion("/audio/scan.ogg");
-    var urlAdd = Url.PageLink(string.Empty, "add", pageParam);
-    var urlBilling = Url.PageLink("BazaarBilling", null, new { eventId = Model.EventId });
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+
+    Model.BuildHeaderMenu(new { eventId, id });
+
     var dateConverter = new GermanDateTimeConverter();
-    var addUrl = Url.PageLink("ArticleAdd", null, pageParam);
-    var cancelUrl = Url.PageLink(string.Empty, "cancel", pageParam);
-    var sumUrl = Url.PageLink(string.Empty, "sum", pageParam);
-    var completeUrl = Url.PageLink(string.Empty, "complete", pageParam);
+
+    var audioBeepUrl = Html.AppendVersion("/audio/scan.ogg");
+    var billingUrl = Url.PageLink("BazaarBilling", null, new { eventId });
+    var articleAddUrl = Url.PageLink("ArticleAdd", null, new { eventId, id });
+
+    var urlAdd = Url.PageLink(string.Empty, "add", new { id });
+    var cancelUrl = Url.PageLink(string.Empty, "cancel", new { id });
+    var sumUrl = Url.PageLink(string.Empty, "sum", new { id });
+    var completeUrl = Url.PageLink(string.Empty, "complete", new { id });
 }
 
 @await Html.PartialAsync("_Header")
@@ -24,7 +28,7 @@
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { eventId = Model.EventId })</div>
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId, id }, new { eventId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
@@ -41,16 +45,16 @@
                                 <a class="dropdown-item open-modal scan-button" data-target="#scanModal" href="#">
                                     Artikel einscannen
                                 </a>
-                                <a class="dropdown-item" href="@addUrl">
+                                <a class="dropdown-item" href="@articleAddUrl">
                                     Artikel eingeben
                                 </a>
                                 <a class="dropdown-item open-modal" data-target="#cancelModal" data-url="@cancelUrl" href="#">
-                                    Kassen-Vorgang abbrechen
+                                    Kassenvorgang abbrechen
                                 </a>
                                 @if (Model.CanComplete)
                                 {
                                     <a class="dropdown-item open-modal" data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl" href="#">
-                                        Kassen-Vorgang abschließen
+                                        Kassenvorgang abschließen
                                     </a>
                                 }
                             </div>
@@ -66,7 +70,7 @@
                 <a href="#" class="button is-floating is-warning open-modal scan-button" data-target="#scanModal">
                     <i class="fas fa-barcode"></i>
                 </a>
-                <a href="@addUrl" class="button is-floating is-link" style="right:120px">
+                <a href="@articleAddUrl" class="button is-floating is-link" style="right:120px">
                     <i class="fas fa-keyboard"></i>
                 </a>
                 <a href="#" class="button is-floating is-danger open-modal" style="right:200px" data-target="#cancelModal" data-url="@cancelUrl">
@@ -82,20 +86,13 @@
             </div>
         }
 
-        <h2 class="subtitle">@(Model.EventNameAndDescription ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Event</h2>
 
         @if (!ModelState.IsValid)
         {
             <div class="notification is-danger">
                 <button class="delete"></button>
                 <div asp-validation-summary="All"></div>
-            </div>
-        }
-        else if (Model.AddedArticle != null && Model.CanEdit)
-        {
-            <div class="notification @(Model.AddedArticleExists ? "is-warning" : "is-success")">
-                <button class="delete"></button>
-                @(Model.AddedArticleExists ? Model.AddedArticle.FormatAsExists() : Model.AddedArticle.FormatAsAdded())
             </div>
         }
 
@@ -112,27 +109,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.Articles.Any())
+                    @if (Model.Items.Length == 0)
                     {
                         <tr>
-                            <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
+                            <td colspan="6"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
                         </tr>
                     }
-                    @foreach (var a in Model.Articles)
+                    @foreach (var i in Model.Items)
                     {
                         <tr>
-                            <td>@dateConverter.ToDateTime(a.AddedOn)</td>
-                            <td>@a.SellerNumber</td>
-                            <td>@a.LabelNumber</td>
-                            <td>@a.Name</td>
-                            <td>@a.Price.ToString("0.00") €</td>
+                            <td>@dateConverter.ToDateTime(i.BillingArticle.CreatedOn)</td>
+                            <td>@i.SellerNumber</td>
+                            <td>@i.SellerArticle.LabelNumber</td>
+                            <td>@i.SellerArticle.Name</td>
+                            <td>@i.SellerArticle.Price.ToString("0.00") €</td>
                             <td>
                                 @if (Model.CanEdit)
                                 {
                                 <a class="open-modal" href="#"
                                    data-target="#deleteModal"
-                                   data-info="@a.FormatAsInfo()"
-                                   data-url="@(Url.PageLink(string.Empty, "delete", new { eventId = Model.EventId, billingId = Model.BillingId, id = a.Id }))">Löschen</a>
+                                   data-info="@i.Format()"
+                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticle.Id }))">Löschen</a>
                                 }
                             </td>
                         </tr>
@@ -146,161 +143,158 @@
 
 @await Html.PartialAsync("_Footer")
 
-@if (Model.CanEdit)
+<div id="scanModal" class="modal" aria-hidden="true">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+        <h1 class="has-text-centered has-text-white is-size-3">QR-Code Scanner</h1>
+        <video class="qr-video"></video>
+    </div>
+    <button class="modal-close is-large close-modal" aria-label="close"></button>
+</div>
+
+@Html.CreateModalTemplateWithOkCancel(
+    "cancelModal",
+    "Kassenvorgang stornieren",
+    "Möchtest du wirklich den aktuellen Kassen-Vorgang stornieren?")
+
+@Html.CreateModalTemplateStart("completeModal", "Kassen-Vorgang abschließen")
+<div class="content is-size-4">
+    <div>Anzahl: <span class="billingCount">?</span></div>
+    <div>Summe: <span class="billingTotal">?</span> €</div>
+    <div>Rückgabe: <span class="billingBack">?</span> €</div>
+    <hr />
+    <p>Erhalten:</p>
+    <input class="input" type="number" step="0.01" />
+</div>
+@Html.CreateModalTemplateEnd(true)
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteModal",
+    "Artikel entfernen",
+    @"Möchtest du wirklich den Artikel ""<span class=""article-info""></span>"" entfernen?")
+
+@section Scripts
 {
-    <div id="scanModal" class="modal" aria-hidden="true">
-        <div class="modal-background"></div>
-        <div class="modal-content">
-            <h1 class="has-text-centered has-text-white is-size-3">QR-Code Scanner</h1>
-            <video class="qr-video"></video>
-        </div>
-        <button class="modal-close is-large close-modal" aria-label="close"></button>
-    </div>
-
-    @Html.CreateModalTemplateWithOkCancel(
-        "cancelModal",
-        "Kassen-Vorgang stornieren",
-        "Möchtest du wirklich den aktuellen Kassen-Vorgang stornieren?")
-
-    @Html.CreateModalTemplateStart("completeModal", "Kassen-Vorgang abschließen")
-    <div class="content is-size-4">
-        <div>Anzahl: <span class="billingCount">?</span></div>
-        <div>Summe: <span class="billingTotal">?</span> €</div>
-        <div>Rückgabe: <span class="billingBack">?</span> €</div>
-        <hr />
-        <p>Erhalten:</p>
-        <input class="input" type="number" step="0.01" />
-    </div>
-    @Html.CreateModalTemplateEnd(true)
-
-    @Html.CreateModalTemplateWithOkCancel(
-        "deleteModal",
-        "Artikel entfernen",
-        @"Möchtest du wirklich den Artikel ""<span class=""article-info""></span>"" entfernen?")
-
-    @section Scripts
-    {
-        <script type="text/javascript">
-        $(function () {
-            var scanner = null;
-            QrScanner.hasCamera().then(function (result) {
-                if (!result) {
-                    $('.scan-button').addClass('is-hidden');
-                }
-            });
-
-            const scanModal = $('#scanModal');
-            scanModal.on('modal:open', function (e) {
-                const video = $(e.target).find(".qr-video").get(0);
-                const beep = new Audio('@urlAudioBeep');
-
-                scanner = new QrScanner(video, function (result) {
-                    scanner.stop();
-                    beep.play();
-
-                    const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.data);
-                    if (!isValid) {
-                        createToast('QR-Code ist ungültig', 'is-danger');
-                        sleep(2000).then(() => scanner.start());
-                        return;
-                    }
-
-                    $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: result.data }).done(function (data) {
-                        if (data) {
-                            if (data.exists) {
-                                createToast(`Artikel "${data.name}" (#${data.lableNumber}) für ${data.price} € wurde bereits erfasst.`, 'is-warning');
-                            }
-                            else {
-                                createToast(`Artikel "${data.name}" (#${data.lableNumber}) für ${data.price} € wurde angelegt.`);
-                            }
-                        } else {
-                            createToast('Artikel wurde nicht gefunden.', 'is-danger');
-                        }
-                        sleep(2000).then(() => scanner.start());
-                    });
-                }, { highlightScanRegion:true, highlightCodeOutline:true });
-
-                scanner.start();
-            });
-            scanModal.on('modal:close', function (e) {
-                scanner.destroy();
-                scanner = null;
-                window.location.reload();
-            });
-
-            handleModal({
-                id: '#cancelModal',
-                token: {@Html.AjaxCsrfToken()},
-                confirm: {
-                    dataurl: 'url',
-                    action: function () {
-                        window.location = '@Html.Raw(urlBilling)';
-                    },
-                    toast: {
-                        success: 'Kassen-Vorgang wurde storniert.',
-                        failed: 'Kassen-Vorgang konnte nicht storniert werden.'
-                    }
-                }
-            });
-
-            handleModal({
-                id: '#completeModal',
-                token: {@Html.AjaxCsrfToken()},
-                load: {
-                    dataurl: 'sumurl',
-                    action: function(target, data) {
-                        target.find('.billingCount').text(`${data.count}`);
-                        target.find('.billingTotal').text(`${data.total}`);
-                    },
-                    toast: {
-                        failed: 'Kassen-Vorgang konnte nicht geladen werden.'
-                    }
-                },
-                confirm: {
-                    dataurl: 'completeurl',
-                    action: function () {
-                        window.location = '@Html.Raw(urlBilling)';
-                    },
-                    toast: {
-                        success: 'Kassen-Vorgang wurde abgeschlossen.',
-                        failed: 'Kassen-Vorgang konnte nicht abgeschlossen werden.'
-                    }
-                }
-            });
-
-            $("#completeModal input").on("keyup change", function() {
-                const receivedMoney = parseFloat($(this).val().replaceAll(",", "."));
-                const totalMoney = parseFloat($('#completeModal').find(".billingTotal").text());
-                if (!isNaN(receivedMoney) && receivedMoney > 0.0 && !isNaN(totalMoney) && totalMoney > 0.0 && receivedMoney >= totalMoney) {
-                    const val = receivedMoney - totalMoney;
-                    $('#completeModal').find(".billingBack").text(val.toFixed(2));
-                } else {
-                    $('#completeModal').find(".billingBack").text('?');
-                }                
-            });
-
-            handleModal({
-                id: '#deleteModal',
-                token: {@Html.AjaxCsrfToken()},
-                init: function(target, relatedTarget) {
-                    const info = relatedTarget.dataset['info'];
-                    target.find('.article-info').text(info);
-                },
-                confirm: {
-                    dataurl: 'url',
-                    action: function () {
-                        window.location.reload();
-                    },
-                    toast: {
-                        success: 'Artikel wurde entfernt.',
-                        failed: 'Artikel konnte nicht entfernt werden.'
-                    }
-                }
-            });
-
-            
-
+<script type="text/javascript">
+    $(function () {
+        var scanner = null;
+        QrScanner.hasCamera().then(function (result) {
+            if (!result) {
+                $('.scan-button').addClass('is-hidden');
+            }
         });
-        </script>
-    }
+
+        const scanModal = $('#scanModal');
+        scanModal.on('modal:open', function (e) {
+            const video = $(e.target).find(".qr-video").get(0);
+            const beep = new Audio('@audioBeepUrl');
+
+            scanner = new QrScanner(video, function (result) {
+                scanner.stop();
+                beep.play();
+
+                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.data);
+                if (!isValid) {
+                    createToast('QR-Code ist ungültig', 'is-danger');
+                    sleep(2000).then(() => scanner.start());
+                    return;
+                }
+
+                $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: result.data }).done(function (data) {
+                    if (data && data.created) {
+                        createToast(`Artikel wurde angelegt.`);
+                    }
+                    else if (data && data.exists) {
+                        createToast(`Artikel wurde bereits erfasst.`, 'is-warning');
+                    }
+                    else if (data && data.notfound) {
+                        createToast(`Artikel wurde nicht gefunden.`, 'is-warning');
+                    }
+                    else {
+                        createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
+                    }
+                    sleep(2000).then(() => scanner.start());
+                });
+            }, { highlightScanRegion:true, highlightCodeOutline:true });
+
+            scanner.start();
+        });
+        scanModal.on('modal:close', function (e) {
+            scanner.destroy();
+            scanner = null;
+            window.location.reload();
+        });
+
+        handleModal({
+            id: '#cancelModal',
+            token: {@Html.AjaxCsrfToken()},
+            confirm: {
+                dataurl: 'url',
+                action: function () {
+                    window.location = '@Html.Raw(billingUrl)';
+                },
+                toast: {
+                    success: 'Kassenvorgang wurde storniert.',
+                    failed: 'Kassenvorgang konnte nicht storniert werden.'
+                }
+            }
+        });
+
+        handleModal({
+            id: '#completeModal',
+            token: {@Html.AjaxCsrfToken()},
+            load: {
+                dataurl: 'sumurl',
+                action: function(target, data) {
+                    target.find('.billingCount').text(`${data.count}`);
+                    target.find('.billingTotal').text(`${data.total}`);
+                },
+                toast: {
+                    failed: 'Kassenvorgang konnte nicht geladen werden.'
+                }
+            },
+            confirm: {
+                dataurl: 'completeurl',
+                action: function () {
+                    window.location = '@Html.Raw(billingUrl)';
+                },
+                toast: {
+                    success: 'Kassenvorgang wurde abgeschlossen.',
+                    failed: 'Kassenvorgang konnte nicht abgeschlossen werden.'
+                }
+            }
+        });
+
+        $("#completeModal input").on("keyup change", function() {
+            const receivedMoney = parseFloat($(this).val().replaceAll(",", "."));
+            const totalMoney = parseFloat($('#completeModal').find(".billingTotal").text());
+            if (!isNaN(receivedMoney) && receivedMoney > 0.0 && !isNaN(totalMoney) && totalMoney > 0.0 && receivedMoney >= totalMoney) {
+                const val = receivedMoney - totalMoney;
+                $('#completeModal').find(".billingBack").text(val.toFixed(2));
+            } else {
+                $('#completeModal').find(".billingBack").text('?');
+            }                
+        });
+
+        handleModal({
+            id: '#deleteModal',
+            token: {@Html.AjaxCsrfToken()},
+            init: function(target, relatedTarget) {
+                const info = relatedTarget.dataset['info'];
+                target.find('.article-info').text(info);
+            },
+            confirm: {
+                dataurl: 'url',
+                action: function () {
+                    window.location.reload();
+                },
+                toast: {
+                    success: 'Artikel wurde entfernt.',
+                    failed: 'Artikel konnte nicht entfernt werden.'
+                }
+            }
+        });
+
+    });
+</script>
 }

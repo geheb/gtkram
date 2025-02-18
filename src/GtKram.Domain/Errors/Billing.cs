@@ -11,4 +11,7 @@ public static class Billing
 
     public static Error SaveFailed { get; } =
         new($"{_prefix}.save.failed", "Der Kassenvorgang konnte nicht gespeichert werden.");
+
+    public static Error StatusCompleted { get; } =
+        new($"{_prefix}.status.completed", "Der Kassenvorgang ist geschlossen.");
 }

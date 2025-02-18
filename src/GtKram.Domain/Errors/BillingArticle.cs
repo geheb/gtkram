@@ -14,4 +14,7 @@ public static class BillingArticle
 
     public static Error DeleteFailed { get; } =
         new($"{_prefix}.save.failed", "Der Kassenartikel konnte nicht gelöscht werden.");
+
+    public static Error Exists { get; } =
+        new($"{_prefix}.exists", "Der Kassenartikel ist bereits gebucht.");
 }

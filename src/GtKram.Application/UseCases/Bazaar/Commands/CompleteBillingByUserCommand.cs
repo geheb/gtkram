@@ -3,4 +3,4 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public record struct DeleteEventCommand(Guid EventId) : ICommand<Result>;
+public record struct CompleteBillingByUserCommand(Guid UserId, Guid BillingId) : ICommand<Result>;
