@@ -32,8 +32,8 @@ jobs:
 
     - name: Publish files
       run: |
-        dotnet publish ./src/GtKram.Cli -c Release -o ./dist/cli -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
-        dotnet publish ./src/GtKram.Ui -c Release -o ./dist/ui -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+        dotnet publish ./app/GtKram.Cli -c Release -o ./dist/cli -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+        dotnet publish ./app/GtKram.Ui -c Release -o ./dist/ui -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
 
     - name: Create archive
       run: |

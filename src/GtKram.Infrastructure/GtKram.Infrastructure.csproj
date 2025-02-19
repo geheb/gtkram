@@ -25,6 +25,8 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="GtKram.Cli" />
+		<InternalsVisibleTo Include="GtKram.Application.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
 </Project>

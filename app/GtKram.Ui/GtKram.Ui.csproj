@@ -23,9 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GtKram.Application\GtKram.Application.csproj" />
-    <ProjectReference Include="..\GtKram.Domain\GtKram.Domain.csproj" />
-    <ProjectReference Include="..\GtKram.Infrastructure\GtKram.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\GtKram.Application\GtKram.Application.csproj" />
+    <ProjectReference Include="..\..\src\GtKram.Domain\GtKram.Domain.csproj" />
+    <ProjectReference Include="..\..\src\GtKram.Infrastructure\GtKram.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
