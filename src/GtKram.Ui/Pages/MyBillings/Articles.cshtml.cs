@@ -65,7 +65,7 @@ public class ArticlesModel : PageModel
             return new JsonResult(new { created = true });
         }
 
-        if (result.Errors.Any(e => e == BillingArticle.Exists))
+        if (result.Errors.Any(e => e == BillingArticle.AlreadyBooked))
         {
             return new JsonResult(new { exists = true });
         }

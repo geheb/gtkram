@@ -18,6 +18,7 @@ internal sealed class BillingHandler :
     IQueryHandler<GetEventsWithBillingByUserQuery, BazaarEventWithBillingCount[]>,
     IQueryHandler<GetBillingsWithTotalsAndEventByUserQuery, Result<BazaarBillingsWithTotalsAndEvent>>,
     IQueryHandler<GetBillingArticlesWithBillingAndEventByUserQuery, Result<BazaarSellerArticlesWithBillingAndEvent>>,
+    IQueryHandler<FindEventByBillingQuery, Result<BazaarEvent>>,
     ICommandHandler<DeleteBillingArticleCommand, Result>,
     ICommandHandler<DeleteBillingArticleByUserCommand, Result>,
     ICommandHandler<CancelBillingCommand, Result>,
@@ -25,7 +26,8 @@ internal sealed class BillingHandler :
     ICommandHandler<CompleteBillingCommand, Result>,
     ICommandHandler<CompleteBillingByUserCommand, Result>,
     ICommandHandler<CreateBillingByUserCommand, Result<Guid>>,
-    ICommandHandler<CreateBillingArticleByUserCommand, Result<Guid>>
+    ICommandHandler<CreateBillingArticleByUserCommand, Result<Guid>>,
+    ICommandHandler<CreateBillingArticleManuallyByUserCommand, Result>
 {
     private readonly TimeProvider _timeProvider;
     private readonly IUserRepository _userRepository;
@@ -559,9 +561,66 @@ internal sealed class BillingHandler :
         var billingArticle = await _billingArticleRepository.FindBySellerArticleId(command.SellerArticleId, cancellationToken);
         if (billingArticle.IsSuccess)
         {
-            return Result.Fail(BillingArticle.Exists);
+            return Result.Fail(BillingArticle.AlreadyBooked);
         }
 
         return await _billingArticleRepository.Create(command.BillingId, command.SellerArticleId, cancellationToken);
+    }
+
+    public async ValueTask<Result<BazaarEvent>> Handle(FindEventByBillingQuery query, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(query.BillingId, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing.ToResult();
+        }
+
+        return await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
+    }
+
+    public async ValueTask<Result> Handle(CreateBillingArticleManuallyByUserCommand command, CancellationToken cancellationToken)
+    {
+        var billing = await _billingRepository.Find(command.BillingId, cancellationToken);
+        if (billing.IsFailed)
+        {
+            return billing;
+        }
+
+        if (billing.Value.UserId != command.UserId)
+        {
+            return Result.Fail(Internal.InvalidRequest);
+        }
+
+        var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
+        if (@event.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var eventConverter = new EventConverter();
+        if (eventConverter.IsExpired(@event.Value, _timeProvider))
+        {
+            return Result.Fail(Event.Expired);
+        }
+
+        var seller = await _sellerRepository.FindBySellerNumberAndEventId(command.SellerNumber, billing.Value.BazaarEventId, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller;
+        }
+
+        var article = await _sellerArticleRepository.FindByBazaarSellerIdAndLabelNumber(seller.Value.Id, command.LabelNumber, cancellationToken);
+        if (article.IsFailed)
+        {
+            return article;
+        }
+
+        var billingArticle = await _billingArticleRepository.FindBySellerArticleId(article.Value.Id, cancellationToken);
+        if (billingArticle.IsSuccess)
+        {
+            return Result.Fail(BillingArticle.AlreadyBooked);
+        }
+
+        return await _billingArticleRepository.Create(billing.Value.Id, article.Value.Id, cancellationToken);
     }
 }

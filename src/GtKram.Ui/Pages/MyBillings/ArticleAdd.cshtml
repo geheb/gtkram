@@ -1,10 +1,13 @@
-﻿@page "/MyBillings/Bazaar/{eventId:guid}/ArticleAdd/{billingId:guid}"
+﻿@page "/MyBillings/Bazaar/{eventId:guid}/Articles/{id:guid}/Add"
 @model GtKram.Ui.Pages.MyBillings.ArticleAddModel
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    var pageParam = new { eventId = Model.EventId, billingId = Model.BillingId };
-    Model.BuildHeaderMenu(pageParam);
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+
+    Model.BuildHeaderMenu(new { eventId, id });
 }
 
 @await Html.PartialAsync("_Header")
@@ -12,9 +15,9 @@
 <section class="section">
     <div class="container">
 
-        @Html.CreateBreadcrumb(pageParam, pageParam, new { eventId = Model.EventId })
+        @Html.CreateBreadcrumb(new { eventId, id }, new { eventId, id }, new { eventId })
 
-        <h2 class="subtitle">@(Model.EventNameAndDescription ?? "Unbekannt")</h2>
+        <h2 class="subtitle">@Model.Event</h2>
 
         <div class="columns">
             <div class="column is-half">
@@ -28,20 +31,21 @@
                 }
 
                 <form method="post">
-                    <fieldset>
+                    <input type="hidden" asp-for="Input.State_Event" />
+                    <fieldset disabled="@Model.IsDisabled">
                         <div class="field">
-                            <label class="label" asp-for="SellerNumber"></label>
+                            <label class="label" asp-for="Input.SellerNumber"></label>
                             <div class="control">
-                                <input class="input" type="text" autofocus="" asp-for="SellerNumber" />
+                                <input class="input" type="text" autofocus="" asp-for="Input.SellerNumber" />
                             </div>
-                            <span asp-validation-for="SellerNumber"></span>
+                            <span asp-validation-for="Input.SellerNumber"></span>
                         </div>
                         <div class="field">
-                            <label class="label" asp-for="LabelNumber"></label>
+                            <label class="label" asp-for="Input.LabelNumber"></label>
                             <div class="control">
-                                <input class="input" type="text" asp-for="LabelNumber" />
+                                <input class="input" type="text" asp-for="Input.LabelNumber" />
                             </div>
-                            <span asp-validation-for="LabelNumber"></span>
+                            <span asp-validation-for="Input.LabelNumber"></span>
                         </div>
 
                         <button class="button is-primary" type="submit">Anlegen</button>

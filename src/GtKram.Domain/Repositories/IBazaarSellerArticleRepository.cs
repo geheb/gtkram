@@ -15,4 +15,5 @@ public interface IBazaarSellerArticleRepository
     Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken);
     Task<Result> Update(BazaarSellerArticle model, CancellationToken cancellationToken);
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
+    Task<Result<BazaarSellerArticle>> FindByBazaarSellerIdAndLabelNumber(Guid sellerId, int labelNumber, CancellationToken cancellationToken);
 }
