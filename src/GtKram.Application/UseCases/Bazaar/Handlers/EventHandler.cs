@@ -1,5 +1,4 @@
 using GtKram.Application.Converter;
-using GtKram.Application.Repositories;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;

@@ -141,7 +141,6 @@ internal sealed class AppDbContext
             eb.Property(e => e.Status).IsRequired();
             eb.Property(e => e.BazaarEventId).HasColumnType(KeyType);
             eb.Property(e => e.UserId).HasColumnType(KeyType);
-            eb.Property(e => e.Total).HasColumnType("decimal(8,2)").IsRequired();
 
             eb.HasOne(e => e.BazaarEvent)
                 .WithMany(e => e.BazaarBillings)
