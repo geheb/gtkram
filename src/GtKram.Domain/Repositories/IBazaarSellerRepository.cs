@@ -13,6 +13,5 @@ public interface IBazaarSellerRepository
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
     Task<BazaarSeller[]> GetAll(CancellationToken cancellationToken);
     Task<BazaarSeller[]> GetById(Guid[] ids, CancellationToken cancellationToken);
-    Task<Result<BazaarSeller>> FindByIdAndUserId(Guid id, Guid userId, CancellationToken cancellationToken);
     Task<Result<BazaarSeller>> FindBySellerNumberAndEventId(int sellerNumber, Guid eventId, CancellationToken cancellationToken);
 }

@@ -171,20 +171,6 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         return [.. result];
     }
 
-    public async Task<Result<BazaarSeller>> FindByIdAndUserId(Guid id, Guid userId, CancellationToken cancellationToken)
-    {
-        var entity = await _dbSet
-            .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
-
-        if (entity is null)
-        {
-            return Result.Fail(Seller.NotFound);
-        }
-
-        return entity.MapToDomain();
-    }
-
     public async Task<Result<BazaarSeller>> FindBySellerNumberAndEventId(int sellerNumber, Guid eventId, CancellationToken cancellationToken)
     {
         var entity = await _dbSet

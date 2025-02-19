@@ -11,6 +11,8 @@ internal sealed class BazaarSellerArticle
     public string? Name { get; set; }
     public string? Size { get; set; }
     public decimal Price { get; set; }
+
+    // TODO remove
     public int Status { get; set; }
     public BazaarBillingArticle? BazaarBillingArticle { get; set; }
 }

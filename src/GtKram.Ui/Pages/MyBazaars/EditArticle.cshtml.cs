@@ -52,7 +52,7 @@ public class EditArticleModel : PageModel
             ModelState.AddModelError(string.Empty, SellerArticle.EditExpired.Message);
         }
 
-        if (!result.Value.Article.CanEdit)
+        if (result.Value.IsBooked)
         {
             IsDisabled = true;
             ModelState.AddModelError(string.Empty, SellerArticle.EditFailedDueToBooked.Message);

@@ -27,7 +27,6 @@ internal static class BazaarMapping
 
     public static BazaarEvent MapToEntity(this Domain.Models.BazaarEvent model, BazaarEvent entity, GermanDateTimeConverter dc)
     {
-        entity.Id = model.Id;
         entity.Name = model.Name;
         entity.Description = model.Description;
         entity.StartDate = model.StartsOn.ToUniversalTime();
@@ -58,7 +57,6 @@ internal static class BazaarMapping
 
     public static BazaarSellerRegistration MapToEntity(this Domain.Models.BazaarSellerRegistration model, BazaarSellerRegistration entity, GermanDateTimeConverter dc)
     {
-        entity.Id = model.Id;
         entity.BazaarEventId = model.BazaarEventId;
         entity.Email = model.Email;
         entity.Name = model.Name;
@@ -81,8 +79,6 @@ internal static class BazaarMapping
 
     public static BazaarBilling MapToEntity(this Domain.Models.BazaarBilling model, BazaarBilling entity)
     {
-        entity.Id = model.Id;
-        entity.CreatedOn = model.CreatedOn.ToUniversalTime();
         entity.Status = (int)model.Status;
         entity.BazaarEventId = model.BazaarEventId;
         entity.UserId = model.UserId;
@@ -97,15 +93,6 @@ internal static class BazaarMapping
         BazaarSellerArticleId = entity.BazaarSellerArticleId!.Value,
     };
 
-    public static BazaarBillingArticle MapToEntity(this Domain.Models.BazaarBillingArticle model, BazaarBillingArticle entity)
-    {
-        entity.Id = model.Id;
-        entity.CreatedOn = model.CreatedOn.ToUniversalTime();
-        entity.BazaarBillingId = model.BazaarBillingId;
-        entity.BazaarSellerArticleId = model.BazaarSellerArticleId;
-        return entity;
-    }
-
     public static Domain.Models.BazaarSellerArticle MapToDomain(this BazaarSellerArticle entity) => new()
     {
         Id = entity.Id,
@@ -119,7 +106,6 @@ internal static class BazaarMapping
 
     public static BazaarSellerArticle MapToEntity(this Domain.Models.BazaarSellerArticle model, BazaarSellerArticle entity)
     {
-        entity.Id = model.Id;
         entity.BazaarSellerId = model.BazaarSellerId;
         entity.LabelNumber = model.LabelNumber;
         entity.Name = model.Name;
@@ -132,6 +118,7 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarSeller MapToDomain(this BazaarSeller entity) => new()
     {
         Id = entity.Id,
+        UserId = entity.UserId!.Value,
         CreatedOn = entity.CreatedOn,
         BazaarEventId = entity.BazaarEventId!.Value,
         SellerNumber = entity.SellerNumber,
@@ -142,8 +129,6 @@ internal static class BazaarMapping
 
     public static BazaarSeller MapToEntity(this Domain.Models.BazaarSeller model, BazaarSeller entity)
     {
-        entity.Id = model.Id;
-        entity.CreatedOn = model.CreatedOn;
         entity.BazaarEventId = model.BazaarEventId;
         entity.SellerNumber = model.SellerNumber;
         entity.Role = (int)model.Role;
@@ -233,7 +218,6 @@ internal static class BazaarMapping
         Name = entity.Name,
         Size = entity.Size,
         Price = entity.Price,
-        Status = (Domain.Models.SellerArticleStatus)entity.Status,
         SellerNumber = entity.BazaarSeller!.SellerNumber
     };
 
