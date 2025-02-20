@@ -92,7 +92,6 @@ internal sealed class AppDbContext
         {
             eb.ToTable("bazaar_sellers");
             eb.Property(e => e.Id).HasColumnType(KeyType).ValueGeneratedNever();
-            eb.Property(e => e.CreatedOn).IsRequired();
             eb.Property(e => e.BazaarEventId).HasColumnType(KeyType);
             eb.Property(e => e.UserId).HasColumnType(KeyType);
             eb.Property(e => e.SellerNumber).IsRequired();
@@ -124,7 +123,6 @@ internal sealed class AppDbContext
             eb.Property(e => e.Name).HasMaxLength(256).IsRequired();
             eb.Property(e => e.Size).HasMaxLength(16);
             eb.Property(e => e.Price).HasColumnType("decimal(6,2)").IsRequired();
-            eb.Property(e => e.Status).IsRequired();
 
             eb.HasOne(e => e.BazaarSeller)
                 .WithMany(e => e.BazaarSellerArticles)

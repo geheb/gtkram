@@ -127,4 +127,21 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
 
         return result.ToArray();
     }
+
+    public async Task<BazaarBillingArticle[]> GetBySellerArticleId(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var dc = new GermanDateTimeConverter();
+        var result = new List<BazaarBillingArticle>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .AsNoTracking()
+                .Where(e => chunk.Contains(e.BazaarSellerArticleId!.Value))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain(dc)));
+        }
+
+        return result.ToArray();
+    }
 }

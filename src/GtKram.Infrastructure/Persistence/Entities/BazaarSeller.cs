@@ -3,7 +3,7 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 internal sealed class BazaarSeller
 {
     public Guid Id { get; set; }
-    public DateTimeOffset CreatedOn { get; set; }
+    public DateTimeOffset? CreatedOn { get; set; }
     public DateTimeOffset? UpdatedOn { get; set; }
     public Guid? BazaarEventId { get; set; }
     public BazaarEvent? BazaarEvent { get; set; }

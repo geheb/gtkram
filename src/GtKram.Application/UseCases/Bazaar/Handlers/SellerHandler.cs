@@ -41,6 +41,7 @@ internal sealed class SellerHandler :
     private readonly IBazaarSellerRegistrationRepository _sellerRegistrationRepository;
     private readonly IBazaarSellerRepository _sellerRepository;
     private readonly IBazaarSellerArticleRepository _sellerArticleRepository;
+    private readonly IBazaarBillingRepository _billingRepository;
     private readonly IBazaarBillingArticleRepository _billingArticleRepository;
     private readonly IBazaarEventRepository _eventRepository;
 
@@ -54,6 +55,7 @@ internal sealed class SellerHandler :
         IBazaarSellerRegistrationRepository sellerRegistrationRepository,
         IBazaarSellerRepository sellerRepository,
         IBazaarSellerArticleRepository sellerArticleRepository,
+        IBazaarBillingRepository billingRepository,
         IBazaarBillingArticleRepository billingArticleRepository,
         IBazaarEventRepository eventRepository)
     {
@@ -66,6 +68,7 @@ internal sealed class SellerHandler :
         _sellerRegistrationRepository = sellerRegistrationRepository;
         _sellerRepository = sellerRepository;
         _sellerArticleRepository = sellerArticleRepository;
+        _billingRepository = billingRepository;
         _billingArticleRepository = billingArticleRepository;
         _eventRepository = eventRepository;
     }
@@ -324,7 +327,39 @@ internal sealed class SellerHandler :
         }
 
         var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
-        return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, articles));
+        if (articles.Length == 0)
+        {
+            return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, []));
+        }
+
+        HashSet<Guid> billingCompleted = [];
+        Dictionary<Guid, BazaarBillingArticle> billingArticlesBySellerArticleId;
+        {
+            var billingArticles = await _billingArticleRepository.GetBySellerArticleId([.. articles.Select(a => a.Id)], cancellationToken);
+            billingArticlesBySellerArticleId = billingArticles.ToDictionary(b => b.BazaarSellerArticleId);
+            if (billingArticles.Length > 0)
+            {
+                var billings = await _billingRepository.GetById([.. billingArticles.Select(b => b.BazaarBillingId).Distinct()], cancellationToken);
+                billingCompleted = new(billings.Where(b => b.IsCompleted).Select(b => b.Id));
+            }
+        }
+
+        var result = new List<BazaarSellerArticleWithBilling>(articles.Length);
+        foreach (var article in articles)
+        {
+            Guid? billingArticleId = null;
+            DateTimeOffset? billingCreatedOn = null;
+            var isSold = false;
+            if (billingArticlesBySellerArticleId.TryGetValue(article.Id, out var billingArticle))
+            {
+                billingArticleId = billingArticle.Id;
+                billingCreatedOn = billingArticle.CreatedOn;
+                isSold = billingCompleted.Contains(billingArticle.BazaarBillingId);
+            }
+            result.Add(new(article, billingArticleId, billingCreatedOn, isSold, seller.Value.SellerNumber));
+        }
+
+        return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, [.. result]));
     }
 
     public async ValueTask<BazaarEventWithSellerAndArticleCount[]> Handle(GetEventsWithSellerAndAricleCountByUserQuery query, CancellationToken cancellationToken)
@@ -408,7 +443,35 @@ internal sealed class SellerHandler :
             return Result.Fail(Internal.InvalidData);
         }
 
-        return Result.Ok(new BazaarSellerWithEventAndArticles(seller.Value, @event.Value, articles));
+
+        HashSet<Guid> billingCompleted = [];
+        Dictionary<Guid, BazaarBillingArticle> billingArticlesBySellerArticleId;
+        {
+            var billingArticles = await _billingArticleRepository.GetBySellerArticleId([.. articles.Select(a => a.Id)], cancellationToken);
+            billingArticlesBySellerArticleId = billingArticles.ToDictionary(b => b.BazaarSellerArticleId);
+            if (billingArticles.Length > 0)
+            {
+                var billings = await _billingRepository.GetById([.. billingArticles.Select(b => b.BazaarBillingId).Distinct()], cancellationToken);
+                billingCompleted = new(billings.Where(b => b.IsCompleted).Select(b => b.Id));
+            }
+        }
+
+        var result = new List<BazaarSellerArticleWithBilling>(articles.Length);
+        foreach (var article in articles)
+        {
+            Guid? billingArticleId = null;
+            DateTimeOffset? billingCreatedOn = null;
+            var isSold = false;
+            if (billingArticlesBySellerArticleId.TryGetValue(article.Id, out var billingArticle))
+            {
+                billingArticleId = billingArticle.Id;
+                billingCreatedOn = billingArticle.CreatedOn;
+                isSold = billingCompleted.Contains(billingArticle.BazaarBillingId);
+            }
+            result.Add(new(article, billingArticleId, billingCreatedOn, isSold, seller.Value.SellerNumber));
+        }
+
+        return Result.Ok(new BazaarSellerWithEventAndArticles(seller.Value, @event.Value, [.. result]));
     }
 
     public async ValueTask<Result> Handle(TakeOverSellerArticlesByUserCommand command, CancellationToken cancellationToken)
@@ -438,7 +501,19 @@ internal sealed class SellerHandler :
             if (articles.Length > 0) break;
         }
 
-        if (articles.Length == 0 || !articles.Any(a => a.Status == SellerArticleStatus.Created))
+        if (articles.Length == 0)
+        {
+            return Result.Fail(SellerArticle.NotAvailable);
+        }
+
+        var billingArticles = await _billingArticleRepository.GetBySellerArticleId([.. articles.Select(s => s.Id)], cancellationToken);
+        if (billingArticles.Length > 0)
+        {
+            var billingArticlesByArticleId = new HashSet<Guid>(billingArticles.Select(b => b.BazaarSellerArticleId));
+            articles = articles.Where(a => !billingArticlesByArticleId.Contains(a.Id)).ToArray();
+        }
+
+        if (articles.Length == 0)
         {
             return Result.Fail(SellerArticle.NotAvailable);
         }
@@ -457,14 +532,13 @@ internal sealed class SellerHandler :
         }
 
         var takeOverArticles = new List<BazaarSellerArticle>();
-        foreach (var a in articles.Where(a => a.Status == SellerArticleStatus.Created).OrderBy(a => a.LabelNumber))
+        foreach (var a in articles.OrderBy(a => a.LabelNumber))
         {
             takeOverArticles.Add(new()
             {
                 Name = a.Name,
                 Size = a.Size,
-                Price = a.Price,
-                Status = SellerArticleStatus.Created
+                Price = a.Price
             });
             if (++currentCount >= currentSeller.MaxArticleCount) break;
         }

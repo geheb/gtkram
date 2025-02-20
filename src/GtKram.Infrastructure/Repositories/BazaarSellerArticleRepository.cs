@@ -43,7 +43,6 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
             entity.Id = _pkGenerator.Generate();
             entity.CreatedOn = _timeProvider.GetUtcNow();
             entity.LabelNumber = ++maxLabelNumber;
-            entity.Status = (int)SellerArticleStatus.Created;
 
             await _dbSet.AddAsync(entity, cancellationToken);
 
@@ -76,7 +75,6 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
                 entity.CreatedOn = _timeProvider.GetUtcNow();
                 entity.BazaarSellerId = sellerId;
                 entity.LabelNumber = ++maxLabelNumber;
-                entity.Status = (int)SellerArticleStatus.Created;
 
                 await _dbSet.AddAsync(entity, cancellationToken);
             }

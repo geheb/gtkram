@@ -10,6 +10,7 @@ public interface IBazaarBillingRepository
     Task<BazaarBilling[]> GetByBazaarEventIdAndUserId(Guid eventId, Guid userId, CancellationToken cancellationToken);
     Task<BazaarBilling[]> GetByUserId(Guid id, CancellationToken cancellationToken);
     Task<BazaarBilling[]> GetAll(CancellationToken cancellationToken);
+    Task<BazaarBilling[]> GetById(Guid[] ids, CancellationToken cancellationToken);
     Task<Result<BazaarBilling>> Find(Guid id, CancellationToken cancellationToken);
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
     Task<Result> Update(BazaarBilling model, CancellationToken cancellationToken);

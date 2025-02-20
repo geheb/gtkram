@@ -91,15 +91,15 @@
                     }
                     @foreach (var a in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("EditArticle", null, new { id = a.Id }))">
-                            <td>@a.Name (#@a.LabelNumber)</td>
-                            <td>@a.Size</td>
-                            <td>@a.Price.ToString("0.00") €</td>
+                        <tr class="clickable-row" data-url="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id }))">
+                            <td>@a.SellerArticle.Name (#@a.SellerArticle.LabelNumber)</td>
+                            <td>@a.SellerArticle.Price</td>
+                            <td>@a.SellerArticle.Price.ToString("0.00") €</td>
                             <td>
                                 <i class="@(a.IsSold ? "fas fa-check-circle has-text-success" : "")"></i>
                             </td>
                             <td>
-                                <a href="@(Url.PageLink("EditArticle", null, new { id = a.Id }))">Bearbeiten</a>
+                                <a href="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

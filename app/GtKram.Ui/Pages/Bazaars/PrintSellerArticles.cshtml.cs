@@ -1,3 +1,4 @@
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Models;
 using GtKram.Ui.Extensions;
@@ -13,7 +14,7 @@ public class PrintSellerArticlesModel : PageModel
     private readonly IMediator _mediator;
 
     public int SellerNumber { get; set; }
-    public BazaarSellerArticle[] Items { get; private set; } = [];
+    public BazaarSellerArticleWithBilling[] Items { get; private set; } = [];
 
     public PrintSellerArticlesModel(
         IMediator mediator)

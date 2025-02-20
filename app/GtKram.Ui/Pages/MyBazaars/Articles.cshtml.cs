@@ -1,5 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
+using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Errors;
@@ -30,7 +31,7 @@ public class ArticlesModel : PageModel
     public int SoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
     public decimal PayoutTotalValue { get; set; }
-    public BazaarSellerArticle[] Items { get; set; } = [];
+    public BazaarSellerArticleWithBilling[] Items { get; set; } = [];
 
     public ArticlesModel(
         TimeProvider timeProvider,
@@ -69,10 +70,10 @@ public class ArticlesModel : PageModel
         }
 
         AvailableCount = Items.Length;
-        AvailableTotalValue = Items.Sum(a => a.Price);
+        AvailableTotalValue = Items.Sum(a => a.SellerArticle.Price);
         var sold = Items.Where(a => a.IsSold);
         SoldCount = sold.Count();
-        SoldTotalValue = sold.Sum(a => a.Price);
+        SoldTotalValue = sold.Sum(a => a.SellerArticle.Price);
         PayoutTotalValue = eventConverter.CalcPayout(@event, SoldTotalValue);
     }
 

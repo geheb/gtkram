@@ -194,9 +194,12 @@ internal sealed class BillingHandler :
         foreach (var billingArticle in billingArticles)
         {
             var article = articlesById[billingArticle.BazaarSellerArticleId];
+
             result.Add(new(
                 article,
-                billingArticle,
+                billingArticle.Id,
+                billingArticle.CreatedOn,
+                billing.Value.IsCompleted,
                 sellersById[article.BazaarSellerId].SellerNumber));
         }
 
@@ -520,7 +523,9 @@ internal sealed class BillingHandler :
             var article = articlesById[billingArticle.BazaarSellerArticleId];
             result.Add(new(
                 article,
-                billingArticle,
+                billingArticle.Id,
+                billingArticle.CreatedOn,
+                billing.Value.IsCompleted,
                 sellersById[article.BazaarSellerId].SellerNumber));
         }
 

@@ -118,7 +118,7 @@
                     @foreach (var i in Model.Items)
                     {
                         <tr>
-                            <td>@dateConverter.ToDateTime(i.BillingArticle.CreatedOn)</td>
+                            <td>@dateConverter.ToDateTime(i.BillingCreatedOn!.Value)</td>
                             <td>@i.SellerNumber</td>
                             <td>@i.SellerArticle.LabelNumber</td>
                             <td>@i.SellerArticle.Name</td>
@@ -129,7 +129,7 @@
                                 <a class="open-modal" href="#"
                                    data-target="#deleteModal"
                                    data-info="@i.Format()"
-                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticle.Id }))">Löschen</a>
+                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">Löschen</a>
                                 }
                             </td>
                         </tr>

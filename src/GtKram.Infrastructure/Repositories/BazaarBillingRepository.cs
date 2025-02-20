@@ -99,6 +99,23 @@ internal sealed class BazaarBillingRepository : IBazaarBillingRepository
         return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
+    public async Task<BazaarBilling[]> GetById(Guid[] ids, CancellationToken cancellationToken)
+    {
+        var dc = new GermanDateTimeConverter();
+        var result = new List<BazaarBilling>(ids.Length);
+        foreach (var chunk in ids.Chunk(100))
+        {
+            var entities = await _dbSet
+                .AsNoTracking()
+                .Where(e => chunk.Contains(e.Id))
+                .ToArrayAsync(cancellationToken);
+
+            result.AddRange(entities.Select(e => e.MapToDomain(dc)));
+        }
+
+        return result.ToArray();
+    }
+
     public async Task<BazaarBilling[]> GetByUserId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet

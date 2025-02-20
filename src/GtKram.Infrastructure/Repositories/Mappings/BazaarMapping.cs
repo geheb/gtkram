@@ -97,8 +97,7 @@ internal static class BazaarMapping
         LabelNumber = entity.LabelNumber,
         Name = entity.Name,
         Size = entity.Size,
-        Price = entity.Price,
-        Status = (Domain.Models.SellerArticleStatus)entity.Status,
+        Price = entity.Price
     };
 
     public static BazaarSellerArticle MapToEntity(this Domain.Models.BazaarSellerArticle model, BazaarSellerArticle entity)
@@ -108,7 +107,6 @@ internal static class BazaarMapping
         entity.Name = model.Name;
         entity.Size = model.Size;
         entity.Price = model.Price;
-        entity.Status = (int)model.Status;
         return entity;
     }
 
@@ -116,7 +114,7 @@ internal static class BazaarMapping
     {
         Id = entity.Id,
         UserId = entity.UserId!.Value,
-        CreatedOn = entity.CreatedOn,
+        CreatedOn = entity.CreatedOn ?? DateTimeOffset.MinValue,
         BazaarEventId = entity.BazaarEventId!.Value,
         SellerNumber = entity.SellerNumber,
         Role = (Domain.Models.SellerRole)entity.Role,

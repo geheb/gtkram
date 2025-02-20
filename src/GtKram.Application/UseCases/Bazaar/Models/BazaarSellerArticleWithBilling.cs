@@ -4,7 +4,9 @@ namespace GtKram.Application.UseCases.Bazaar.Models;
 
 public record struct BazaarSellerArticleWithBilling(
     BazaarSellerArticle SellerArticle, 
-    BazaarBillingArticle BillingArticle,
+    Guid? BillingArticleId,
+    DateTimeOffset? BillingCreatedOn,
+    bool IsSold,
     int SellerNumber)
 {
     public string Format() =>
