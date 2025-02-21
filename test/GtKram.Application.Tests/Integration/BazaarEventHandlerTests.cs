@@ -169,16 +169,17 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var regRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
         var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@bar", Name = "bar", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@baz", Name = "baz", Phone = "12345" }, default);
-        await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default);
+        var id1 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@bar", Name = "bar", Phone = "12345" }, default);
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@baz", Name = "baz", Phone = "12345" }, default);
+        var id2 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
+        await regRepo.Create(new() { BazaarEventId = id2, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
 
         var result = await sut.Handle(new GetEventsWithRegistrationCountQuery(), default);
 
         result.Length.ShouldBe(2);
-        result.First(r => r.Event.Id == id).RegistrationCount.ShouldBe(3);
-        result.First(r => r.Event.Id != id).RegistrationCount.ShouldBe(0);
+        result.First(r => r.Event.Id == id1).RegistrationCount.ShouldBe(3);
+        result.First(r => r.Event.Id == id2).RegistrationCount.ShouldBe(1);
     }
 }
