@@ -8,7 +8,7 @@ using NSubstitute;
 
 namespace GtKram.Application.Tests;
 
-public class MockSignInManager : SignInManager<IdentityUserGuid>
+internal class MockSignInManager : SignInManager<IdentityUserGuid>
 {
     public MockSignInManager()
         : base(

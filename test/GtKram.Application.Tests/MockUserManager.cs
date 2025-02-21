@@ -6,7 +6,7 @@ using NSubstitute;
 
 namespace GtKram.Application.Tests;
 
-public class MockUserManager : UserManager<IdentityUserGuid>
+internal class MockUserManager : UserManager<IdentityUserGuid>
 {
     public MockUserManager()
         : base(

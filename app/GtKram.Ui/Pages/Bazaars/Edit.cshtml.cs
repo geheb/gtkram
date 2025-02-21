@@ -31,7 +31,7 @@ public class EditModel : PageModel
 
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindEventQuery(id, false), cancellationToken);
+        var result = await _mediator.Send(new FindEventQuery(id), cancellationToken);
         if (result.IsFailed)
         {
             IsDisabled = true;

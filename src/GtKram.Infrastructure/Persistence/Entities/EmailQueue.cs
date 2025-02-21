@@ -1,6 +1,6 @@
 namespace GtKram.Infrastructure.Persistence.Entities;
 
-public sealed class EmailQueue
+internal sealed class EmailQueue
 {
     public Guid Id { get; set; }
     public DateTimeOffset CreatedOn {  get; set; }

@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
-internal sealed class SellerHandler :
+internal sealed class BazaarSellerHandler :
     IQueryHandler<FindRegistrationWithSellerQuery, Result<BazaarSellerRegistrationWithSeller>>,
     IQueryHandler<GetSellerRegistrationWithArticleCountQuery, BazaarSellerRegistrationWithArticleCount[]>,
     IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, Result<BazaarSellerWithRegistrationAndArticles>>,
@@ -45,7 +45,7 @@ internal sealed class SellerHandler :
     private readonly IBazaarBillingArticleRepository _billingArticleRepository;
     private readonly IBazaarEventRepository _eventRepository;
 
-    public SellerHandler(
+    public BazaarSellerHandler(
         TimeProvider timeProvider,
         IdentityErrorDescriber errorDescriber,
         IMediator mediator,

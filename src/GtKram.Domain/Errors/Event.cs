@@ -12,6 +12,9 @@ public static class Event
     public static Error SaveFailed { get; } =
         new($"{_prefix}.save.failed", "Der Kinderbasar konnte nicht gespeichert werden.");
 
+    public static Error DeleteFailed { get; } =
+        new($"{_prefix}.delete.failed", "Der Kinderbasar konnte nicht gelöscht werden.");
+
     public static Error Expired { get; } =
         new($"{_prefix}.expired", "Der Kinderbasar ist bereits abgelaufen.");
 

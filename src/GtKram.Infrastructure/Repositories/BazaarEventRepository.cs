@@ -25,16 +25,17 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarEvent>();
     }
 
-    public async Task<Result> Create(BazaarEvent model, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Create(BazaarEvent model, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new(), new());
         entity.Id = _pkGenerator.Generate();
         entity.CreatedOn = _timeProvider.GetUtcNow();
+        entity.Commission = 20;
 
         await _dbSet.AddAsync(entity, cancellationToken);
 
         var isAdded = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isAdded ? Result.Ok() : Result.Fail(Event.SaveFailed);
+        return isAdded ? Result.Ok(entity.Id) : Result.Fail(Event.SaveFailed);
     }
 
     public async Task<Result<BazaarEvent>> Find(Guid id, CancellationToken cancellationToken)
@@ -97,9 +98,15 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarEvent { Id = id });
+        var entity = await _dbSet.FindAsync(id);
+        if (entity is null)
+        {
+            return Result.Fail(Event.NotFound);
+        }
+
+        _dbSet.Remove(entity);
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(Event.NotFound);
+        return isDeleted ? Result.Ok() : Result.Fail(Event.DeleteFailed);
     }
 }

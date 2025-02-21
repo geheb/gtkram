@@ -9,6 +9,7 @@ using GtKram.Infrastructure.Worker;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace GtKram.Infrastructure;
 
@@ -19,6 +20,8 @@ public static class ServiceExtensions
         services.AddHttpContextAccessor();
 
         services.AddMemoryCache();
+
+        services.AddSingleton(TimeProvider.System);
 
         services.Configure<SmtpConnectionOptions>(config.GetSection("Smtp"));
 

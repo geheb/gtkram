@@ -101,7 +101,7 @@ public class BazaarEventInput
         var dc = new GermanDateTimeConverter();
         return new(new()
         {
-            Name = Name,
+            Name = Name!,
             Description = Description,
             StartsOn = dc.FromIsoDateTime(StartDate)!.Value,
             EndsOn = dc.FromIsoDateTime(EndDate)!.Value,

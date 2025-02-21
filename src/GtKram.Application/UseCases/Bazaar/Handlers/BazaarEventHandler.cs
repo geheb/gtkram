@@ -10,8 +10,9 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
-internal sealed class EventHandler :
+internal sealed class BazaarEventHandler :
     IQueryHandler<FindEventQuery, Result<BazaarEvent>>,
+    IQueryHandler<FindEventForRegisterQuery, Result<BazaarEvent>>,
     IQueryHandler<GetEventsWithRegistrationCountQuery, BazaarEventWithRegistrationCount[]>,
     ICommandHandler<CreateEventCommand, Result>,
     ICommandHandler<UpdateEventCommand, Result>,
@@ -21,10 +22,9 @@ internal sealed class EventHandler :
     private readonly IBazaarEventRepository _eventRepository;
     private readonly IBazaarSellerRegistrationRepository _sellerRegistrationRepository;
 
-    public EventHandler(
+    public BazaarEventHandler(
         TimeProvider timeProvider,
         IBazaarEventRepository eventRepository,
-        IBazaarSellerRepository sellerRepository,
         IBazaarSellerRegistrationRepository sellerRegistrationRepository)
     {
         _timeProvider = timeProvider;
@@ -32,15 +32,13 @@ internal sealed class EventHandler :
         _sellerRegistrationRepository = sellerRegistrationRepository;
     }
 
-    public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
+        await _eventRepository.Find(query.EventId, cancellationToken);
+
+    public async ValueTask<Result<BazaarEvent>> Handle(FindEventForRegisterQuery query, CancellationToken cancellationToken)
     {
         var @event = await _eventRepository.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
-        {
-            return @event;
-        }
-
-        if (!query.ShouldValidate)
         {
             return @event;
         }

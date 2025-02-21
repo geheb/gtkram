@@ -8,12 +8,13 @@ internal static class BazaarMapping
     public static Domain.Models.BazaarEvent MapToDomain(this BazaarEvent entity, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
-        Name = entity.Name,
+        Name = entity.Name!,
         Description = entity.Description,
         StartsOn = dc.ToLocal(entity.StartDate),
         EndsOn = dc.ToLocal(entity.EndDate),
         Address = entity.Address,
         MaxSellers = entity.MaxSellers,
+        Commission = entity.Commission,
         RegisterStartsOn = dc.ToLocal(entity.RegisterStartDate),
         RegisterEndsOn = dc.ToLocal(entity.RegisterEndDate),
         EditArticleEndsOn = entity.EditArticleEndDate.HasValue ? dc.ToLocal(entity.EditArticleEndDate.Value) : null,

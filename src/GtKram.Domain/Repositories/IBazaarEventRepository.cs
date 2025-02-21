@@ -5,7 +5,7 @@ namespace GtKram.Domain.Repositories;
 
 public interface IBazaarEventRepository
 {
-    Task<Result> Create(BazaarEvent model, CancellationToken cancellationToken);
+    Task<Result<Guid>> Create(BazaarEvent model, CancellationToken cancellationToken);
     Task<Result<BazaarEvent>> Find(Guid id, CancellationToken cancellationToken);
     Task<BazaarEvent[]> GetById(Guid[] ids, CancellationToken cancellationToken);
     Task<BazaarEvent[]> GetAll(CancellationToken cancellationToken);

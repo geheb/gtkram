@@ -4,21 +4,28 @@ using GtKram.Infrastructure.Persistence;
 
 namespace GtKram.Application.Tests;
 
-public abstract class DatabaseBase
+public abstract class DatabaseFixture : IAsyncLifetime
 {
-    protected readonly IServiceProvider _serviceProvider;
+    protected ServiceProvider _serviceProvider = null!;
 
-    public DatabaseBase()
+    public async Task DisposeAsync()
+    {
+       await _serviceProvider.DisposeAsync();
+    }
+
+    public Task InitializeAsync()
     {
         var services = new ServiceCollection();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
 
-        ConfigureServices(services);
+        Setup(services);
 
         _serviceProvider = services.BuildServiceProvider();
+
+        return Task.CompletedTask;
     }
 
-    protected abstract void ConfigureServices(IServiceCollection services);
+    protected abstract void Setup(IServiceCollection services);
 }

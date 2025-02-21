@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Infrastructure.Persistence.Entities;
 
-public sealed class IdentityUserGuid : IdentityUser<Guid> // ApplicationUser
+internal sealed class IdentityUserGuid : IdentityUser<Guid> // ApplicationUser
 {
     public string? Name { get; set; }
     public DateTimeOffset? LastLogin { get; set; }

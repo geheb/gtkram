@@ -10,7 +10,7 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
-internal sealed class BillingHandler :
+internal sealed class BazaarBillingHandler :
     IQueryHandler<GetEventsWithBillingTotalsQuery, BazaarEventWithBillingTotals[]>,
     IQueryHandler<GetBillingsWithTotalsAndEventQuery, Result<BazaarBillingsWithTotalsAndEvent>>,
     IQueryHandler<GetBillingArticlesWithBillingAndEventQuery, Result<BazaarSellerArticlesWithBillingAndEvent>>,
@@ -38,7 +38,7 @@ internal sealed class BillingHandler :
     private readonly IBazaarBillingArticleRepository _billingArticleRepository;
     private readonly IBazaarSellerArticleRepository _sellerArticleRepository;
 
-    public BillingHandler(
+    public BazaarBillingHandler(
         TimeProvider timeProvider,
         IUserRepository userRepository,
         IBazaarEventRepository eventRepository,

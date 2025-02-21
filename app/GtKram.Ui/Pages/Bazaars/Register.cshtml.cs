@@ -35,7 +35,7 @@ public class RegisterModel : PageModel
 
     public async Task OnGetAsync(Guid id, bool? success, CancellationToken cancellationToken)
     {
-        var @event = await _mediator.Send(new FindEventQuery(id, true), cancellationToken);
+        var @event = await _mediator.Send(new FindEventForRegisterQuery(id), cancellationToken);
         if (@event.IsFailed)
         {
             IsDisabled = true;
@@ -63,14 +63,6 @@ public class RegisterModel : PageModel
             IsDisabled = true;
             _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
-            return Page();
-        }
-
-        var @event = await _mediator.Send(new FindEventQuery(id, true), cancellationToken);
-        if (@event.IsFailed)
-        {
-            IsDisabled = true;
-            ModelState.AddError(@event.Errors);
             return Page();
         }
 

@@ -9,22 +9,22 @@ using Shouldly;
 
 namespace GtKram.Application.Tests.Integration;
 
-public class UserTests : DatabaseBase
+public class UserTests : DatabaseFixture
 {
-    protected override void ConfigureServices(IServiceCollection services)
+    protected override void Setup(IServiceCollection services)
     {
         var mockUserManager = Substitute.For<MockUserManager>();
         mockUserManager.CreateAsync(Arg.Any<IdentityUserGuid>()).Returns(IdentityResult.Success);
         mockUserManager.AddToRolesAsync(Arg.Any<IdentityUserGuid>(), Arg.Any<IEnumerable<string>>()).Returns(IdentityResult.Success);
 
-        services.AddScoped(s => TimeProvider.System);
+        services.AddSingleton(TimeProvider.System);
         services.AddScoped<UserManager<IdentityUserGuid>>(s => mockUserManager);
         services.AddScoped(s => Substitute.For<IdentityErrorDescriber>());
         services.AddScoped<IUserRepository, UserRepository>();
     }
 
     [Fact]
-    public async Task Create_User()
+    public async Task Create_User_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
