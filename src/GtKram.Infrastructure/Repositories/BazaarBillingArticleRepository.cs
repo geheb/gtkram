@@ -43,10 +43,16 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarBillingArticle { Id = id });
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(BillingArticle.NotFound);
+        }
+
+        _dbSet.Remove(entity);
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(BillingArticle.NotFound);
+        return isDeleted ? Result.Ok() : Result.Fail(BillingArticle.SaveFailed);
     }
 
     public async Task<Result> DeleteByBillingId(Guid id, CancellationToken cancellationToken)

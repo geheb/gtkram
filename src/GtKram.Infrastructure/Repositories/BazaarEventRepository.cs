@@ -98,7 +98,7 @@ internal sealed class BazaarEventRepository : IBazaarEventRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _dbSet.FindAsync(id);
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Event.NotFound);

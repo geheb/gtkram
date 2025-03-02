@@ -40,11 +40,12 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         {
             if (entity.SellerNumber < 1)
             {
-                var max = await _dbSet
+                var maxSellerNumber = await _dbSet
                     .Where(e => e.BazaarEventId == model.BazaarEventId)
-                    .MaxAsync(e => e.SellerNumber, cancellationToken);
+                    .Select(e => (int?)e.SellerNumber)
+                    .MaxAsync(cancellationToken) ?? 0;
 
-                entity.SellerNumber = max + 1;
+                entity.SellerNumber = maxSellerNumber + 1;
             }
             else
             {
@@ -140,10 +141,16 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarSeller { Id = id });
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(Seller.NotFound);
+        }
+
+        _dbSet.Remove(entity);
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(Seller.NotFound);
+        return isDeleted ? Result.Ok() : Result.Fail(Seller.SaveFailed);
     }
 
     public async Task<BazaarSeller[]> GetAll(CancellationToken cancellationToken)

@@ -95,7 +95,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
     }
 
     [Fact]
-    public async Task FFindEventForRegisterQuery_IsFailed_If_Expired()
+    public async Task EventExpired_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
@@ -112,15 +112,16 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
     }
 
     [Fact]
-    public async Task FindEventForRegisterQuery_IsFailed_If_RegisterStartsOn()
+    public async Task Register_NotTakePlace_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow().AddHours(1));
 
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
+
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
         var id = (await repo.Create(@event, default)).Value;
 
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
 
         result.IsFailed.ShouldBeTrue();
@@ -128,7 +129,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
     }
 
     [Fact]
-    public async Task FindEventForRegisterQuery_IsFailed_If_RegisterEndsOn()
+    public async Task Register_Expired_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddHours(2));
@@ -145,7 +146,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
     }
 
     [Fact]
-    public async Task FindEventForRegisterQuery_IsFailed_If_MaxSellers()
+    public async Task RegistrationLimitExceeded_FindEventForRegisterQuery_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();

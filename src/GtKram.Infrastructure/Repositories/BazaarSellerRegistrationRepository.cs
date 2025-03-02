@@ -162,10 +162,16 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarSellerRegistration { Id = id });
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(EventRegistration.NotFound);
+        }
+
+        _dbSet.Remove(entity);
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(EventRegistration.NotFound);
+        return isDeleted ? Result.Ok() : Result.Fail(EventRegistration.SaveFailed);
     }
 
     public async Task<Result<int>> GetCountByBazaarEventId(Guid id, CancellationToken cancellationToken)

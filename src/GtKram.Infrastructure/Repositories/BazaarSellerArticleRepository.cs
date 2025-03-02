@@ -37,12 +37,13 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         {
             var maxLabelNumber = await _dbSet
                 .Where(e => e.BazaarSellerId == model.BazaarSellerId)
-                .MaxAsync(e => e.LabelNumber, cancellationToken);
+                .Select(e => (int?)e.LabelNumber)
+                .MaxAsync(cancellationToken) ?? 0;
 
             var entity = model.MapToEntity(new());
             entity.Id = _pkGenerator.Generate();
             entity.CreatedOn = _timeProvider.GetUtcNow();
-            entity.LabelNumber = ++maxLabelNumber;
+            entity.LabelNumber = maxLabelNumber + 1;
 
             await _dbSet.AddAsync(entity, cancellationToken);
 
@@ -66,7 +67,8 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
         {
             var maxLabelNumber = await _dbSet
                 .Where(e => e.BazaarSellerId == sellerId)
-                .MaxAsync(e => e.LabelNumber, cancellationToken);
+                .Select(e => (int?)e.LabelNumber)
+                .MaxAsync(cancellationToken) ?? 0;
 
             foreach (var model in models)
             {
@@ -90,10 +92,16 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        _dbSet.Remove(new Persistence.Entities.BazaarSellerArticle { Id = id });
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return Result.Fail(SellerArticle.NotFound);
+        }
+
+        _dbSet.Remove(entity);
 
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;
-        return isDeleted ? Result.Ok() : Result.Fail(SellerArticle.NotFound);
+        return isDeleted ? Result.Ok() : Result.Fail(SellerArticle.SaveFailed);
     }
 
     public async Task<Result<BazaarSellerArticle>> Find(Guid id, CancellationToken cancellationToken)
