@@ -246,12 +246,13 @@ internal sealed class BazaarSellerHandler :
 
             var seller = new BazaarSeller
             {
+                UserId = userId,
                 BazaarEventId = @event.Value.Id,
                 Role = SellerRole.Standard,
                 MaxArticleCount = SellerRole.Standard.GetMaxArticleCount()
             };
 
-            var sellerResult = await _sellerRepository.Create(seller, userId, cancellationToken);
+            var sellerResult = await _sellerRepository.Create(seller, cancellationToken);
             if (sellerResult.IsFailed)
             {
                 return sellerResult.ToResult();

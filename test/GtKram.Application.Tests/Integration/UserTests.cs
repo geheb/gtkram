@@ -9,21 +9,34 @@ using Shouldly;
 
 namespace GtKram.Application.Tests.Integration;
 
-public class UserTests : DatabaseFixture
+[TestClass]
+public class UserTests
 {
-    protected override void Setup(IServiceCollection services)
+    private readonly ServiceFixture _fixture = new();
+    private IServiceProvider _serviceProvider = null!;
+
+    [TestInitialize]
+    public void Init()
     {
         var mockUserManager = Substitute.For<MockUserManager>();
         mockUserManager.CreateAsync(Arg.Any<IdentityUserGuid>()).Returns(IdentityResult.Success);
         mockUserManager.AddToRolesAsync(Arg.Any<IdentityUserGuid>(), Arg.Any<IEnumerable<string>>()).Returns(IdentityResult.Success);
 
-        services.AddSingleton(TimeProvider.System);
-        services.AddScoped<UserManager<IdentityUserGuid>>(s => mockUserManager);
-        services.AddScoped(s => Substitute.For<IdentityErrorDescriber>());
-        services.AddScoped<IUserRepository, UserRepository>();
+        _fixture.Services.AddSingleton(TimeProvider.System);
+        _fixture.Services.AddScoped<UserManager<IdentityUserGuid>>(s => mockUserManager);
+        _fixture.Services.AddScoped(s => Substitute.For<IdentityErrorDescriber>());
+        _fixture.Services.AddScoped<IUserRepository, UserRepository>();
+
+        _serviceProvider = _fixture.Build();
     }
 
-    [Fact]
+    [TestCleanup]
+    public void Cleanup()
+    {
+        _fixture.Dispose();
+    }
+
+    [TestMethod]
     public async Task Create_User_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();

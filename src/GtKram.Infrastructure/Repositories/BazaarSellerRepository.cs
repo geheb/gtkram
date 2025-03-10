@@ -27,12 +27,12 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         _dbSet = _dbContext.Set<Persistence.Entities.BazaarSeller>();
     }
 
-    public async Task<Result<Guid>> Create(BazaarSeller model, Guid userId, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Create(BazaarSeller model, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new());
         entity.Id = _pkGenerator.Generate();
         entity.CreatedOn = _timeProvider.GetUtcNow();
-        entity.UserId = userId;
+        entity.UserId = model.UserId;
 
         await _sellerNumberSemaphore.WaitAsync(cancellationToken);
 

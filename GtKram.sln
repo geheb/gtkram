@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Ui", "app\GtKram.Ui\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Cli", "app\GtKram.Cli\GtKram.Cli.csproj", "{7A97B086-F9A4-4AF1-942F-05F1E24D98EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GtKram.Application.Tests", "test\GtKram.Application.Tests\GtKram.Application.Tests.csproj", "{AB1B401C-CED5-41CA-ADAD-F1F862BCEBD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GtKram.Application.Tests", "test\GtKram.Application.Tests\GtKram.Application.Tests.csproj", "{AB1B401C-CED5-41CA-ADAD-F1F862BCEBD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

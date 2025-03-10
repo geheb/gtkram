@@ -11,22 +11,34 @@ using Shouldly;
 
 namespace GtKram.Application.Tests.Integration;
 
-public sealed class BazaarEventHandlerTests : DatabaseFixture
+[TestClass]
+public sealed class BazaarEventHandlerTests
 {
+    private readonly ServiceFixture _fixture = new();
+    private IServiceProvider _serviceProvider = null!;
     private TimeProvider _mockTimeProvider = null!;
 
-    protected override void Setup(IServiceCollection services)
+    [TestInitialize]
+    public void Init()
     {
         _mockTimeProvider = Substitute.For<TimeProvider>();
         _mockTimeProvider.GetUtcNow().Returns(_ => DateTimeOffset.UtcNow);
 
-        services.AddSingleton(_mockTimeProvider);
-        services.AddScoped<IBazaarEventRepository, BazaarEventRepository>();
-        services.AddScoped<IBazaarSellerRegistrationRepository, BazaarSellerRegistrationRepository>();
-        services.AddScoped<BazaarEventHandler>();
+        _fixture.Services.AddSingleton(_mockTimeProvider);
+        _fixture.Services.AddScoped<IBazaarEventRepository, BazaarEventRepository>();
+        _fixture.Services.AddScoped<IBazaarSellerRegistrationRepository, BazaarSellerRegistrationRepository>();
+        _fixture.Services.AddScoped<BazaarEventHandler>();
+
+        _serviceProvider = _fixture.Build();
     }
 
-    [Fact]
+    [TestCleanup]
+    public void Cleanup()
+    {
+        _fixture.Dispose();
+    }
+
+    [TestMethod]
     public async Task CreateEventCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -37,7 +49,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.IsSuccess.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task DeleteEventCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -50,7 +62,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.IsSuccess.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task UpdateEventCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -67,7 +79,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         model.Value.Description.ShouldBe("foo");
     }
 
-    [Fact]
+    [TestMethod]
     public async Task FindEventQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -81,7 +93,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.Value.Commission.ShouldBe(20);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task FindEventForRegisterQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -94,7 +106,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.IsSuccess.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task EventExpired_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
@@ -111,7 +123,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.Errors.Any(e => e == Event.Expired).ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task Register_NotTakePlace_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow().AddHours(1));
@@ -128,7 +140,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task Register_Expired_FindEventForRegisterQuery_IsFailed()
     {
         var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
@@ -145,7 +157,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task RegistrationLimitExceeded_FindEventForRegisterQuery_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -163,7 +175,7 @@ public sealed class BazaarEventHandlerTests : DatabaseFixture
         result.Errors.Any(e => e == EventRegistration.LimitExceeded).ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task GetEventsWithRegistrationCountQuery_Has_Result()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
