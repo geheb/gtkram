@@ -14,6 +14,12 @@ public class UserTests
 {
     private readonly ServiceFixture _fixture = new();
     private IServiceProvider _serviceProvider = null!;
+    private CancellationToken _cancellationToken;
+
+    public UserTests(TestContext context)
+    {
+        _cancellationToken = context.CancellationTokenSource.Token;
+    }
 
     [TestInitialize]
     public void Init()
@@ -42,7 +48,7 @@ public class UserTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-        var result = await userRepo.Create("foo", "foo@bar", [UserRoleType.Manager], default);
+        var result = await userRepo.Create("foo", "foo@bar", [UserRoleType.Manager], _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
     }
 }

@@ -18,7 +18,7 @@ internal sealed class BazaarSellerHandler :
     IQueryHandler<FindRegistrationWithSellerQuery, Result<BazaarSellerRegistrationWithSeller>>,
     IQueryHandler<GetSellerRegistrationWithArticleCountQuery, BazaarSellerRegistrationWithArticleCount[]>,
     IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, Result<BazaarSellerWithRegistrationAndArticles>>,
-    IQueryHandler<GetEventsWithSellerAndAricleCountByUserQuery, BazaarEventWithSellerAndArticleCount[]>,
+    IQueryHandler<GetEventsWithSellerAndArticleCountByUserQuery, BazaarEventWithSellerAndArticleCount[]>,
     IQueryHandler<FindSellerWithEventAndArticlesByUserQuery, Result<BazaarSellerWithEventAndArticles>>,
     IQueryHandler<FindSellerArticleByUserQuery, Result<BazaarSellerArticleWithEvent>>,
     IQueryHandler<FindSellerEventByUserQuery, Result<BazaarEvent>>,
@@ -363,7 +363,7 @@ internal sealed class BazaarSellerHandler :
         return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, [.. result]));
     }
 
-    public async ValueTask<BazaarEventWithSellerAndArticleCount[]> Handle(GetEventsWithSellerAndAricleCountByUserQuery query, CancellationToken cancellationToken)
+    public async ValueTask<BazaarEventWithSellerAndArticleCount[]> Handle(GetEventsWithSellerAndArticleCountByUserQuery query, CancellationToken cancellationToken)
     {
         var sellers = await _sellerRepository.GetByUserId(query.UserId, cancellationToken);
         if (sellers.Length == 0)

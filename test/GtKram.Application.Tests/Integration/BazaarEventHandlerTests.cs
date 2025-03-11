@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Shouldly;
 
-
 namespace GtKram.Application.Tests.Integration;
 
 [TestClass]
@@ -17,6 +16,12 @@ public sealed class BazaarEventHandlerTests
     private readonly ServiceFixture _fixture = new();
     private IServiceProvider _serviceProvider = null!;
     private TimeProvider _mockTimeProvider = null!;
+    private CancellationToken _cancellationToken;
+
+    public BazaarEventHandlerTests(TestContext context)
+    {
+        _cancellationToken = context.CancellationTokenSource.Token;
+    }
 
     [TestInitialize]
     public void Init()
@@ -44,7 +49,7 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
 
-        var result = await sut.Handle(new CreateEventCommand(TestData.CreateEvent(_mockTimeProvider.GetUtcNow())), default);
+        var result = await sut.Handle(new CreateEventCommand(TestData.CreateEvent(_mockTimeProvider.GetUtcNow())), _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
     }
@@ -55,9 +60,9 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
+        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
-        var result = await sut.Handle(new DeleteEventCommand(id), default);
+        var result = await sut.Handle(new DeleteEventCommand(id), _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
     }
@@ -68,12 +73,12 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
-        var model = await repo.Find(id, default);
+        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        var model = await repo.Find(id, _cancellationToken);
         model.Value.Description = "foo";
 
-        var result = await sut.Handle(new UpdateEventCommand(model.Value), default);
-        model = await repo.Find(id, default);
+        var result = await sut.Handle(new UpdateEventCommand(model.Value), _cancellationToken);
+        model = await repo.Find(id, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         model.Value.Description.ShouldBe("foo");
@@ -85,9 +90,9 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
+        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
-        var result = await sut.Handle(new FindEventQuery(id), default);
+        var result = await sut.Handle(new FindEventQuery(id), _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Commission.ShouldBe(20);
@@ -99,9 +104,9 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
+        var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
+        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
     }
@@ -115,9 +120,9 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, default)).Value;
+        var id = (await repo.Create(@event, _cancellationToken)).Value;
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
+        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == Event.Expired).ShouldBeTrue();
@@ -131,10 +136,10 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
 
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, default)).Value;
+        var id = (await repo.Create(@event, _cancellationToken)).Value;
 
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
+        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
@@ -149,9 +154,9 @@ public sealed class BazaarEventHandlerTests
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, default)).Value;
+        var id = (await repo.Create(@event, _cancellationToken)).Value;
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
+        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
@@ -164,12 +169,12 @@ public sealed class BazaarEventHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var regRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
         var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@bar", Name = "bar", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id, Email = "user@baz", Name = "baz", Phone = "12345" }, default);
+        var id = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        await regRepo.Create(new() { BazaarEventId = id, Email = "user@foo", Name = "foo", Phone = "12345" }, _cancellationToken);
+        await regRepo.Create(new() { BazaarEventId = id, Email = "user@bar", Name = "bar", Phone = "12345" }, _cancellationToken);
+        await regRepo.Create(new() { BazaarEventId = id, Email = "user@baz", Name = "baz", Phone = "12345" }, _cancellationToken);
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), default);
+        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == EventRegistration.LimitExceeded).ShouldBeTrue();
@@ -182,14 +187,14 @@ public sealed class BazaarEventHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
         var regRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
         var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id1 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
-        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@bar", Name = "bar", Phone = "12345" }, default);
-        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@baz", Name = "baz", Phone = "12345" }, default);
-        var id2 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), default)).Value;
-        await regRepo.Create(new() { BazaarEventId = id2, Email = "user@foo", Name = "foo", Phone = "12345" }, default);
+        var id1 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@foo", Name = "foo", Phone = "12345" }, _cancellationToken);
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@bar", Name = "bar", Phone = "12345" }, _cancellationToken);
+        await regRepo.Create(new() { BazaarEventId = id1, Email = "user@baz", Name = "baz", Phone = "12345" }, _cancellationToken);
+        var id2 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        await regRepo.Create(new() { BazaarEventId = id2, Email = "user@foo", Name = "foo", Phone = "12345" }, _cancellationToken);
 
-        var result = await sut.Handle(new GetEventsWithRegistrationCountQuery(), default);
+        var result = await sut.Handle(new GetEventsWithRegistrationCountQuery(), _cancellationToken);
 
         result.Length.ShouldBe(2);
         result.First(r => r.Event.Id == id1).RegistrationCount.ShouldBe(3);
