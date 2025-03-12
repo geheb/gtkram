@@ -36,11 +36,11 @@ public sealed class BazaarSellerHandlerTests
     {
         _mockTimeProvider = Substitute.For<TimeProvider>();
         _mockTimeProvider.GetUtcNow().Returns(_ => DateTimeOffset.UtcNow);
+        _fixture.Services.AddSingleton(_mockTimeProvider);
 
         var mockMediator = Substitute.For<IMediator>();
         mockMediator.Send(Arg.Any<CreateUserCommand>(), _cancellationToken).Returns(Result.Ok(Guid.NewGuid()));
         _fixture.Services.AddScoped(_ => mockMediator);
-        _fixture.Services.AddSingleton(_mockTimeProvider);
 
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "http://localhost", Title = "Title" }));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ConfirmEmailDataProtectionTokenProviderOptions()));
@@ -49,7 +49,6 @@ public sealed class BazaarSellerHandlerTests
         var mockUserManager = Substitute.For<MockUserManager>();
         mockUserManager.CreateAsync(Arg.Any<Infrastructure.Persistence.Entities.IdentityUserGuid>()).Returns(IdentityResult.Success);
         mockUserManager.AddToRolesAsync(Arg.Any<Infrastructure.Persistence.Entities.IdentityUserGuid>(), Arg.Any<IEnumerable<string>>()).Returns(IdentityResult.Success);
-
         _fixture.Services.AddScoped<UserManager<Infrastructure.Persistence.Entities.IdentityUserGuid>>(_ => mockUserManager);
         _fixture.Services.AddScoped(_ => Substitute.For<IdentityErrorDescriber>());
         _fixture.Services.AddScoped<IUserRepository, UserRepository>();
@@ -103,12 +102,13 @@ public sealed class BazaarSellerHandlerTests
         var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
+
         result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
     }
 
     [TestMethod]
-    public async Task RegistrationLimitExceeded_CreateSellerRegistrationCommand_IsFailed()
+    public async Task LimitExceeded_CreateSellerRegistrationCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();

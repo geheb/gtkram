@@ -143,16 +143,20 @@ internal sealed class BazaarBillingHandler :
         var result = new List<BazaarEventWithBillingTotals>(events.Length);
         foreach (var @event in events)
         {
-            var eventBillings = billingsByEventId[@event.Id];
             var soldTotal = 0m;
-            foreach (var billing in eventBillings.Where(b => b.IsCompleted))
+            var billingCount = 0;
+            if (billingsByEventId.TryGetValue(@event.Id, out var eventBillings))
             {
-                var eventBillingArticles = billingArticlesByBillingId[billing.Id];
-                soldTotal += eventBillingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+                billingCount = eventBillings.Length;
+                foreach (var billing in eventBillings.Where(b => b.IsCompleted))
+                {
+                    var eventBillingArticles = billingArticlesByBillingId[billing.Id];
+                    soldTotal += eventBillingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+                }
             }
             var commissionTotal = (@event.Commission / 100.0M) * soldTotal;
 
-            result.Add(new(@event, eventBillings.Length, soldTotal, commissionTotal));
+            result.Add(new(@event, billingCount, soldTotal, commissionTotal));
         }
 
         return [.. result];
