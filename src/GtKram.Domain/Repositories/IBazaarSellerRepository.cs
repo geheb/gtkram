@@ -9,6 +9,7 @@ public interface IBazaarSellerRepository
     Task<Result<BazaarSeller>> Find(Guid id, CancellationToken cancellationToken);
     Task<BazaarSeller[]> GetByBazaarEventId(Guid id, CancellationToken cancellationToken);
     Task<BazaarSeller[]> GetByUserId(Guid id, CancellationToken cancellationToken);
+    Task<Result<BazaarSeller>> GetByUserIdAndBazaarEventId(Guid userId, Guid eventId, CancellationToken cancellationToken);
     Task<Result> Update(BazaarSeller model, CancellationToken cancellationToken);
     Task<Result> Delete(Guid id, CancellationToken cancellationToken);
     Task<BazaarSeller[]> GetAll(CancellationToken cancellationToken);

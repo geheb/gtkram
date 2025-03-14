@@ -13,7 +13,9 @@ using Mediator;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using NSubstitute.Exceptions;
 using Shouldly;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace GtKram.Application.Tests.Integration;
 
@@ -50,6 +52,7 @@ public sealed class BazaarBillingHandlerTests
         mockUserRepo.GetAll(Arg.Any<CancellationToken>()).Returns([_mockUser]);
         mockUserRepo.FindById(_mockUser.Id, Arg.Any<CancellationToken>()).Returns(Result.Ok(_mockUser));
         mockUserRepo.FindByEmail(_mockUser.Email!, Arg.Any<CancellationToken>()).Returns(Result.Ok(_mockUser));
+
         _fixture.Services.AddScoped(_ => mockUserRepo);
 
         var mockEmailValidatorService = Substitute.For<IEmailValidatorService>();
@@ -91,19 +94,231 @@ public sealed class BazaarBillingHandlerTests
     public async Task EmptyEvent_GetEventsWithBillingTotalsQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        await CreateEventAndSeller(scope);
+        var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
         var query = new GetEventsWithBillingTotalsQuery();
         var result = await sut.Handle(query, _cancellationToken);
 
         result.Length.ShouldBe(1);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
         result[0].CommissionTotal.ShouldBe(0m);
         result[0].SoldTotal.ShouldBe(0m);
         result[0].BillingCount.ShouldBe(0);
     }
 
-    private async Task CreateEventAndSeller(IServiceScope scope)
+    [TestMethod]
+    public async Task GetEventsWithBillingTotalsQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+        await CreateBilling(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetEventsWithBillingTotalsQuery();
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.Length.ShouldBe(1);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
+        result[0].CommissionTotal.ShouldBe(0m);
+        result[0].SoldTotal.ShouldBe(0m);
+        result[0].BillingCount.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task EmptyEvent_GetBillingsWithTotalsAndEventQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetBillingsWithTotalsAndEventQuery(context.BazaarEventId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
+        result.Value.Billings.Length.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task GetBillingsWithTotalsAndEventQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+        await CreateBilling(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetBillingsWithTotalsAndEventQuery(context.BazaarEventId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
+        result.Value.Billings.Length.ShouldBe(1);
+        result.Value.Billings[0].CreatedBy.ShouldBe(_mockUser.Name);
+        result.Value.Billings[0].Total.ShouldBe(0);
+        result.Value.Billings[0].ArticleCount.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task EmptyEvent_GetEventsWithBillingByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetEventsWithBillingByUserQuery(context.UserId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.ShouldBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task GetEventsWithBillingByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+        await CreateBilling(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetEventsWithBillingByUserQuery(context.UserId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.Length.ShouldBe(1);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
+        result[0].BillingCount.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task EmptyEvent_And_SellerCanCreateBillings_GetEventsWithBillingByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetEventsWithBillingByUserQuery(context.UserId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.Length.ShouldBe(1);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
+        result[0].BillingCount.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task SellerCanCreateBillings_GetEventsWithBillingByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+        await CreateBilling(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetEventsWithBillingByUserQuery(context.UserId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.Length.ShouldBe(1);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
+        result[0].BillingCount.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task EmptyEvent_GetBillingsWithTotalsAndEventByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetBillingsWithTotalsAndEventByUserQuery(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
+        result.Value.Billings.Length.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task GetBillingsWithTotalsAndEventByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+        await CreateBilling(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var query = new GetBillingsWithTotalsAndEventByUserQuery(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
+        result.Value.Billings.Length.ShouldBe(1);
+        result.Value.Billings[0].CreatedBy.ShouldBe(_mockUser.Name);
+        result.Value.Billings[0].Total.ShouldBe(0);
+        result.Value.Billings[0].ArticleCount.ShouldBe(0);
+    }
+
+    [TestMethod]
+    public async Task Seller_CreateBillingByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingByUserCommand(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == Domain.Errors.Seller.BillingNotAllowed).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task SellerWithBilling_CreateBillingByUserCommand_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingByUserCommand(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task SellerWithBilling_And_EventExpired_CreateBillingByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await SellerCanCreateBillings(scope, context.Id);
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingByUserCommand(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task SellerIsManager_CreateBillingByUserCommand_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        _mockUser.Roles = [UserRoleType.Seller, UserRoleType.Manager];
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingByUserCommand(context.UserId, context.BazaarEventId);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    private async Task<BazaarSeller> CreateEventAndSeller(IServiceScope scope)
     {
         var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
         var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
@@ -115,10 +330,41 @@ public sealed class BazaarBillingHandlerTests
         result.IsSuccess.ShouldBeTrue();
 
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
+        var sellerReg = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
 
-        var command = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
+        var command = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerReg.Id, ConfirmUserCallbackUrl = "http://localhost" };
         result = await handler.Handle(command, _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
+
+        sellerReg = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
+
+        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
+        var seller = await sellerRepo.Find(sellerReg.BazaarSellerId!.Value, _cancellationToken);
+        seller.IsSuccess.ShouldBeTrue();
+
+        return seller.Value;
+    }
+
+    private async Task SellerCanCreateBillings(IServiceScope scope, Guid sellerId)
+    {
+        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
+        var seller = await sellerRepo.Find(sellerId, _cancellationToken);
+        seller.IsSuccess.ShouldBeTrue();
+        seller.Value.CanCreateBillings = true;
+
+        var handler = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+
+        var command = new UpdateSellerCommand(seller.Value);
+        var result = await handler.Handle(command, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    private async Task<Guid> CreateBilling(IServiceScope scope, BazaarSeller seller)
+    {
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingByUserCommand(seller.UserId, seller.BazaarEventId);
+        var result = await sut.Handle(command, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+        return result.Value;
     }
 }

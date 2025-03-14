@@ -105,6 +105,20 @@ internal sealed class BazaarSellerRepository : IBazaarSellerRepository
         return entities.Select(e => e.MapToDomain()).ToArray();
     }
 
+    public async Task<Result<BazaarSeller>> GetByUserIdAndBazaarEventId(Guid userId, Guid eventId, CancellationToken cancellationToken)
+    {
+        var entity = await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == userId && e.BazaarEventId == eventId, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Fail(Seller.NotFound);
+        }
+
+        return Result.Ok(entity.MapToDomain());
+    }
+
     public async Task<Result> Update(BazaarSeller model, CancellationToken cancellationToken)
     {
         var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == model.Id, cancellationToken);

@@ -94,10 +94,15 @@ internal sealed class BazaarBillingHandler :
 
         foreach (var billing in billings)
         {
-            var billingArticles = billingArticlesByBillingId[billing.Id];
-            var total = billingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+            var total = 0m;
+            var articleCount = 0;
+            if (billingArticlesByBillingId.TryGetValue(billing.Id, out var billingArticles))
+            {
+                total = billingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+                articleCount = billingArticles.Length;
+            }
 
-            result.Add(new(billing, usersNameById[billing.UserId], billingArticles.Length, total));
+            result.Add(new(billing, usersNameById[billing.UserId], articleCount, total));
         }
 
         return Result.Ok(new BazaarBillingsWithTotalsAndEvent([.. result], @event.Value));
@@ -429,8 +434,11 @@ internal sealed class BazaarBillingHandler :
         var result = new List<BazaarEventWithBillingCount>();
         foreach (var @event in events)
         {
-            var count = billingsByEventId[@event.Id];
-            result.Add(new(@event, count));
+            if (!billingsByEventId.TryGetValue(@event.Id, out var billingCount))
+            {
+                billingCount = 0;
+            }
+            result.Add(new(@event, billingCount));
         }
 
         return [.. result];
@@ -472,17 +480,57 @@ internal sealed class BazaarBillingHandler :
 
         foreach (var billing in billings)
         {
-            var billingArticles = billingArticlesByBillingId[billing.Id];
-            var total = billingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+            var total = 0m;
+            var articleCount = 0;
+            if (billingArticlesByBillingId.TryGetValue(billing.Id, out var billingArticles))
+            {
+                total = billingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
+                articleCount = billingArticles.Length;
+            }
 
-            result.Add(new(billing, user.Value.Name, billingArticles.Length, total));
+            result.Add(new(billing, user.Value.Name, articleCount, total));
         }
 
         return Result.Ok(new BazaarBillingsWithTotalsAndEvent([.. result], @event.Value));
     }
 
-    public async ValueTask<Result<Guid>> Handle(CreateBillingByUserCommand command, CancellationToken cancellationToken) =>
-        await _billingRepository.Create(command.EventId, command.UserId, cancellationToken);
+    public async ValueTask<Result<Guid>> Handle(CreateBillingByUserCommand command, CancellationToken cancellationToken)
+    {
+        var seller = await _sellerRepository.GetByUserIdAndBazaarEventId(command.UserId, command.EventId, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return seller.ToResult();
+        }
+
+        var user = await _userRepository.FindById(command.UserId, cancellationToken);
+        if (user.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var isManager = user.Value.Roles.Any(r => r == UserRoleType.Manager || r == UserRoleType.Administrator);
+        if (!isManager)
+        {
+            if (!seller.Value.CanCreateBillings)
+            {
+                return Result.Fail(Seller.BillingNotAllowed);
+            }
+
+            var @event = await _eventRepository.Find(command.EventId, cancellationToken);
+            if (@event.IsFailed)
+            {
+                return Result.Fail(Internal.InvalidData);
+            }
+
+            var eventConverter = new EventConverter();
+            if (eventConverter.IsExpired(@event.Value, _timeProvider))
+            {
+                return Result.Fail(Event.Expired);
+            }
+        }
+
+        return await _billingRepository.Create(command.EventId, command.UserId, cancellationToken);
+    }
 
     public async ValueTask<Result<BazaarSellerArticlesWithBillingAndEvent>> Handle(GetBillingArticlesWithBillingAndEventByUserQuery query, CancellationToken cancellationToken)
     {
