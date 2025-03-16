@@ -227,10 +227,7 @@ internal sealed class BazaarBillingHandler :
         {
             return Result.Fail(Internal.InvalidData);
         }
-        if (billing.Value.Status == BillingStatus.Completed)
-        {
-            return Result.Fail(Billing.StatusCompleted);
-        }
+
         var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
         if (@event.IsFailed)
         {
@@ -283,17 +280,6 @@ internal sealed class BazaarBillingHandler :
         if (billing.IsFailed)
         {
             return billing;
-        }
-
-        var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
-        if (@event.IsFailed)
-        {
-            return Result.Fail(Internal.InvalidData);
-        }
-        var eventConverter = new EventConverter();
-        if (eventConverter.IsExpired(@event.Value, _timeProvider))
-        {
-            return Result.Fail(Event.Expired);
         }
 
         var billingArticle = await _billingArticleRepository.DeleteByBillingId(command.Id, cancellationToken);
@@ -356,6 +342,12 @@ internal sealed class BazaarBillingHandler :
             return Result.Fail(Billing.StatusCompleted);
         }
 
+        var articles = await _billingArticleRepository.GetByBazaarBillingId(command.Id, cancellationToken);
+        if (articles.Length == 0)
+        {
+            return Result.Fail(Billing.IsEmpty);
+        }
+
         billing.Value.Status = BillingStatus.Completed;
         return await _billingRepository.Update(billing.Value, cancellationToken); 
     }
@@ -376,6 +368,12 @@ internal sealed class BazaarBillingHandler :
         if (billing.Value.UserId != command.UserId)
         {
             return Result.Fail(Internal.InvalidRequest);
+        }
+
+        var articles = await _billingArticleRepository.GetByBazaarBillingId(command.BillingId, cancellationToken);
+        if (articles.Length == 0)
+        {
+            return Result.Fail(Billing.IsEmpty);
         }
 
         billing.Value.Status = BillingStatus.Completed;

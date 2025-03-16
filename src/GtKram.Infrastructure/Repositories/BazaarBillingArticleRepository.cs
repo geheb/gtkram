@@ -58,9 +58,13 @@ internal sealed class BazaarBillingArticleRepository : IBazaarBillingArticleRepo
     public async Task<Result> DeleteByBillingId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _dbSet
-            .AsNoTracking()
             .Where(e => e.BazaarBillingId == id)
             .ToArrayAsync(cancellationToken);
+
+        if (entities.Length == 0)
+        {
+            return Result.Ok();
+        }
 
         _dbSet.RemoveRange(entities);
         var isDeleted = await _dbContext.SaveChangesAsync(cancellationToken) > 0;

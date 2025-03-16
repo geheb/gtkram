@@ -79,11 +79,11 @@ internal sealed class BazaarSellerRegistrationRepository : IBazaarSellerRegistra
         return entity.MapToDomain(new());
     }
 
-    public async Task<Result<BazaarSellerRegistration>> FindByEmail(string email, CancellationToken cancellationToken)
+    public async Task<Result<BazaarSellerRegistration>> FindByEmailAndBazaarEventId(string email, Guid eventId, CancellationToken cancellationToken)
     {
         var entity = await _dbSet
             .AsNoTracking()
-            .FirstOrDefaultAsync(e => e.Email == email, cancellationToken);
+            .FirstOrDefaultAsync(e => e.BazaarEventId == eventId && e.Email == email, cancellationToken);
 
         if (entity is null)
         {

@@ -156,7 +156,11 @@ internal sealed class BazaarSellerHandler :
             }
         }
 
-        var seller = await _sellerRegistrationRepository.FindByEmail(command.Registration.Email, cancellationToken);
+        var seller = await _sellerRegistrationRepository.FindByEmailAndBazaarEventId(
+            command.Registration.Email, 
+            command.Registration.BazaarEventId,
+            cancellationToken);
+
         if (seller.IsFailed)
         {
             var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
@@ -435,7 +439,7 @@ internal sealed class BazaarSellerHandler :
         var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
         if (articles.Length == 0)
         {
-            return Result.Fail(SellerArticle.NotAvailable);
+            return Result.Fail(SellerArticle.IsEmpty);
         }
 
         var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
@@ -504,7 +508,7 @@ internal sealed class BazaarSellerHandler :
 
         if (articles.Length == 0)
         {
-            return Result.Fail(SellerArticle.NotAvailable);
+            return Result.Fail(SellerArticle.IsEmpty);
         }
 
         var billingArticles = await _billingArticleRepository.GetBySellerArticleId([.. articles.Select(s => s.Id)], cancellationToken);
@@ -516,7 +520,7 @@ internal sealed class BazaarSellerHandler :
 
         if (articles.Length == 0)
         {
-            return Result.Fail(SellerArticle.NotAvailable);
+            return Result.Fail(SellerArticle.IsEmpty);
         }
 
         var currentSeller = sellers.First(s => s.Id == command.SellerId);

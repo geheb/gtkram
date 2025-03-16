@@ -26,6 +26,15 @@ public sealed class BazaarSellerHandlerTests
     private TimeProvider _mockTimeProvider = null!;
     private IServiceProvider _serviceProvider = null!;
 
+    private readonly User _mockUser = new()
+    {
+        Id = Guid.NewGuid(),
+        Name = "Foo",
+        Email = "foo@bar.baz",
+        Roles = [UserRoleType.Seller],
+        IsEmailConfirmed = true
+    };
+
     public BazaarSellerHandlerTests(TestContext context)
     {
         _cancellationToken = context.CancellationTokenSource.Token;
@@ -42,16 +51,17 @@ public sealed class BazaarSellerHandlerTests
         mockMediator.Send(Arg.Any<CreateUserCommand>(), _cancellationToken).Returns(Result.Ok(Guid.NewGuid()));
         _fixture.Services.AddScoped(_ => mockMediator);
 
+        var mockUserRepo = Substitute.For<IUserRepository>();
+        mockUserRepo.Create(Arg.Any<string>(), _mockUser.Email, Arg.Any<UserRoleType[]>(), Arg.Any<CancellationToken>()).Returns(_mockUser.Id);
+        mockUserRepo.FindByEmail(_mockUser.Email!, Arg.Any<CancellationToken>()).Returns(Result.Ok(_mockUser));
+        mockUserRepo.FindById(_mockUser.Id, Arg.Any<CancellationToken>()).Returns(Result.Ok(_mockUser));
+
+        _fixture.Services.AddScoped(_ => mockUserRepo);
+        _fixture.Services.AddScoped(_ => Substitute.For<IdentityErrorDescriber>());
+
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "http://localhost", Title = "Title" }));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ConfirmEmailDataProtectionTokenProviderOptions()));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new DataProtectionTokenProviderOptions()));
-
-        var mockUserManager = Substitute.For<MockUserManager>();
-        mockUserManager.CreateAsync(Arg.Any<Infrastructure.Persistence.Entities.IdentityUserGuid>()).Returns(IdentityResult.Success);
-        mockUserManager.AddToRolesAsync(Arg.Any<Infrastructure.Persistence.Entities.IdentityUserGuid>(), Arg.Any<IEnumerable<string>>()).Returns(IdentityResult.Success);
-        _fixture.Services.AddScoped<UserManager<Infrastructure.Persistence.Entities.IdentityUserGuid>>(_ => mockUserManager);
-        _fixture.Services.AddScoped(_ => Substitute.For<IdentityErrorDescriber>());
-        _fixture.Services.AddScoped<IUserRepository, UserRepository>();
 
         var mockEmailValidatorService = Substitute.For<IEmailValidatorService>();
         mockEmailValidatorService.Validate(Arg.Any<string>(), _cancellationToken).Returns(true);
@@ -67,6 +77,7 @@ public sealed class BazaarSellerHandlerTests
         _fixture.Services.AddScoped<IBazaarBillingArticleRepository, BazaarBillingArticleRepository>();
 
         _fixture.Services.AddScoped<BazaarSellerHandler>();
+        _fixture.Services.AddScoped<BazaarBillingHandler>();
 
         _serviceProvider = _fixture.Build();
     }
@@ -81,29 +92,17 @@ public sealed class BazaarSellerHandlerTests
     public async Task CreateSellerRegistrationCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-
-        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
-        var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
-
-        result.IsSuccess.ShouldBeTrue();
+        await CreateEventAndRegistration(scope);
     }
 
     [TestMethod]
     public async Task SameUserTwoTimes_CreateSellerRegistrationCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndRegistration(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-
-        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
-        var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
-
-        result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
+        var result = await sut.Handle(new CreateSellerRegistrationCommand(context, true), _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
     }
 
@@ -111,20 +110,16 @@ public sealed class BazaarSellerHandlerTests
     public async Task LimitExceeded_CreateSellerRegistrationCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        var context = await CreateEventAndRegistration(scope);
 
-        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var reg = new BazaarSellerRegistration { BazaarEventId = context.BazaarEventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
-        reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "bar", Phone = "12345", Email = "bar@bar" };
+        reg = new BazaarSellerRegistration { BazaarEventId = context.BazaarEventId, Name = "bar", Phone = "12345", Email = "bar@bar" };
         result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
-        reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "baz", Phone = "12345", Email = "baz@baz" };
-        result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
-        reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foobar", Phone = "12345", Email = "foo@bar" };
+        reg = new BazaarSellerRegistration { BazaarEventId = context.BazaarEventId, Name = "baz", Phone = "12345", Email = "baz@baz" };
         result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -135,13 +130,11 @@ public sealed class BazaarSellerHandlerTests
     public async Task EventExpired_CreateSellerRegistrationCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+        var context = await CreateEventAndRegistration(scope);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
-
-        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var reg = new BazaarSellerRegistration { BazaarEventId = context.BazaarEventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -152,14 +145,10 @@ public sealed class BazaarSellerHandlerTests
     public async Task AcceptSellerRegistrationCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
+        var context = await CreateEventAndRegistration(scope);
 
-        var command = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new AcceptSellerRegistrationCommand { SellerRegistrationId = context.Id, ConfirmUserCallbackUrl = "http://localhost" };
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -169,14 +158,10 @@ public sealed class BazaarSellerHandlerTests
     public async Task DeleteSellerRegistrationCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
+        var context = await CreateEventAndRegistration(scope);
 
-        var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = sellerRegId };
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = context.Id };
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -186,17 +171,13 @@ public sealed class BazaarSellerHandlerTests
     public async Task DeleteSellerRegistrationCommand_AfterAccept_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndRegistration(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
+        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = context.Id, ConfirmUserCallbackUrl = "http://localhost" };
         var result = await sut.Handle(acceptCommand, _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
-
-        var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = sellerRegId };
+        var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = context.Id };
         result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -206,15 +187,10 @@ public sealed class BazaarSellerHandlerTests
     public async Task DenySellerRegistrationCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndRegistration(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-
-        var command = new DenySellerRegistrationCommand { SellerRegistrationId = sellerRegId };
+        var command = new DenySellerRegistrationCommand { SellerRegistrationId = context.Id };
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -224,24 +200,12 @@ public sealed class BazaarSellerHandlerTests
     public async Task FindSellerEventByUserQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // query users event
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        var query = new FindSellerEventByUserQuery { UserId = seller.UserId, SellerId = seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.UserId, SellerId = context.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        // assert
         result.IsSuccess.ShouldBeTrue();
     }
 
@@ -249,25 +213,13 @@ public sealed class BazaarSellerHandlerTests
     public async Task EventExpired_FindSellerEventByUserQuery_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // query users event
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        var query = new FindSellerEventByUserQuery { UserId = seller.UserId, SellerId = seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.UserId, SellerId = context.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        // assert
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == Event.Expired).ShouldBeTrue();
     }
@@ -276,25 +228,13 @@ public sealed class BazaarSellerHandlerTests
     public async Task EditExpired_FindSellerEventByUserQuery_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // query users event
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddHours(2));
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        var query = new FindSellerEventByUserQuery { UserId = seller.UserId, SellerId = seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.UserId, SellerId = context.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        // assert
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
     }
@@ -303,24 +243,12 @@ public sealed class BazaarSellerHandlerTests
     public async Task OtherUser_FindSellerEventByUserQuery_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // query users event
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        var query = new FindSellerEventByUserQuery { UserId = Guid.NewGuid(), SellerId = seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = Guid.NewGuid(), SellerId = context.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        // assert
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Internal.InvalidRequest).ShouldBeTrue();
     }
@@ -329,24 +257,12 @@ public sealed class BazaarSellerHandlerTests
     public async Task CreateSellerArticleByUserCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create article
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        var command = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", 1);
+        var command = new CreateSellerArticleByUserCommand(context.UserId, context.Id, "foo", "bar", 1);
         var result = await sut.Handle(command, _cancellationToken);
 
-        // assert
         result.IsSuccess.ShouldBeTrue();
     }
 
@@ -354,33 +270,13 @@ public sealed class BazaarSellerHandlerTests
     public async Task MaxExceeded_CreateSellerArticleByUserCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context); 
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create max articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-        seller.MaxArticleCount = 3;
-        await sellerRepo.Update(seller, _cancellationToken);
-
-        foreach (var i in Enumerable.Range(0, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", 1);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // check max articles
-        var command = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", 1);
+        var command = new CreateSellerArticleByUserCommand(context.UserId, context.Id, "foo", "bar", 1);
         var result = await sut.Handle(command, _cancellationToken);
+
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == SellerArticle.MaxExceeded).ShouldBeTrue();
     }
@@ -389,31 +285,12 @@ public sealed class BazaarSellerHandlerTests
     public async Task CreateSellerArticleByUserCommand_ValidateArticles_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
 
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // check articles
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+
         articles.Select(a => a.LabelNumber).Distinct().Count().ShouldBe(3);
         articles.Sum(a => a.Price).ShouldBe(1 + 2 + 3);
     }
@@ -422,34 +299,15 @@ public sealed class BazaarSellerHandlerTests
     public async Task DeleteSellerArticleByUserCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
 
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // delete article
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var command = new DeleteSellerArticleByUserCommand(seller.UserId, articles[0].Id);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var command = new DeleteSellerArticleByUserCommand(context.UserId, articles[0].Id);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
+
         result.IsSuccess.ShouldBeTrue();
     }
 
@@ -457,36 +315,16 @@ public sealed class BazaarSellerHandlerTests
     public async Task EditExpired_DeleteSellerArticleByUserCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
 
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // delete article
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(1));
-
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var command = new DeleteSellerArticleByUserCommand(seller.UserId, articles[0].Id);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var command = new DeleteSellerArticleByUserCommand(context.UserId, articles[0].Id);
         var result = await sut.Handle(command, _cancellationToken);
+
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
     }
@@ -495,36 +333,17 @@ public sealed class BazaarSellerHandlerTests
     public async Task UpdateSellerArticleByUserCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
 
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // update article
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var command = new UpdateSellerArticleByUserCommand(seller.UserId, articles[0].Id, "bar", "baz", 10);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var command = new UpdateSellerArticleByUserCommand(context.UserId, articles[0].Id, "bar", "baz", 10);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
+
         result.IsSuccess.ShouldBeTrue();
-        articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
+        articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
         articles.Select(a => a.LabelNumber).Distinct().Count().ShouldBe(3);
         articles.Sum(a => a.Price).ShouldBeGreaterThan(10);
     }
@@ -533,36 +352,16 @@ public sealed class BazaarSellerHandlerTests
     public async Task EditExpired_UpdateSellerArticleByUserCommand_IsFailed()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // update article
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(1));
-
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var command = new UpdateSellerArticleByUserCommand(seller.UserId, articles[0].Id, "bar", "baz", 10);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var command = new UpdateSellerArticleByUserCommand(context.UserId, articles[0].Id, "bar", "baz", 10);
         var result = await sut.Handle(command, _cancellationToken);
+
         result.IsFailed.ShouldBeTrue();
         result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
     }
@@ -571,36 +370,17 @@ public sealed class BazaarSellerHandlerTests
     public async Task FindSellerArticleByUserQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // query article
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var query = new FindSellerArticleByUserQuery(seller.UserId, articles[0].Id);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var query = new FindSellerArticleByUserQuery(context.UserId, articles[0].Id);
         var result = await sut.Handle(query, _cancellationToken);
+
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Event.Id.ShouldBe(eventId);
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
         result.Value.IsBooked.ShouldBeFalse();
     }
 
@@ -608,37 +388,18 @@ public sealed class BazaarSellerHandlerTests
     public async Task FindSellerWithEventAndArticlesByUserQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // query articles
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
-        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
-        var query = new FindSellerWithEventAndArticlesByUserQuery(seller.UserId, seller.Id);
-
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Id, _cancellationToken);
+        var query = new FindSellerWithEventAndArticlesByUserQuery(context.UserId, context.Id);
         var result = await sut.Handle(query, _cancellationToken);
+
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Event.Id.ShouldBe(eventId);
-        result.Value.Seller.Id.ShouldBe(seller.Id);
+        result.Value.Event.Id.ShouldBe(context.BazaarEventId);
+        result.Value.Seller.Id.ShouldBe(context.Id);
         result.Value.Articles.Select(a => a.SellerArticle.Id).SequenceEqual(articles.Select(a => a.Id)).ShouldBeTrue();
     }
 
@@ -646,34 +407,16 @@ public sealed class BazaarSellerHandlerTests
     public async Task GetEventsWithSellerAndArticleCountByUserQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-
-        // create event and accept seller
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
-
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
-
-        foreach (var i in Enumerable.Range(1, 3))
-        {
-            var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
-            var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
-        }
-
-        // query articles
-        var query = new GetEventsWithSellerAndArticleCountByUserQuery(seller.UserId);
+        var query = new GetEventsWithSellerAndArticleCountByUserQuery(context.UserId);
         var result = await sut.Handle(query, _cancellationToken);
+
         result.Length.ShouldBe(1);
-        result[0].Event.Id.ShouldBe(eventId);
-        result[0].Seller.Id.ShouldBe(seller.Id);
+        result[0].Event.Id.ShouldBe(context.BazaarEventId);
+        result[0].Seller.Id.ShouldBe(context.Id);
         result[0].ArticleCount.ShouldBe(3);
     }
 
@@ -681,20 +424,206 @@ public sealed class BazaarSellerHandlerTests
     public async Task FindSellerWithRegistrationAndArticlesQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
 
-        // create event and accept seller
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var query = new FindSellerWithRegistrationAndArticlesQuery(context.Id);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Seller.Id.ShouldBe(context.Id);
+        result.Value.Registration.BazaarEventId.ShouldBe(context.BazaarEventId);
+        result.Value.Articles.Length.ShouldBe(3);
+    }
+
+    [TestMethod]
+    public async Task GetSellerRegistrationWithArticleCountQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var query = new GetSellerRegistrationWithArticleCountQuery(context.BazaarEventId);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.Length.ShouldBe(1);
+        result[0].Seller!.Id.ShouldBe(context.Id);
+        result[0].ArticleCount.ShouldBe(3);
+    }
+
+    [TestMethod]
+    public async Task FindRegistrationWithSellerQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
+        var sellerReg = await sellerRegRepo.FindByBazaarSellerId(context.Id, _cancellationToken);
+        sellerReg.IsSuccess.ShouldBeTrue();
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var query = new FindRegistrationWithSellerQuery(sellerReg.Value.Id);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Seller.ShouldNotBeNull();
+    }
+
+    [TestMethod]
+    public async Task TakeOverSellerArticlesByUserCommand_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
+        context = await CreateEventAndSeller(scope);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new TakeOverSellerArticlesByUserCommand(context.UserId, context.Id);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task MaxExceeded_TakeOverSellerArticlesByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
+        context = await CreateEventAndSeller(scope);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new TakeOverSellerArticlesByUserCommand(context.UserId, context.Id);
+        var result = await sut.Handle(command, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+
+        result = await sut.Handle(command, _cancellationToken);
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == SellerArticle.MaxExceeded).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task EmptyArticles_TakeOverSellerArticlesByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
+        context = await CreateEventAndSeller(scope);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new TakeOverSellerArticlesByUserCommand(context.UserId, context.Id);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == SellerArticle.IsEmpty).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public async Task SoldArticles_TakeOverSellerArticlesByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CreateArticles(scope, context);
+        await CanCreateBillings(scope, context);
+        await CreateCompletedBilling(scope, context);
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
+        context = await CreateEventAndSeller(scope);
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new TakeOverSellerArticlesByUserCommand(context.UserId, context.Id);
+        var result = await sut.Handle(command, _cancellationToken);
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == SellerArticle.IsEmpty).ShouldBeTrue();
+    }
+
+    private async Task CanCreateBillings(IServiceScope scope, BazaarSeller seller)
+    {
+        seller.CanCreateBillings = true;
+        var handler = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var command = new UpdateSellerCommand(seller);
+        var result = await handler.Handle(command, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    private async Task<Guid> CreateCompletedBilling(IServiceScope scope, BazaarSeller seller)
+    {
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var billingCommand = new CreateBillingByUserCommand(seller.UserId, seller.BazaarEventId);
+        var billingResult = await sut.Handle(billingCommand, _cancellationToken);
+        billingResult.IsSuccess.ShouldBeTrue();
+
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
+
+        foreach (var article in articles)
+        {
+            var command = new CreateBillingArticleByUserCommand(seller.UserId, billingResult.Value, article.Id);
+            var result = await sut.Handle(command, _cancellationToken);
+            result.IsSuccess.ShouldBeTrue();
+        }
+
+        var completeCommand = new CompleteBillingByUserCommand(seller.UserId, billingResult.Value);
+        var completeResult = await sut.Handle(completeCommand, _cancellationToken);
+        completeResult.IsSuccess.ShouldBeTrue();
+
+        return billingResult.Value;
+    }
+
+    private async Task<BazaarSellerRegistration> CreateEventAndRegistration(IServiceScope scope)
+    {
         var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
         var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
-        await sellerRegRepo.Create(new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Email = "foo@foo", Phone = "12345" }, _cancellationToken);
-        var sellerRegId = (await sellerRegRepo.GetByBazaarEventId(eventId, _cancellationToken))[0].Id;
-        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerRegId, ConfirmUserCallbackUrl = "http://localhost" };
-        await sut.Handle(acceptCommand, _cancellationToken);
 
-        // create some articles
-        var seller = (await sellerRepo.GetByBazaarEventId(eventId, _cancellationToken))[0];
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = _mockUser.Email };
+        var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
+
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
+        var sellerReg = await sellerRegRepo.FindByEmailAndBazaarEventId(_mockUser.Email, eventId, _cancellationToken);
+        sellerReg.IsSuccess.ShouldBeTrue();
+
+        return sellerReg.Value;
+    }
+
+    private async Task<BazaarSeller> CreateEventAndSeller(IServiceScope scope)
+    {
+        var eventRepo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
+        var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var reg = new BazaarSellerRegistration { BazaarEventId = eventId, Name = "foo", Phone = "12345", Email = _mockUser.Email };
+        var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
+
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRegistrationRepository>();
+        var sellerReg = await sellerRegRepo.FindByEmailAndBazaarEventId(_mockUser.Email, eventId, _cancellationToken);
+        sellerReg.IsSuccess.ShouldBeTrue();
+
+        var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerReg.Value.Id, ConfirmUserCallbackUrl = "http://localhost" };
+        result = await sut.Handle(acceptCommand, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+
+        sellerReg = await sellerRegRepo.FindByEmailAndBazaarEventId(_mockUser.Email, eventId, _cancellationToken);
+        sellerReg.IsSuccess.ShouldBeTrue();
+
+        var sellerRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerRepository>();
+        var seller = await sellerRepo.Find(sellerReg.Value.BazaarSellerId!.Value, _cancellationToken);
+        seller.IsSuccess.ShouldBeTrue();
+;
+        seller.Value.MaxArticleCount = 3;
+        result = await sellerRepo.Update(seller.Value, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+
+        return seller.Value;
+    }
+
+    private async Task CreateArticles(IServiceScope scope, BazaarSeller seller)
+    {
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
 
         foreach (var i in Enumerable.Range(1, 3))
         {
@@ -702,13 +631,5 @@ public sealed class BazaarSellerHandlerTests
             var r = await sut.Handle(c, _cancellationToken);
             r.IsSuccess.ShouldBeTrue();
         }
-
-        // query articles
-        var query = new FindSellerWithRegistrationAndArticlesQuery(seller.Id);
-        var result = await sut.Handle(query, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.Seller.Id.ShouldBe(seller.Id);
-        result.Value.Registration.Id.ShouldBe(sellerRegId);
-        result.Value.Articles.Length.ShouldBe(3);
     }
 }
