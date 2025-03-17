@@ -11,21 +11,21 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
 
 namespace GtKram.Cli;
 
-class Program
+public sealed class Program
 {
     static async Task<int> Main(string[] args)
     {
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((context, config) =>
             {
-                config.AddJsonFile("appsettings.json");
-                config.AddEnvironmentVariables();
-                config.AddCommandLine(args);
+                config
+                    .AddJsonFile("appsettings.json")
+                    .AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json", true)
+                    .AddEnvironmentVariables()
+                    .AddCommandLine(args);
             })
             .ConfigureServices((context, services) =>
             {

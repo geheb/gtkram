@@ -125,7 +125,9 @@ internal sealed class UserRepository : IUserRepository
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
-        return Result.Ok(user.MapToDomain(new()));
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return Result.Ok(user.MapToDomain(roles,new()));
     }
 
     public async Task<Result<Domain.Models.User>> FindById(Guid id, CancellationToken cancellationToken)
@@ -135,19 +137,21 @@ internal sealed class UserRepository : IUserRepository
         {
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
-        return Result.Ok(user.MapToDomain(new()));
+        var roles = await _userManager.GetRolesAsync(user);
+        return Result.Ok(user.MapToDomain(roles, new()));
     }
 
     public async Task<Domain.Models.User[]> GetAll(CancellationToken cancellationToken)
     {
         var dbSet = _dbContext.Set<IdentityUserGuid>();
         var result = await dbSet
-            .Include(e => e.UserRoles)
+            .Include(e => e.UserRoles!)
+            .ThenInclude(e => e.Role!)
             .Where(e => e.DisabledOn == null)
             .ToArrayAsync(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
-        return result.Select(e => e.MapToDomain(dc)).ToArray();
+        return result.Select(e => e.MapToDomain(e.UserRoles!.Select(r => r.Role!.Name!), dc)).ToArray();
     }
 
     public async Task<Result> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)

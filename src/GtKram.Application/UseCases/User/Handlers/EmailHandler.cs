@@ -129,6 +129,7 @@ internal sealed class EmailHandler :
 
         var uriBuilder = new UriBuilder(command.CallbackUrl);
         var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+        query["id"] = resultUser.Value.Id.ToString();
         query["token"] = resultToken.Value;
         uriBuilder.Query = query.ToString();
 

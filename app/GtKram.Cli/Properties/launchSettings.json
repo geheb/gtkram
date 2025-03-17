@@ -1,8 +1,11 @@
 {
-  "profiles": {
-    "GtKram.Cli": {
-      "commandName": "Project",
-      "commandLineArgs": ""
+    "profiles": {
+        "GtKram.Cli": {
+            "commandName": "Project",
+            "commandLineArgs": "--migrate-db",
+            "environmentVariables": {
+                "DOTNET_ENVIRONMENT": "Development"
+            }
+        }
     }
-  }
 }

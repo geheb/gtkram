@@ -9,12 +9,12 @@ namespace GtKram.Infrastructure.Repositories.Mappings;
 
 internal static class UserMapping
 {
-    public static Domain.Models.User MapToDomain(this IdentityUserGuid entity, GermanDateTimeConverter dc) => new()
+    public static Domain.Models.User MapToDomain(this IdentityUserGuid entity, IEnumerable<string> roles, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
         Name = entity.Name!,
         Email = entity.Email!,
-        Roles = [.. entity.UserRoles!.Select(r => r.Role!.Name!.MapToRole())],
+        Roles = [.. roles.Select(r => r.MapToRole())],
         IsEmailConfirmed = entity.EmailConfirmed,
         LastLoginDate = entity.LastLogin is not null ? dc.ToLocal(entity.LastLogin!.Value) : null,
         LockoutEndDate = entity.LockoutEnabled && entity.LockoutEnd is not null ? dc.ToLocal(entity.LockoutEnd!.Value) : null,
