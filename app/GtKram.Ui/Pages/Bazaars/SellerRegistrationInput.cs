@@ -47,15 +47,6 @@ public class SellerRegistrationInput
         CanCreateBillings = seller.CanCreateBillings;
     }
 
-    internal UpdateSellerCommand ToCommand(Guid id)
-    {
-        return new(new()
-        {
-            Id = id,
-            SellerNumber = SellerNumber,
-            Role = (SellerRole)Role,
-            CanCreateBillings = CanCreateBillings,
-            MaxArticleCount = ((SellerRole)Role).GetMaxArticleCount()
-        });
-    }
+    internal UpdateSellerCommand ToCommand(Guid id) =>
+        new(id, SellerNumber, (SellerRole)Role, CanCreateBillings);
 }

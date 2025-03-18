@@ -183,8 +183,37 @@ internal sealed class BazaarSellerHandler :
         }
     }
 
-    public async ValueTask<Result> Handle(UpdateSellerCommand command, CancellationToken cancellationToken) =>
-        await _sellerRepository.Update(command.Seller, cancellationToken);
+    public async ValueTask<Result> Handle(UpdateSellerCommand command, CancellationToken cancellationToken)
+    {
+        var registration = await _sellerRegistrationRepository.Find(command.SellerRegistrationId, cancellationToken);
+        if (registration.IsFailed)
+        {
+            return registration.ToResult();
+        }
+
+        if (registration.Value.BazaarSellerId is null)
+        {
+            return Result.Fail(Seller.NotFound);
+        }
+
+        var seller = await _sellerRepository.Find(registration.Value.BazaarSellerId!.Value, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+        seller.Value.SellerNumber = command.SellerNumber;
+        seller.Value.Role = command.Role;
+        seller.Value.MaxArticleCount = command.Role.GetMaxArticleCount();
+        seller.Value.CanCreateBillings = command.CanCreateBillings;
+
+        var result = await _sellerRepository.Update(seller.Value, cancellationToken);
+        if (result.IsFailed || !command.CanCreateBillings)
+        {
+            return result;
+        }
+
+        return await _userRepository.AddRole(seller.Value.UserId, UserRoleType.Billing, cancellationToken);
+    }
 
     public async ValueTask<Result> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
@@ -194,16 +223,13 @@ internal sealed class BazaarSellerHandler :
             return registration.ToResult();
         }
 
-        if (registration.Value.BazaarSellerId is not null)
+        var result = await _sellerRegistrationRepository.Delete(command.SellerRegistrationId, cancellationToken);
+        if (result.IsFailed || registration.Value.BazaarSellerId is null)
         {
-            var result = await _sellerRepository.Delete(registration.Value.BazaarSellerId.Value, cancellationToken);
-            if (result.IsFailed)
-            {
-                return result;
-            }
+            return result;
         }
 
-        return await _sellerRegistrationRepository.Delete(command.SellerRegistrationId, cancellationToken);
+        return await _sellerRepository.Delete(registration.Value.BazaarSellerId.Value, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(AcceptSellerRegistrationCommand command, CancellationToken cancellationToken)
@@ -232,6 +258,11 @@ internal sealed class BazaarSellerHandler :
             var user = await _userRepository.FindByEmail(registration.Value.Email, cancellationToken);
             if (user.IsSuccess)
             {
+                var resultUser = await _userRepository.AddRole(user.Value.Id, UserRoleType.Seller, cancellationToken);
+                if (resultUser.IsFailed)
+                {
+                    return resultUser;
+                }
                 userId = user.Value.Id;
             }
             else
@@ -405,10 +436,12 @@ internal sealed class BazaarSellerHandler :
         var result = new List<BazaarEventWithSellerAndArticleCount>(sellers.Length);
 
         foreach (var seller in sellers)
-        { 
+        {
             var @event = eventsById[seller.BazaarEventId];
-            var count = countBySellerId[seller.Id];
-
+            if (!countBySellerId.TryGetValue(seller.Id, out var count))
+            {
+                count = 0;
+            }
             result.Add(new(@event, seller, count));
         }
 

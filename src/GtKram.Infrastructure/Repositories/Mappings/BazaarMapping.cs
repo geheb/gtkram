@@ -47,7 +47,7 @@ internal static class BazaarMapping
         Email = entity.Email!,
         Name = entity.Name!,
         Phone = entity.Phone!,
-        ClothingType = entity.Clothing?.Split(';').Select(c => int.Parse(c)).ToArray(),
+        ClothingType = entity.Clothing?.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => int.Parse(c)).ToArray(),
         Accepted = entity.Accepted,
         PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.PreferredType,
         BazaarSellerId = entity.BazaarSellerId

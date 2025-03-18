@@ -4,4 +4,8 @@ using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public record struct UpdateSellerCommand(BazaarSeller Seller) : ICommand<Result>;
+public record struct UpdateSellerCommand(
+    Guid SellerRegistrationId,
+    int SellerNumber,
+    SellerRole Role,
+    bool CanCreateBillings) : ICommand<Result>;
