@@ -22,7 +22,7 @@ public static class SellerArticle
         new($"{_prefix}.max.exceeded", "Die maximale Anzahl der Artikel wurde überschritten.");
 
     public static Error EditExpired { get; } =
-        new($"{_prefix}.edit.expired", "Die Bearbeitung des Artikels ist abgelaufen.");
+        new($"{_prefix}.edit.expired", "Die Bearbeitung der Artikel ist abgelaufen.");
 
     public static Error EditFailedDueToBooked { get; } =
         new($"{_prefix}.edit.failed.due.to.booked", "Der Artikel ist bereits gebucht und kann nicht bearbeitet werden.");

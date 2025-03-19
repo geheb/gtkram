@@ -19,7 +19,6 @@
                     <strong>Wichtig:</strong> Diese Registrierung ist <u class="has-text-danger">keine</u> Garantie für einen Verkäuferplatz!
                 </h3>
 
-
                 <div class="has-text-centered">
                     <p><strong>Kinderbasar:</strong> @Model.Input.State_Event</p>
                     @if (!string.IsNullOrEmpty(Model.Input.State_Address))
@@ -27,6 +26,7 @@
                         <strong>Adresse:</strong> <a target="_blank" rel="noopener noreferrer" href="@("https://www.google.com/maps/dir/?api=1&destination=" + WebUtility.UrlEncode(Model.Input.State_Address))">@Model.Input.State_Address</a>
                     }
                 </div>
+                
 
                 @if (!ModelState.IsValid)
                 {
@@ -91,7 +91,7 @@
                                     <div class="control">
                                         <input type="checkbox" asp-for="Input.HasGoldenRules" />
                                         <label asp-for="Input.HasGoldenRules">@Html.DisplayNameFor(m => m.Input.HasGoldenRules)</label>
-                                        <a target="_blank" rel="noopener noreferrer" href="https://mein-kinderkram.de/die-goldenen-regeln/">(Link)</a>
+                                        <a target="_blank" rel="noopener noreferrer" href="@appSettings.Value.RegisterRulesUrl">(Link)</a>
                                     </div>
                                     <span asp-validation-for="Input.HasGoldenRules"></span>
                                 </div>

@@ -48,8 +48,6 @@ public class EditSellerModel : PageModel
             return;
         }
 
-        Input.State_SellerId = sellerResult.Value.Seller?.Id;
-
         var converter = new EventConverter();
         Input.State_Event = converter.Format(@event.Value);
 

@@ -29,7 +29,7 @@ public class AddModel : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var result = await _mediator.Send(Input.ToCommand(), cancellationToken);
+        var result = await _mediator.Send(Input.ToCreateCommand(), cancellationToken);
         if (result.IsFailed)
         {
             ModelState.AddError(result.Errors);

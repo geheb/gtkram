@@ -96,11 +96,32 @@ public class BazaarEventInput
         IsRegistrationsLocked = model.IsRegistrationsLocked;
     }
 
-    public CreateEventCommand ToCommand()
+    public CreateEventCommand ToCreateCommand()
     {
         var dc = new GermanDateTimeConverter();
         return new(new()
         {
+            Name = Name!,
+            Description = Description,
+            StartsOn = dc.FromIsoDateTime(StartDate)!.Value,
+            EndsOn = dc.FromIsoDateTime(EndDate)!.Value,
+            Address = Address,
+            MaxSellers = MaxSellers,
+            RegisterStartsOn = dc.FromIsoDateTime(RegisterStartDate)!.Value,
+            RegisterEndsOn = dc.FromIsoDateTime(RegisterEndDate)!.Value,
+            EditArticleEndsOn = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
+            PickUpLabelsStartsOn = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
+            PickUpLabelsEndsOn = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
+            IsRegistrationsLocked = IsRegistrationsLocked
+        });
+    }
+
+    public UpdateEventCommand ToUpdateCommand(Guid id)
+    {
+        var dc = new GermanDateTimeConverter();
+        return new(new()
+        {
+            Id = id,
             Name = Name!,
             Description = Description,
             StartsOn = dc.FromIsoDateTime(StartDate)!.Value,

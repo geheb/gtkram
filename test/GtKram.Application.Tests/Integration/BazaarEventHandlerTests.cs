@@ -106,64 +106,15 @@ public sealed class BazaarEventHandlerTests
         var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
         var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
+        var result = await sut.Handle(new FindEventForRegistrationQuery(id), _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(id);
+        result.Value.RegistrationCount.ShouldBe(0);
     }
 
     [TestMethod]
-    public async Task EventExpired_FindEventForRegisterQuery_IsFailed()
-    {
-        var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
-        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
-
-        using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
-        var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, _cancellationToken)).Value;
-
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
-
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Event.Expired).ShouldBeTrue();
-    }
-
-    [TestMethod]
-    public async Task Register_NotTakePlace_FindEventForRegisterQuery_IsFailed()
-    {
-        var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow().AddHours(1));
-
-        using var scope = _serviceProvider.CreateAsyncScope();
-
-        var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, _cancellationToken)).Value;
-
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
-
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
-    }
-
-    [TestMethod]
-    public async Task Register_Expired_FindEventForRegisterQuery_IsFailed()
-    {
-        var @event = TestData.CreateEvent(_mockTimeProvider.GetUtcNow());
-        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddHours(2));
-
-        using var scope = _serviceProvider.CreateAsyncScope();
-        var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
-        var repo = scope.ServiceProvider.GetRequiredService<IBazaarEventRepository>();
-        var id = (await repo.Create(@event, _cancellationToken)).Value;
-
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
-
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == EventRegistration.NotReady).ShouldBeTrue();
-    }
-
-    [TestMethod]
-    public async Task RegistrationLimitExceeded_FindEventForRegisterQuery_IsFailed()
+    public async Task Registrations_FindEventForRegisterQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();
@@ -174,14 +125,14 @@ public sealed class BazaarEventHandlerTests
         await regRepo.Create(new() { BazaarEventId = id, Email = "user@bar", Name = "bar", Phone = "12345" }, _cancellationToken);
         await regRepo.Create(new() { BazaarEventId = id, Email = "user@baz", Name = "baz", Phone = "12345" }, _cancellationToken);
 
-        var result = await sut.Handle(new FindEventForRegisterQuery(id), _cancellationToken);
+        var result = await sut.Handle(new FindEventForRegistrationQuery(id), _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == EventRegistration.LimitExceeded).ShouldBeTrue();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.RegistrationCount.ShouldBe(3);
     }
 
     [TestMethod]
-    public async Task GetEventsWithRegistrationCountQuery_Has_Result()
+    public async Task GetEventsWithRegistrationCountQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<BazaarEventHandler>();

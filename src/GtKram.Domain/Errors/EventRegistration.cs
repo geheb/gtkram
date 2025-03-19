@@ -15,8 +15,8 @@ public static class EventRegistration
     public static Error Timeout { get; } =
         new($"{_prefix}.timeout", "Zeitüberschreitung beim Beareiten der Registrierung. Bitte erneut versuchen.");
 
-    public static Error NotReady { get; } =
-        new($"{_prefix}.not.ready", "Aktuell können keine Anfragen angenommen werden.");
+    public static Error IsExpired { get; } =
+        new($"{_prefix}.not.ready", "Die Registrierung ist bereits abgelaufen.");
 
     public static Error LimitExceeded { get; } =
         new($"{_prefix}.limit.exceeded", "Die maximale Anzahl von Registrierungen wurde erreicht.");

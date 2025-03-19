@@ -1,11 +1,12 @@
-﻿@page "/Bazaars/{eventId:guid}/Seller/Add"
+﻿@page "/Bazaars/{eventId:guid}/Sellers/Add"
 @model GtKram.Ui.Pages.Bazaars.AddSellerModel
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    Model.BuildHeaderMenu();
 
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+
+    Model.BuildHeaderMenu(new { eventId });
 }
 
 @await Html.PartialAsync("_Header")
@@ -16,7 +17,7 @@
 
         @Html.CreateBreadcrumb(new { eventId }, new { eventId }, new { id = eventId })
 
-        <h2 class="subtitle">@Model.Input.State_Event</h2>
+        <h2 class="title is-4">@Model.Input.State_Event</h2>
 
         <div class="columns">
             <div class="column is-half">

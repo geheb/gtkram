@@ -28,24 +28,21 @@
                             </span>
                         </button>
                     </div>
-                    @if (Model.Input.State_SellerId is not null)
-                    {
-                        <div class="dropdown-menu" id="user-action" role="menu">
-                            <div class="dropdown-content">
-                                <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, new { eventId, id = Model.Input.State_SellerId }))">
-                                    Artikel anzeigen
-                                </a>
-                                <a class="dropdown-item" href="@(Url.PageLink("PrintSellerArticles", null, new { id = Model.Input.State_SellerId }))" target="_blank" rel="noopener noreferrer">
-                                    Etiketten drucken
-                                </a>
-                            </div>
+                    <div class="dropdown-menu" id="user-action" role="menu">
+                        <div class="dropdown-content">
+                            <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, new { eventId, id }))">
+                                Artikel anzeigen
+                            </a>
+                            <a class="dropdown-item" href="@(Url.PageLink("PrintSellerArticles", null, new { id }))" target="_blank" rel="noopener noreferrer">
+                                Etiketten drucken
+                            </a>
                         </div>
-                    }
+                    </div> 
                 </div>
             </div>
         </div>
 
-        <h2 class="subtitle">@Model.Input.State_Event</h2>
+        <h2 class="title is-4">@Model.Input.State_Event</h2>
 
         <div class="columns mt-4">
             <div class="column is-half">
@@ -61,7 +58,6 @@
                 <form method="post">
                     <fieldset disabled="@Model.IsDisabled">
                         <input type="hidden" asp-for="Input.State_Event" />
-                        <input type="hidden" asp-for="Input.State_SellerId" />
                         <div class="field">
                             <label class="label" asp-for="Input.Name"></label>
                             <div class="control">

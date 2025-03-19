@@ -60,7 +60,7 @@ public sealed class BazaarSellerHandlerTests
         _fixture.Services.AddScoped(_ => mockUserRepo);
         _fixture.Services.AddScoped(_ => Substitute.For<IdentityErrorDescriber>());
 
-        _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "http://localhost", Title = "Title" }));
+        _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "http://localhost", Title = "Title", RegisterRulesUrl = "http://localhost" }));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ConfirmEmailDataProtectionTokenProviderOptions()));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new DataProtectionTokenProviderOptions()));
 
@@ -393,6 +393,24 @@ public sealed class BazaarSellerHandlerTests
     }
 
     [TestMethod]
+    public async Task EmptyArticles_FindSellerWithEventAndArticlesByUserQuery_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
+        var articles = await sellerArticleRepo.GetByBazaarSellerId(context.Seller.Id, _cancellationToken);
+        var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.UserId, context.Seller.Id);
+        var result = await sut.Handle(query, _cancellationToken);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.Event.Id.ShouldBe(context.Seller.BazaarEventId);
+        result.Value.Seller.Id.ShouldBe(context.Seller.Id);
+        result.Value.Articles.ShouldBeEmpty();
+    }
+
+    [TestMethod]
     public async Task FindSellerWithEventAndArticlesByUserQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -452,7 +470,7 @@ public sealed class BazaarSellerHandlerTests
         await CreateArticles(scope, context.Seller);
 
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        var query = new FindSellerWithRegistrationAndArticlesQuery(context.Seller.Id);
+        var query = new FindSellerWithRegistrationAndArticlesQuery(context.Registration.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();

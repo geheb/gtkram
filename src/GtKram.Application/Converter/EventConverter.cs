@@ -22,10 +22,9 @@ public sealed class EventConverter
     public decimal CalcPayout(BazaarEvent model, decimal total) =>
         total - total * (model.Commission / 100.0M);
 
-    public bool CanRegister(BazaarEvent model, TimeProvider timeProvider)
+    public bool IsRegisterExpired(BazaarEvent model, TimeProvider timeProvider)
     {
         var now = _dateTimeConverter.ToLocal(timeProvider.GetUtcNow());
-
         return !model.IsRegistrationsLocked 
             && now >= model.RegisterStartsOn 
             && now <= model.RegisterEndsOn;

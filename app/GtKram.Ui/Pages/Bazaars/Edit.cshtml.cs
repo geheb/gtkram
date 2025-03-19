@@ -42,7 +42,6 @@ public class EditModel : PageModel
         var converter = new EventConverter();
         if (converter.IsExpired(result.Value, _timeProvider))
         {
-            IsDisabled = true;
             ModelState.AddModelError(string.Empty, I18n.LocalizedMessages.BazaarExpired);
         }
 
@@ -53,7 +52,7 @@ public class EditModel : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var result = await _mediator.Send(Input.ToCommand(), cancellationToken);
+        var result = await _mediator.Send(Input.ToUpdateCommand(id), cancellationToken);
         if (result.IsFailed)
         {
             ModelState.AddError(result.Errors);

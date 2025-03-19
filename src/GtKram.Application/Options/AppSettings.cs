@@ -11,6 +11,7 @@ public sealed class AppSettings
     public required string HeaderTitle { get; set; }
     public required string Organizer { get; set; }
     public string? DefaultEventLocation { get; set; }
+    public required string RegisterRulesUrl { get; set; }
 
     public AppSettings()
     {

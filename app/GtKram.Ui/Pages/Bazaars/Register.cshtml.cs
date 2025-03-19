@@ -1,5 +1,7 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Base;
+using GtKram.Domain.Errors;
 using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
 using Mediator;
@@ -35,7 +37,7 @@ public class RegisterModel : PageModel
 
     public async Task OnGetAsync(Guid id, bool? success, CancellationToken cancellationToken)
     {
-        var @event = await _mediator.Send(new FindEventForRegisterQuery(id), cancellationToken);
+        var @event = await _mediator.Send(new FindEventForRegistrationQuery(id), cancellationToken);
         if (@event.IsFailed)
         {
             IsDisabled = true;
@@ -44,9 +46,24 @@ public class RegisterModel : PageModel
         }
 
         var converter = new EventConverter();
+        if (converter.IsExpired(@event.Value.Event, _timeProvider))
+        {
+            IsDisabled = true;
+            ModelState.AddModelError(string.Empty, Event.Expired.Message);
+        }
+        else if (!converter.IsRegisterExpired(@event.Value.Event, _timeProvider))
+        {
+            IsDisabled = true;
+            ModelState.AddModelError(string.Empty, EventRegistration.IsExpired.Message);
+        }
+        else if(@event.Value.RegistrationCount >= @event.Value.Event.MaxSellers)
+        {
+            IsDisabled = true;
+            ModelState.AddModelError(string.Empty, EventRegistration.LimitExceeded.Message);
+        }
 
-        Input.State_Event = converter.Format(@event.Value);
-        Input.State_Address = @event.Value.Address;
+        Input.State_Event = converter.Format(@event.Value.Event);
+        Input.State_Address = @event.Value.Event.Address;
 
         if (success == true)
         {

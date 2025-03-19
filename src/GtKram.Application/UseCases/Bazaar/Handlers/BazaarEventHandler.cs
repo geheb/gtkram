@@ -12,7 +12,7 @@ namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class BazaarEventHandler :
     IQueryHandler<FindEventQuery, Result<BazaarEvent>>,
-    IQueryHandler<FindEventForRegisterQuery, Result<BazaarEvent>>,
+    IQueryHandler<FindEventForRegistrationQuery, Result<BazaarEventWithRegistrationCount>>,
     IQueryHandler<GetEventsWithRegistrationCountQuery, BazaarEventWithRegistrationCount[]>,
     ICommandHandler<CreateEventCommand, Result>,
     ICommandHandler<UpdateEventCommand, Result>,
@@ -35,37 +35,21 @@ internal sealed class BazaarEventHandler :
     public async ValueTask<Result<BazaarEvent>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
         await _eventRepository.Find(query.EventId, cancellationToken);
 
-    public async ValueTask<Result<BazaarEvent>> Handle(FindEventForRegisterQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<BazaarEventWithRegistrationCount>> Handle(FindEventForRegistrationQuery query, CancellationToken cancellationToken)
     {
         var @event = await _eventRepository.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
         {
-            return @event;
+            return @event.ToResult();
         }
 
-        var converter = new EventConverter();
-        if (converter.IsExpired(@event.Value, _timeProvider))
-        {
-            return Result.Fail(Event.Expired);
-        }
-
-        if (!converter.CanRegister(@event.Value, _timeProvider))
-        {
-            return Result.Fail(EventRegistration.NotReady);
-        }
-
-        var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
+        var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(query.EventId, cancellationToken);
         if (count.IsFailed)
         {
             return count.ToResult();
         }
 
-        if (count.Value >= @event.Value.MaxSellers)
-        {
-            return Result.Fail(EventRegistration.LimitExceeded);
-        }
-        
-        return @event;
+        return Result.Ok(new BazaarEventWithRegistrationCount(@event.Value, count.Value));
     }
 
     public async ValueTask<BazaarEventWithRegistrationCount[]> Handle(GetEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)

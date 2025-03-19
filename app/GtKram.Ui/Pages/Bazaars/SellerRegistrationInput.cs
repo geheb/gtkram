@@ -9,7 +9,6 @@ namespace GtKram.Ui.Pages.Bazaars;
 public class SellerRegistrationInput
 {
     public string State_Event { get; set; } = "Unbekannt";
-    public Guid? State_SellerId { get; set; }
 
     [Display(Name = "Name")]
     public string? Name { get; set; }

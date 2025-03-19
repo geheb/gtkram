@@ -139,9 +139,9 @@ internal sealed class BazaarSellerHandler :
                 return Result.Fail(Event.Expired);
             }
 
-            if (!converter.CanRegister(@event.Value, _timeProvider))
+            if (!converter.IsRegisterExpired(@event.Value, _timeProvider))
             {
-                return Result.Fail(EventRegistration.NotReady);
+                return Result.Fail(EventRegistration.IsExpired);
             }
 
             var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
@@ -350,19 +350,24 @@ internal sealed class BazaarSellerHandler :
 
     public async ValueTask<Result<BazaarSellerWithRegistrationAndArticles>> Handle(FindSellerWithRegistrationAndArticlesQuery query, CancellationToken cancellationToken)
     {
-        var seller = await _sellerRepository.Find(query.SellerId, cancellationToken);
-        if (seller.IsFailed)
-        {
-            return seller.ToResult();
-        }
-
-        var registration = await _sellerRegistrationRepository.FindByBazaarSellerId(query.SellerId, cancellationToken);
+        var registration = await _sellerRegistrationRepository.Find(query.SellerRegistrationId, cancellationToken);
         if (registration.IsFailed)
         {
             return registration.ToResult();
         }
 
-        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
+        if (registration.Value.BazaarSellerId is null)
+        {
+            return Result.Fail(Seller.NotFound);
+        }
+
+        var seller = await _sellerRepository.Find(registration.Value.BazaarSellerId.Value, cancellationToken);
+        if (seller.IsFailed)
+        {
+            return Result.Fail(Internal.InvalidData);
+        }
+
+        var articles = await _sellerArticleRepository.GetByBazaarSellerId(seller.Value.Id, cancellationToken);
         if (articles.Length == 0)
         {
             return Result.Ok(new BazaarSellerWithRegistrationAndArticles(seller.Value, registration.Value, []));
@@ -450,7 +455,6 @@ internal sealed class BazaarSellerHandler :
 
     public async ValueTask<Result<BazaarSellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
     {
-        // sanity check
         var seller = await _sellerRepository.Find(query.SellerId, cancellationToken);
         if (seller.IsFailed)
         {
@@ -469,18 +473,17 @@ internal sealed class BazaarSellerHandler :
             return Result.Fail(Seller.Locked);
         }
 
-        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
-        if (articles.Length == 0)
-        {
-            return Result.Fail(SellerArticle.IsEmpty);
-        }
-
         var @event = await _eventRepository.Find(seller.Value.BazaarEventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Internal.InvalidData);
         }
 
+        var articles = await _sellerArticleRepository.GetByBazaarSellerId(query.SellerId, cancellationToken);
+        if (articles.Length == 0)
+        {
+            return Result.Ok(new BazaarSellerWithEventAndArticles(seller.Value, @event.Value, []));
+        }
 
         HashSet<Guid> billingCompleted = [];
         Dictionary<Guid, BazaarBillingArticle> billingArticlesBySellerArticleId;
@@ -514,7 +517,6 @@ internal sealed class BazaarSellerHandler :
 
     public async ValueTask<Result> Handle(TakeOverSellerArticlesByUserCommand command, CancellationToken cancellationToken)
     {
-        // sanity check
         var sellers = await _sellerRepository.GetByUserId(command.UserId, cancellationToken);
         if (!sellers.Any(s => s.Id == command.SellerId))
         {
