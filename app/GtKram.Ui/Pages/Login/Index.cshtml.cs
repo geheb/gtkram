@@ -1,5 +1,6 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Ui.Annotations;
+using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -56,7 +57,7 @@ public class IndexModel : PageModel
         {
             IsDisabled = true;
             _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
@@ -76,7 +77,7 @@ public class IndexModel : PageModel
             return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
         }
 
-        ModelState.AddModelError(string.Empty, "Deine Anmeldedaten stimmen nicht überein.");
+        ModelState.AddError(Domain.Errors.Identity.LoginFailed);
         return Page();
     }
 }

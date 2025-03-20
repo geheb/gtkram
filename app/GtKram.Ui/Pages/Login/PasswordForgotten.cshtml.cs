@@ -1,7 +1,7 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Ui.Annotations;
-using GtKram.Ui.I18n;
+using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,7 @@ public class PasswordForgottenModel : PageModel
         {
             IsDisabled = true;
             _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 

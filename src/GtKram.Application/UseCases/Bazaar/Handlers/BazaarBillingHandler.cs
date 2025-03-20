@@ -345,7 +345,7 @@ internal sealed class BazaarBillingHandler :
         var articles = await _billingArticleRepository.GetByBazaarBillingId(command.Id, cancellationToken);
         if (articles.Length == 0)
         {
-            return Result.Fail(Billing.IsEmpty);
+            return Result.Fail(Billing.Empty);
         }
 
         billing.Value.Status = BillingStatus.Completed;
@@ -373,7 +373,7 @@ internal sealed class BazaarBillingHandler :
         var articles = await _billingArticleRepository.GetByBazaarBillingId(command.BillingId, cancellationToken);
         if (articles.Length == 0)
         {
-            return Result.Fail(Billing.IsEmpty);
+            return Result.Fail(Billing.Empty);
         }
 
         billing.Value.Status = BillingStatus.Completed;

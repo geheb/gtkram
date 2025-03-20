@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.MyBazaars;
 
 [Node("Artikel bearbeiten", FromPage = typeof(ArticlesModel))]
-[Authorize(Roles = "seller,admin")]
+[Authorize(Roles = "seller")]
 public class EditArticleModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
@@ -49,13 +49,13 @@ public class EditArticleModel : PageModel
             eventConverter.IsEditArticlesExpired(result.Value.Event, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, SellerArticle.EditExpired.Message);
+            ModelState.AddError(SellerArticle.EditExpired);
         }
 
         if (result.Value.IsBooked)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, SellerArticle.EditFailedDueToBooked.Message);
+            ModelState.AddError(SellerArticle.EditFailedDueToBooked);
         }
     }
 
@@ -65,7 +65,7 @@ public class EditArticleModel : PageModel
 
         if (!Input.HasPriceClosestToFifty)
         {
-            ModelState.AddModelError(string.Empty, SellerArticle.InvalidPriceRange.Message);
+            ModelState.AddError(SellerArticle.InvalidPriceRange);
             return Page();
         }
 

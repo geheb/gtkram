@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.MyBazaars;
 
 [Node("Anlegen", FromPage = typeof(ArticlesModel))]
-[Authorize(Roles = "seller,admin")]
+[Authorize(Roles = "seller")]
 public class AddArticleModel : PageModel
 {
     private readonly IMediator _mediator;
@@ -46,7 +46,7 @@ public class AddArticleModel : PageModel
 
         if (!Input.HasPriceClosestToFifty)
         {
-            ModelState.AddModelError(string.Empty, SellerArticle.InvalidPriceRange.Message);
+            ModelState.AddError(SellerArticle.InvalidPriceRange);
             return Page();
         }
 

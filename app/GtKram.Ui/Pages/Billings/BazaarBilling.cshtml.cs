@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.Billings;
 
 [Node("Kassenvorgänge", FromPage = typeof(IndexModel))]
-[Authorize(Roles = "billing,admin")]
+[Authorize(Roles = "manager,admin")]
 public class BazaarBillingModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
@@ -41,7 +41,7 @@ public class BazaarBillingModel : PageModel
 
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
+            ModelState.AddError(Domain.Errors.Event.Expired);
         }
 
         Items = result.Value.Billings;

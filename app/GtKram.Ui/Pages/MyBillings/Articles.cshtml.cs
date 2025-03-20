@@ -48,7 +48,7 @@ public class ArticlesModel : PageModel
 
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
+            ModelState.AddError(Domain.Errors.Event.Expired);
         }
         else
         {

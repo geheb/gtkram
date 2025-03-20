@@ -15,6 +15,6 @@ public static class Billing
     public static Error StatusCompleted { get; } =
         new($"{_prefix}.status.completed", "Der Kassenvorgang ist geschlossen.");
 
-    public static Error IsEmpty { get; } =
-        new($"{_prefix}.is.empty", "Der Kassenvorgang ist leer.");
+    public static Error Empty { get; } =
+        new($"{_prefix}.empty", "Der Kassenvorgang ist leer.");
 }

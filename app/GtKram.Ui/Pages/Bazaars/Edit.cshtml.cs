@@ -42,7 +42,7 @@ public class EditModel : PageModel
         var converter = new EventConverter();
         if (converter.IsExpired(result.Value, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, I18n.LocalizedMessages.BazaarExpired);
+            ModelState.AddError(Domain.Errors.Event.Expired);
         }
 
         Input.Init(result.Value);

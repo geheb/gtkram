@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.MyBazaars;
 
 [Node("Meine Teilnahme", FromPage = typeof(Pages.IndexModel))]
-[Authorize(Roles = "seller,admin")]
+[Authorize(Roles = "seller")]
 public class IndexModel : PageModel
 {
     private readonly IMediator _mediator;

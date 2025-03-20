@@ -8,6 +8,8 @@ using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace GtKram.Ui.Pages.MyBillings;
 
@@ -29,7 +31,23 @@ public class BazaarBillingModel : PageModel
         _mediator = mediator;
     }
 
-    public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken) =>
+        await UpdateView(eventId, cancellationToken);
+
+    public async Task<IActionResult> OnGetCreateAsync(Guid eventId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new CreateBillingByUserCommand(User.GetId(), eventId), cancellationToken);
+        if (result.IsFailed)
+        {
+            ModelState.AddError(result.Errors);
+            await UpdateView(eventId, cancellationToken);
+            return Page();
+        }
+
+        return RedirectToPage("Articles", new { eventId, id = result.Value });
+    }
+
+    private async Task UpdateView(Guid eventId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetBillingsWithTotalsAndEventByUserQuery(User.GetId(), eventId), cancellationToken);
         if (result.IsFailed)
@@ -43,21 +61,9 @@ public class BazaarBillingModel : PageModel
 
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
+            ModelState.AddError(Domain.Errors.Event.Expired);
         }
 
         Items = result.Value.Billings;
-    }
-
-    public async Task<IActionResult> OnGetCreateAsync(Guid eventId, CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(new CreateBillingByUserCommand(User.GetId(), eventId), cancellationToken);
-        if (result.IsFailed)
-        {
-            ModelState.AddError(result.Errors);
-            return Page();
-        }
-
-        return RedirectToPage("Articles", new { eventId, id = result.Value });
     }
 }

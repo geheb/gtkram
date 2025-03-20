@@ -12,7 +12,7 @@ using System.Globalization;
 namespace GtKram.Ui.Pages.Billings;
 
 [Node("Arikel", FromPage = typeof(BazaarBillingModel))]
-[Authorize(Roles = "admin")]
+[Authorize(Roles = "manager,admin")]
 public class ArticlesModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
@@ -46,7 +46,7 @@ public class ArticlesModel : PageModel
 
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider))
         {
-            ModelState.AddModelError(string.Empty, Domain.Errors.Event.Expired.Message);
+            ModelState.AddError(Domain.Errors.Event.Expired);
         }
         else
         {

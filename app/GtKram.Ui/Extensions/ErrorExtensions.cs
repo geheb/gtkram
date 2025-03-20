@@ -5,6 +5,12 @@ namespace GtKram.Ui.Extensions;
 
 public static class ErrorExtensions
 {
-    public static void AddError(this ModelStateDictionary modelState, Error[] errors) =>
-        Array.ForEach(errors, e => modelState.AddModelError(string.Empty, e.Message));
+    public static void AddError(this ModelStateDictionary modelState, params Error[] errors)
+    {
+        foreach (var err in errors)
+        {
+            if (modelState.ContainsKey(err.Code)) continue;
+            modelState.AddModelError(err.Code, err.Message);
+        }
+    }
 }

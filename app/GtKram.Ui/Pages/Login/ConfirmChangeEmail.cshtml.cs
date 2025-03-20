@@ -1,5 +1,6 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Ui.Converter;
+using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ public class ConfirmChangeEmailModel : PageModel
     {
         if (id == Guid.Empty || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return;
         }
 
@@ -32,7 +33,7 @@ public class ConfirmChangeEmailModel : PageModel
         var result = await _mediator.Send(new ConfirmChangeEmailCommand(id, email, token), cancellationToken);
         if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidNewEmailConfirmationLink);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return;
         }       
     }

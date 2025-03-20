@@ -655,7 +655,7 @@ public sealed class BazaarBillingHandlerTests
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.Billing.IsEmpty).ShouldBeTrue();
+        result.Errors.Any(e => e == Domain.Errors.Billing.Empty).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -671,7 +671,7 @@ public sealed class BazaarBillingHandlerTests
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.Billing.IsEmpty).ShouldBeTrue();
+        result.Errors.Any(e => e == Domain.Errors.Billing.Empty).ShouldBeTrue();
     }
 
     [TestMethod]

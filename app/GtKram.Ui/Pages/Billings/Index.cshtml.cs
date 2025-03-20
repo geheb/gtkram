@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.Billings;
 
 [Node("Kasse", FromPage = typeof(Pages.IndexModel))]
-[Authorize(Roles = "admin")]
+[Authorize(Roles = "manager,admin")]
 public class IndexModel : PageModel
 {
     private readonly IMediator _mediator;

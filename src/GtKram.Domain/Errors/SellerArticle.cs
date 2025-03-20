@@ -15,8 +15,8 @@ public static class SellerArticle
     public static Error NotFound { get; } =
         new($"{_prefix}.not.found", "Der Artikel wurde nicht gefunden.");
 
-    public static Error IsEmpty { get; } =
-        new($"{_prefix}.is.empty", "Keine Artikel vorhanden.");
+    public static Error Empty { get; } =
+        new($"{_prefix}.empty", "Keine Artikel vorhanden.");
 
     public static Error MaxExceeded { get; } =
         new($"{_prefix}.max.exceeded", "Die maximale Anzahl der Artikel wurde überschritten.");

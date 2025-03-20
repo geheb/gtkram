@@ -49,17 +49,17 @@ public class RegisterModel : PageModel
         if (converter.IsExpired(@event.Value.Event, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, Event.Expired.Message);
+            ModelState.AddError(Event.Expired);
         }
         else if (!converter.IsRegisterExpired(@event.Value.Event, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, EventRegistration.IsExpired.Message);
+            ModelState.AddError(EventRegistration.Expired);
         }
         else if(@event.Value.RegistrationCount >= @event.Value.Event.MaxSellers)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, EventRegistration.LimitExceeded.Message);
+            ModelState.AddError(EventRegistration.LimitExceeded);
         }
 
         Input.State_Event = converter.Format(@event.Value.Event);
@@ -79,7 +79,7 @@ public class RegisterModel : PageModel
         {
             IsDisabled = true;
             _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 

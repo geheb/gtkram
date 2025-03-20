@@ -2,6 +2,7 @@ using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
 using GtKram.Ui.Converter;
+using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -46,7 +47,7 @@ public class ConfirmResetPasswordModel : PageModel
         if (id == Guid.Empty || string.IsNullOrWhiteSpace(token))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return;
         }
 
@@ -54,7 +55,7 @@ public class ConfirmResetPasswordModel : PageModel
         if (result.IsFailed)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidPasswordResetLink);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return;
         }
 
@@ -62,7 +63,7 @@ public class ConfirmResetPasswordModel : PageModel
         if (resultUser.IsFailed)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return;
         }
 
@@ -75,7 +76,7 @@ public class ConfirmResetPasswordModel : PageModel
         {
             IsDisabled = true;
             _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
@@ -83,7 +84,7 @@ public class ConfirmResetPasswordModel : PageModel
         if (resultUser.IsFailed)
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
@@ -94,7 +95,7 @@ public class ConfirmResetPasswordModel : PageModel
         var result = await _mediator.Send(new ConfirmResetPasswordCommand(id, Password!, token), cancellationToken);
         if (result.IsFailed)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.InvalidPasswordResetLink);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return Page();
         }
 

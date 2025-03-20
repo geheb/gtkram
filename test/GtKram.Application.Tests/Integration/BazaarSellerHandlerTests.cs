@@ -561,7 +561,7 @@ public sealed class BazaarSellerHandlerTests
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.IsEmpty).ShouldBeTrue();
+        result.Errors.Any(e => e == SellerArticle.Empty).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -580,7 +580,7 @@ public sealed class BazaarSellerHandlerTests
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.IsEmpty).ShouldBeTrue();
+        result.Errors.Any(e => e == SellerArticle.Empty).ShouldBeTrue();
     }
 
     private async Task CanCreateBillings(IServiceScope scope, (BazaarSeller seller, BazaarSellerRegistration registration) context)

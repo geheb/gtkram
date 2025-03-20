@@ -45,7 +45,7 @@ public class AddSellerModel : PageModel
         if (converter.IsExpired(result.Value, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddModelError(string.Empty, Event.Expired.Message);
+            ModelState.AddError(Event.Expired);
         }
     }
 

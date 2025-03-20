@@ -4,7 +4,6 @@ using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Errors;
-using GtKram.Domain.Models;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +13,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.Ui.Pages.MyBazaars;
 
 [Node("Artikel", FromPage = typeof(IndexModel))]
-[Authorize(Roles = "seller,admin")]
+[Authorize(Roles = "seller")]
 public class ArticlesModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
@@ -66,7 +65,7 @@ public class ArticlesModel : PageModel
 
         if (!CanEdit)
         {
-            ModelState.AddModelError(string.Empty, SellerArticle.EditExpired.Message);
+            ModelState.AddError(SellerArticle.EditExpired);
         }
 
         AvailableCount = Items.Length;

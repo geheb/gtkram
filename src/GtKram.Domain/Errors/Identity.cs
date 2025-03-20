@@ -1,4 +1,5 @@
 using GtKram.Domain.Base;
+using System.Runtime.ConstrainedExecution;
 
 namespace GtKram.Domain.Errors;
 
@@ -23,4 +24,7 @@ public static class Identity
 
     public static Error LoginFailed { get; } =
         new($"{_prefix}.login.failed", "Die Anmeldung ist fehlgeschlagen.");
+
+    public static Error LinkIsExpired { get; } =
+       new($"{_prefix}.link.is.expired", "Der Link ist ungültig oder abgelaufen.");
 }

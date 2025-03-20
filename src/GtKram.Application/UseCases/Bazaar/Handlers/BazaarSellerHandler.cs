@@ -141,7 +141,7 @@ internal sealed class BazaarSellerHandler :
 
             if (!converter.IsRegisterExpired(@event.Value, _timeProvider))
             {
-                return Result.Fail(EventRegistration.IsExpired);
+                return Result.Fail(EventRegistration.Expired);
             }
 
             var count = await _sellerRegistrationRepository.GetCountByBazaarEventId(@event.Value.Id, cancellationToken);
@@ -543,7 +543,7 @@ internal sealed class BazaarSellerHandler :
 
         if (articles.Length == 0)
         {
-            return Result.Fail(SellerArticle.IsEmpty);
+            return Result.Fail(SellerArticle.Empty);
         }
 
         var billingArticles = await _billingArticleRepository.GetBySellerArticleId([.. articles.Select(s => s.Id)], cancellationToken);
@@ -555,7 +555,7 @@ internal sealed class BazaarSellerHandler :
 
         if (articles.Length == 0)
         {
-            return Result.Fail(SellerArticle.IsEmpty);
+            return Result.Fail(SellerArticle.Empty);
         }
 
         var currentSeller = sellers.First(s => s.Id == command.SellerId);

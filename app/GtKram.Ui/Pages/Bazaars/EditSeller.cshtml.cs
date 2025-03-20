@@ -1,5 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Domain.Errors;
 using GtKram.Ui.Converter;
 using GtKram.Ui.Extensions;
 using GtKram.Ui.I18n;
@@ -54,7 +55,7 @@ public class EditSellerModel : PageModel
         var isExpired = converter.IsExpired(@event.Value, _timeProvider);
         if (isExpired)
         {
-            ModelState.AddModelError(string.Empty, LocalizedMessages.BazaarExpired);
+            ModelState.AddError(Event.Expired);
         }
 
         IsDisabled = sellerResult.Value.Seller is null || isExpired;
