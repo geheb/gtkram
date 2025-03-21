@@ -3,14 +3,14 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    Model.BuildHeaderMenu();
+
     var roleConverter = new RoleConverter();
     var dateConverter = new GermanDateTimeConverter();
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">

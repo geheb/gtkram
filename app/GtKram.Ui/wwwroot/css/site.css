@@ -132,6 +132,10 @@ td .label-wrapper {
     }
 }
 
+.small-section {
+    padding: 1rem;
+}
+
 .clickable-row {
     cursor: pointer;
 }

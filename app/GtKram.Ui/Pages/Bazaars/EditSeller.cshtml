@@ -8,13 +8,12 @@
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
     
     var pageParam = new { eventId, id };
-    Model.BuildHeaderMenu(pageParam);
     var sellerConverter = new SellerConverter();
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">

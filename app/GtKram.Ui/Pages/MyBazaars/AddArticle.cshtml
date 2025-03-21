@@ -6,13 +6,11 @@
     ViewData["HasFooter"] = true;
 
     Guid.TryParse(Request.RouteValues["sellerId"] as string, out var sellerId);
-
-    Model.BuildHeaderMenu(new { sellerId });
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         @Html.CreateBreadcrumb(new { sellerId }, new { sellerId })

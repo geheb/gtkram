@@ -10,7 +10,7 @@ public static class HtmlHelperExtensions
     public static IHtmlContent CreateBreadcrumb(this IHtmlHelper helper, params object[] routeValues)
     {
         var nav = new TagBuilder("nav");
-        nav.AddCssClass("breadcrumb has-arrow-separator");
+        nav.AddCssClass("breadcrumb");
         nav.Attributes.Add("aria-label", "breadcrumbs");
 
         var breadcrumbGenerator = helper.ViewContext.HttpContext.RequestServices.GetRequiredService<NodeGeneratorService>();

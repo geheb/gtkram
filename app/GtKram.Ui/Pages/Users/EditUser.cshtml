@@ -4,16 +4,15 @@
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
-    Model.BuildHeaderMenu(new { id });
+
     var pageParam = new { id };
-    Model.BuildHeaderMenu(pageParam);
     var roleConverter = new RoleConverter();
     var usersUrl = Url.PageLink("Index");
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">

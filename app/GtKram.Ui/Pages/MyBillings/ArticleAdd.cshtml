@@ -6,13 +6,11 @@
 
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
-
-    Model.BuildHeaderMenu(new { eventId, id });
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         @Html.CreateBreadcrumb(new { eventId, id }, new { eventId, id }, new { eventId })

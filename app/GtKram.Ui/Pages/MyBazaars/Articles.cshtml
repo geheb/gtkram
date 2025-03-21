@@ -6,13 +6,12 @@
 
     Guid.TryParse(Request.RouteValues["sellerId"] as string, out var sellerId);
 
-    Model.BuildHeaderMenu(new { sellerId }); 
     var addUrl = Url.PageLink("AddArticle", null, new { sellerId });
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">
@@ -91,7 +90,7 @@
                     }
                     @foreach (var a in Model.Items)
                     {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id }))">
+                        <tr class="clickable-row" data-url="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id, sellerId = a.SellerArticle.BazaarSellerId }))">
                             <td>@a.SellerArticle.Name (#@a.SellerArticle.LabelNumber)</td>
                             <td>@a.SellerArticle.Price</td>
                             <td>@a.SellerArticle.Price.ToString("0.00") €</td>
@@ -99,7 +98,7 @@
                                 <i class="@(a.IsSold ? "fas fa-check-circle has-text-success" : "")"></i>
                             </td>
                             <td>
-                                <a href="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id }))">Bearbeiten</a>
+                                    <a href="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id, sellerId = a.SellerArticle.BazaarSellerId }))">Bearbeiten</a>
                             </td>
                         </tr>
                     }

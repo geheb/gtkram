@@ -5,14 +5,14 @@
     ViewData["HasFooter"] = true;
 
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
-    Model.BuildHeaderMenu(new { id });
+
     var dateConverter = new GermanDateTimeConverter();
     var indexLink = Url.PageLink("Index");
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">

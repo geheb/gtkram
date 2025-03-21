@@ -8,10 +8,7 @@
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
 
-    Model.BuildHeaderMenu(new { eventId, id });
-
     var dateConverter = new GermanDateTimeConverter();
-
     var urlBilling = Url.PageLink("BazaarBilling", null, new { eventId });
     var cancelUrl = Url.PageLink(string.Empty, "cancel", new { id });
     var sumUrl = Url.PageLink(string.Empty, "sum", new { id });
@@ -20,7 +17,7 @@
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         <div class="columns is-gapless is-mobile">

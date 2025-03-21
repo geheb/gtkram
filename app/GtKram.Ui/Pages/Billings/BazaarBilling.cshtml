@@ -6,15 +6,13 @@
 
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
 
-    Model.BuildHeaderMenu(new { eventId });
-
     var statusConverter = new BillingStatusConverter();
     var dateConverter = new GermanDateTimeConverter();
 }
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         @Html.CreateBreadcrumb(new { eventId })

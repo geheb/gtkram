@@ -1,8 +1,4 @@
-﻿@{
-    var menu = ViewData["HeaderMenu"] as GtKram.Ui.Routing.MenuItem;
-}
-
-<nav class="navbar is-info">
+﻿<nav class="navbar is-info">
     <div class="container">
 
         <div class="navbar-brand">
@@ -71,18 +67,4 @@
         </div>
     </div>
 
-    @if (menu != null)
-    {
-        <div class="hero-foot">
-            <nav class="tabs is-boxed is-medium">
-                <div class="container">
-                    <ul>
-                        <li class="is-active has-text-info">
-                            <a href="@menu.Path">@menu.Name</a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-        </div>
-    }
 </section>

@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
-    Model.BuildHeaderMenu();
 
     var eventConverter = new EventConverter();
     var dateConverter = new GermanDateTimeConverter();
@@ -11,7 +10,7 @@
 
 @await Html.PartialAsync("_Header")
 
-<section class="section">
+<section class="small-section">
     <div class="container">
 
         @Html.CreateBreadcrumb()

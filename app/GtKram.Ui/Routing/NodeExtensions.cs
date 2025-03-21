@@ -47,28 +47,4 @@ public static class NodeExtensions
 
         return nodes.Length < 1;
     }
-
-    public static void BuildHeaderMenu(this PageModel model, object? routeValues = null)
-    {
-        if (model.User.Identity == null ||
-            !model.User.Identity.IsAuthenticated)
-        {
-            return;
-        }
-
-        var breadcrumbGenerator = model.HttpContext.RequestServices.GetRequiredService<NodeGeneratorService>();
-        var linkGenerator = model.HttpContext.RequestServices.GetRequiredService<LinkGenerator>();
-
-        var node = breadcrumbGenerator.GetNode(model.GetType());
-
-        var path = linkGenerator.GetPathByPage(node.Page, null, routeValues);
-        if (path == null)
-        {
-            return;
-        }
-
-        var menu = new MenuItem(node.Title, path);
-
-        model.ViewData["HeaderMenu"] = menu;
-    }
 }
