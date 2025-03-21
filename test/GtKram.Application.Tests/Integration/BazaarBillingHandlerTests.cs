@@ -618,6 +618,26 @@ public sealed class BazaarBillingHandlerTests
     }
 
     [TestMethod]
+    public async Task CompletedBilling_CreateBillingArticleByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CanCreateBillings(scope, context);
+        var articles = await CreateSellerArticles(scope, context.Seller, 3);
+        var billingId = await CreateCompletedBilling(scope, context.Seller, 1);
+
+        var billingArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarBillingArticleRepository>();
+        var billingArticles = await billingArticleRepo.GetByBazaarBillingId(billingId, _cancellationToken);
+        var article = articles.First(a => !billingArticles.Any(b => b.BazaarSellerArticleId == a.Id));
+
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+        var command = new CreateBillingArticleByUserCommand(context.Seller.UserId, billingId, article.Id);
+        var result = await sut.Handle(command, _cancellationToken);
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == Billing.StatusCompleted).ShouldBeTrue();
+    }
+
+    [TestMethod]
     public async Task CompletedBilling_And_EventExpired_CancelBillingCommand_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -1018,10 +1038,10 @@ public sealed class BazaarBillingHandlerTests
         return (seller.Value, sellerReg.Value);
     }
 
-    private async Task<BazaarSellerArticle[]> CreateSellerArticles(IServiceScope scope, BazaarSeller seller)
+    private async Task<BazaarSellerArticle[]> CreateSellerArticles(IServiceScope scope, BazaarSeller seller, int count = 3)
     {
         var sut = scope.ServiceProvider.GetRequiredService<BazaarSellerHandler>();
-        foreach (var i in Enumerable.Range(1, 3))
+        foreach (var i in Enumerable.Range(1, count))
         {
             var c = new CreateSellerArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
             var r = await sut.Handle(c, _cancellationToken);
@@ -1071,7 +1091,7 @@ public sealed class BazaarBillingHandlerTests
         return billingResult.Value;
     }
 
-    private async Task<Guid> CreateCompletedBilling(IServiceScope scope, BazaarSeller seller)
+    private async Task<Guid> CreateCompletedBilling(IServiceScope scope, BazaarSeller seller, int articleCount = 3)
     {
         var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
         var billingCommand = new CreateBillingByUserCommand(seller.UserId, seller.BazaarEventId);
@@ -1081,7 +1101,7 @@ public sealed class BazaarBillingHandlerTests
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IBazaarSellerArticleRepository>();
         var articles = await sellerArticleRepo.GetByBazaarSellerId(seller.Id, _cancellationToken);
 
-        foreach (var article in articles)
+        foreach (var article in articles.Take(articleCount))
         {
             var command = new CreateBillingArticleByUserCommand(seller.UserId, billingResult.Value, article.Id);
             var result = await sut.Handle(command, _cancellationToken);

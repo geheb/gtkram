@@ -52,7 +52,7 @@ public class ArticlesModel : PageModel
         }
         else
         {
-            CanEdit = true;
+            CanEdit = !result.Value.Billing.IsCompleted;
             CanComplete = Items.Length > 0 && !result.Value.Billing.IsCompleted;
         }
     }

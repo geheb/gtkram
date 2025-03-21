@@ -596,6 +596,11 @@ internal sealed class BazaarBillingHandler :
             return Result.Fail(Internal.InvalidRequest);
         }
 
+        if (billing.Value.Status == BillingStatus.Completed)
+        {
+            return Result.Fail(Billing.StatusCompleted);
+        }
+
         var article = await _sellerArticleRepository.Find(command.SellerArticleId, cancellationToken);
         if (article.IsFailed)
         {
@@ -644,6 +649,11 @@ internal sealed class BazaarBillingHandler :
         if (billing.Value.UserId != command.UserId)
         {
             return Result.Fail(Internal.InvalidRequest);
+        }
+
+        if (billing.Value.Status == BillingStatus.Completed)
+        {
+            return Result.Fail(Billing.StatusCompleted);
         }
 
         var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);

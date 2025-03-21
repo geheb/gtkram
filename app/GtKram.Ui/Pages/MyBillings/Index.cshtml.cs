@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.MyBillings;
 
-[Node("Kasse", FromPage = typeof(Pages.IndexModel))]
+[Node("Meine Kasse", FromPage = typeof(Pages.IndexModel))]
 [Authorize(Roles = "billing")]
 public class IndexModel : PageModel
 {

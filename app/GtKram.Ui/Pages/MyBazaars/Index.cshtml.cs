@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.MyBazaars;
 
-[Node("Meine Teilnahme", FromPage = typeof(Pages.IndexModel))]
+[Node("Meine Kinderbasare", FromPage = typeof(Pages.IndexModel))]
 [Authorize(Roles = "seller")]
 public class IndexModel : PageModel
 {
