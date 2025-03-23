@@ -13,7 +13,7 @@ using System.Globalization;
 
 namespace GtKram.Ui.Pages.MyBillings;
 
-[Node("Kassenvorgang", FromPage = typeof(BazaarBillingModel))]
+[Node("Kassenartikel", FromPage = typeof(BazaarBillingModel))]
 [Authorize(Roles = "billing")]
 public class ArticlesModel : PageModel
 {

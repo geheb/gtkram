@@ -1,8 +1,6 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
-using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Domain.Models;
 using GtKram.Ui.Annotations;
-using Mediator;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.Ui.Pages.MyBazaars;
@@ -10,6 +8,7 @@ namespace GtKram.Ui.Pages.MyBazaars;
 public class ArticleInput
 {
     public string State_Event { get; set; } = "Unbekannt";
+    public string? State_EditArticleEndDate { get; set; }
 
     [Display(Name = "Artikelnummer")]
     public int LabelNumber { get; set; }

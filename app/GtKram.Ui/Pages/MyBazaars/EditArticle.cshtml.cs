@@ -1,5 +1,4 @@
 using GtKram.Application.Converter;
-using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Errors;
@@ -43,7 +42,11 @@ public class EditArticleModel : PageModel
 
         var eventConverter = new EventConverter();
         Input.State_Event = eventConverter.Format(result.Value.Event);
+        Input.State_EditArticleEndDate = result.Value.Event.EditArticleEndsOn is not null
+            ? new GermanDateTimeConverter().ToDateTime(result.Value.Event.EditArticleEndsOn.Value)
+            : null;
         Input.Init(result.Value.Article);
+
 
         if (eventConverter.IsExpired(result.Value.Event, _timeProvider) ||
             eventConverter.IsEditArticlesExpired(result.Value.Event, _timeProvider))
@@ -78,11 +81,5 @@ public class EditArticleModel : PageModel
         }
 
         return RedirectToPage("Articles", new { sellerId });
-    }
-
-    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(new DeleteSellerArticleByUserCommand(User.GetId(), id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
     }
 }

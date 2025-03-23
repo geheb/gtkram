@@ -58,6 +58,11 @@ internal sealed class BazaarSellerArticleRepository : IBazaarSellerArticleReposi
 
     public async Task<Result> Create(BazaarSellerArticle[] models, Guid sellerId, CancellationToken cancellationToken)
     {
+        if (models.Length == 0)
+        {
+            return Result.Fail(SellerArticle.Empty);
+        }
+
         if (!await _labelSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
         {
             return Result.Fail(SellerArticle.SaveFailed);

@@ -15,7 +15,9 @@
       "files": [
         "css/all.min.css",
         "webfonts/fa-solid-900.ttf",
-        "webfonts/fa-solid-900.woff2"
+        "webfonts/fa-solid-900.woff2",
+        "webfonts/fa-regular-400.ttf",
+        "webfonts/fa-regular-400.woff2"
       ]
     },
     {

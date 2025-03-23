@@ -70,46 +70,60 @@
             </div>
         }
 
-        <div class="table-container mt-4">
-            <table class="table is-striped is-hoverable is-fullwidth">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Größe</th>
-                        <th>Preis</th>
-                        <th>Verkauft</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Items.Length < 1)
-                    {
-                        <tr>
-                            <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
-                        </tr>
-                    }
-                    @foreach (var a in Model.Items)
-                    {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id, sellerId = a.SellerArticle.BazaarSellerId }))">
-                            <td>@a.SellerArticle.Name (#@a.SellerArticle.LabelNumber)</td>
-                            <td>@a.SellerArticle.Price</td>
-                            <td>@a.SellerArticle.Price.ToString("0.00") €</td>
-                            <td>
-                                <i class="@(a.IsSold ? "fas fa-check-circle has-text-success" : "")"></i>
-                            </td>
-                            <td>
-                                    <a href="@(Url.PageLink("EditArticle", null, new { id = a.SellerArticle.Id, sellerId = a.SellerArticle.BazaarSellerId }))">Bearbeiten</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Artikel gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item list-item-clickable" data-url="@Url.PageLink("EditArticle", null, new { id = i.SellerArticle.Id, sellerId = i.SellerArticle.BazaarSellerId })">
+                    <div class="list-item-image">
+                        <i class="fas fa-box-archive fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.SellerArticle.Name (#@i.SellerArticle.LabelNumber)</div>
+                        <div class="list-item-description">
+                            @if (!string.IsNullOrWhiteSpace(i.SellerArticle.Size))
+                            {
+                                <span class="tag is-rounded)">@i.SellerArticle.Size</span>
+                            }
+                            <span class="tag is-rounded">@i.SellerArticle.Price.ToString("0.00") €</span>
+                            @if (i.IsSold)
+                            {
+                                <span class="tag is-rounded is-success">Verkauft</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            <a class="button is-hidden-mobile" href="@(Url.PageLink("EditArticle", null, new { id = i.SellerArticle.Id, sellerId = i.SellerArticle.BazaarSellerId }))">
+                                <span class="icon is-small"><i class="fa-solid fa-pen"></i></span>
+                                <span>Bearbeiten</span>
+                            </a>
+                            @if (Model.CanEdit)
+                            {
+                                <a class="button open-modal" href="#" data-target="#deleteArticleModal"
+                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.SellerArticle.Id }))">
+                                    <span class="icon is-small"><i class="fa-solid fa-trash"></i></span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
     </div>
 </section>
 
 @await Html.PartialAsync("_Footer")
+
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteArticleModal",
+    "Artikel löschen",
+    "Möchtest du wirklich diesen Artikel löschen?")
 
 @Html.CreateModalTemplateWithOkCancel(
     "takeOverModal",
@@ -121,9 +135,19 @@
     <script type="text/javascript">
         $(function () {
 
-            $(".clickable-row").click(function (e) {
-                e.stopPropagation();
-                window.location = $(this).data("url");
+            handleModal({
+                id: '#deleteArticleModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Artikel wurde gelöscht.',
+                        failed: 'Artikel konnte nicht gelöscht werden.'
+                    }
+                }
             });
 
             handleModal({
@@ -141,7 +165,7 @@
                     }
                 }
             });
-        });
+    });
     </script>
 }
 

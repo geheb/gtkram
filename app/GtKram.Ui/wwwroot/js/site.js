@@ -139,4 +139,10 @@ $(function () {
         const isPassword = input.attr('type') === 'password';
         input.attr('type', isPassword ? 'text' : 'password');
     });
+
+    $(".list-item-clickable").on('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        window.location = $(this).data("url");
+    });
 });

@@ -76,6 +76,12 @@ public class ArticlesModel : PageModel
         PayoutTotalValue = eventConverter.CalcPayout(@event, SoldTotalValue);
     }
 
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new DeleteSellerArticleByUserCommand(User.GetId(), id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
+    }
+
     public async Task<IActionResult> OnPostTakeOverArticlesAsync(Guid sellerId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new TakeOverSellerArticlesByUserCommand(User.GetId(), sellerId), cancellationToken);

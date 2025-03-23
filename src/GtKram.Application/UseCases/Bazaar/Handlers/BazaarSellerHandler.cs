@@ -559,13 +559,10 @@ internal sealed class BazaarSellerHandler :
         }
 
         var currentSeller = sellers.First(s => s.Id == command.SellerId);
-        var currentCountResult = await _sellerArticleRepository.GetCountByBazaarSellerId(command.SellerId, cancellationToken);
-        if (currentCountResult.IsFailed)
-        {
-            return currentCountResult.ToResult();
-        }
+        var currentArticles = await _sellerArticleRepository.GetByBazaarSellerId(command.SellerId, cancellationToken);
+        var currentArticlesHash = new HashSet<string>(currentArticles.Select(c => c.Name + c.Size + c.Price), StringComparer.OrdinalIgnoreCase);
 
-        var currentCount = currentCountResult.Value;
+        var currentCount = currentArticles.Length;
         if (currentCount >= currentSeller.MaxArticleCount)
         {
             return Result.Fail(SellerArticle.MaxExceeded);
@@ -574,6 +571,7 @@ internal sealed class BazaarSellerHandler :
         var takeOverArticles = new List<BazaarSellerArticle>();
         foreach (var a in articles.OrderBy(a => a.LabelNumber))
         {
+            if (currentArticlesHash.Contains(a.Name + a.Size + a.Price)) continue;
             takeOverArticles.Add(new()
             {
                 Name = a.Name,
@@ -581,6 +579,11 @@ internal sealed class BazaarSellerHandler :
                 Price = a.Price
             });
             if (++currentCount >= currentSeller.MaxArticleCount) break;
+        }
+
+        if (takeOverArticles.Count == 0)
+        {
+            return Result.Fail(SellerArticle.Empty);
         }
 
         return await _sellerArticleRepository.Create(takeOverArticles.ToArray(), command.SellerId, cancellationToken);

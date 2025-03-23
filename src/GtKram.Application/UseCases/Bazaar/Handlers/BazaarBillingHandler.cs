@@ -155,7 +155,7 @@ internal sealed class BazaarBillingHandler :
                 billingCount = eventBillings.Length;
                 foreach (var billing in eventBillings.Where(b => b.IsCompleted))
                 {
-                    var eventBillingArticles = billingArticlesByBillingId[billing.Id];
+                    if (!billingArticlesByBillingId.TryGetValue(billing.Id, out var eventBillingArticles)) continue;
                     soldTotal += eventBillingArticles.Sum(b => articlesById[b.BazaarSellerArticleId].Price);
                 }
             }

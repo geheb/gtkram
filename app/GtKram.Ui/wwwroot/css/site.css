@@ -176,6 +176,10 @@ td .label-wrapper {
     border-radius: 50px
 }
 
+.list-item-clickable {
+    cursor: pointer;
+}
+
 .bd-links {
     display: grid;
     grid-gap: 0;
