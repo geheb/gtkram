@@ -1,7 +1,9 @@
+using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Bazaars;
@@ -22,5 +24,11 @@ public class IndexModel : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Items = await _mediator.Send(new GetEventsWithRegistrationCountQuery(), cancellationToken);
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new DeleteEventCommand(id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }

@@ -223,3 +223,7 @@ input::-ms-reveal {
     pointer-events: all !important;
     cursor: pointer;
 }
+
+.is-height-2-5 {
+    height: 2.5rem;
+}

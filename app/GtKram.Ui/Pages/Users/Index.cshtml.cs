@@ -1,7 +1,9 @@
+using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Domain.Models;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Users;
@@ -28,5 +30,18 @@ public class IndexModel : PageModel
         UsersConfirmed = Items.Count(u => u.IsEmailConfirmed);
         UsersNotConfirmed = Items.Count(u => !u.IsEmailConfirmed);
         UsersLocked = Items.Count(u => u.LockoutEndDate.HasValue);
+    }
+
+    public async Task<IActionResult> OnPostConfirmEmail(Guid id, CancellationToken cancellationToken)
+    {
+        var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id, token = string.Empty });
+        var result = await _mediator.Send(new SendConfirmRegistrationCommand(id, callbackUrl!), cancellationToken);
+        return new JsonResult(result.IsSuccess);
+    }
+
+    public async Task<IActionResult> OnPostResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new ResetOtpCommand(id), cancellationToken);
+        return new JsonResult(result.IsSuccess);
     }
 }

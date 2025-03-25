@@ -25,7 +25,7 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile">
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
             <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId, id }, new { eventId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
@@ -84,7 +84,7 @@
             </div>
         }
 
-        <h2 class="title is-4">@Model.Event</h2>
+        <h1 class="title is-4">@Model.Event</h1>
 
         @if (!ModelState.IsValid)
         {
@@ -113,13 +113,12 @@
                         </div>
                     </div>
                     <div class="list-item-controls">
-                        <div class="buttons is-right is-hidden-mobile">
+                        <div class="buttons is-right">
                             @if (Model.CanEdit)
                             {
                             <a class="button open-modal" href="#" data-target="#deleteModal" data-info="@i.Format()" 
                                 data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">
                                 <span class="icon is-small"><i class="fa-solid fa-eraser"></i></span>
-                                <span>Entfernen</span>
                             </a>
                             }
                         </div>

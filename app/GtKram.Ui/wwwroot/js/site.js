@@ -142,7 +142,6 @@ $(function () {
 
     $(".list-item-clickable").on('click', function (e) {
         e.stopPropagation();
-        e.preventDefault();
         window.location = $(this).data("url");
     });
 });

@@ -61,10 +61,4 @@ public class EditModel : PageModel
 
         return RedirectToPage("Index");
     }
-
-    public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(new DeleteEventCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
-    }
 }

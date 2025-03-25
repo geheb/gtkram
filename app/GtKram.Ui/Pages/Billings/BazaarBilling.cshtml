@@ -15,9 +15,11 @@
 <section class="small-section">
     <div class="container">
 
-        @Html.CreateBreadcrumb(new { eventId })
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { eventId })
+        </div>
 
-        <h2 class="title is-4">@Model.Event</h2>
+        <h1 class="title is-4">@Model.Event</h1>
 
         @if (!ModelState.IsValid)
         {
@@ -68,14 +70,3 @@
 </section>
 
 @await Html.PartialAsync("_Footer")
-
-@section Scripts {
-    <script type="text/javascript">
-    $(function () {
-        $(".clickable-row").click(function (e) {
-            e.stopPropagation();
-            window.location = $(this).data("url");
-        });
-    });
-    </script>
-}

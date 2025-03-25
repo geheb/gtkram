@@ -16,7 +16,7 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile">
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
             <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId })</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <h2 class="title is-4">@Model.Event</h2>
+        <h1 class="title is-4">@Model.Event</h1>
 
         @if (ModelState.IsValid)
         {
@@ -67,7 +67,7 @@
             }
             @foreach (var i in Model.Items)
             {
-                <div class="list-item list-item-clickable" data-url="@Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id })">
+                <div class="list-item">
                     <div class="list-item-image">
                         <i class="fas fa-cart-shopping fa-2x has-text-info"></i>
                     </div>
@@ -80,10 +80,9 @@
                         </div>
                     </div>
                     <div class="list-item-controls">
-                        <div class="buttons is-right is-hidden-mobile">
+                        <div class="buttons is-right">
                             <a class="button" href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">
                                 <span class="icon is-small"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <span>Kassenartikel</span>
                             </a>
                         </div>
                     </div>
@@ -96,13 +95,3 @@
 
 @await Html.PartialAsync("_Footer")
 
-@section Scripts {
-    <script type="text/javascript">
-    $(function () {
-        $(".clickable-row").click(function (e) {
-            e.stopPropagation();
-            window.location = $(this).data("url");
-        });
-    });
-    </script>
-}

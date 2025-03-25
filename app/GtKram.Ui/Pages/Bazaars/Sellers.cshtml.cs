@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
-[Node("Registrierungen", FromPage = typeof(EditModel))]
+[Node("Registrierungen", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
 public class SellersModel : PageModel
 {

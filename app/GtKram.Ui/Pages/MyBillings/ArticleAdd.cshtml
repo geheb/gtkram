@@ -13,9 +13,11 @@
 <section class="small-section">
     <div class="container">
 
-        @Html.CreateBreadcrumb(new { eventId, id }, new { eventId, id }, new { eventId })
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { eventId, id }, new { eventId, id }, new { eventId })
+        </div>
 
-        <h2 class="title is-4">@Model.Event</h2>
+        <h1 class="title is-4">@Model.Event</h1>
 
         <div class="columns">
             <div class="column is-half">

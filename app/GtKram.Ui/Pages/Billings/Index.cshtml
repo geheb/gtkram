@@ -12,7 +12,9 @@
 <section class="small-section">
     <div class="container">
 
-        @Html.CreateBreadcrumb()
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb()
+        </div>
 
         <div class="table-container">
             <table class="table is-striped is-hoverable is-fullwidth">
@@ -52,14 +54,3 @@
 </section>
 
 @await Html.PartialAsync("_Footer")
-
-@section Scripts {
-    <script type="text/javascript">
-        $(function () {
-            $(".clickable-row").click(function (e) {
-                e.stopPropagation();
-                window.location = $(this).data("url");
-            });
-        });
-    </script>
-}

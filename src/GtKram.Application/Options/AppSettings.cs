@@ -15,6 +15,7 @@ public sealed class AppSettings
 
     public AppSettings()
     {
-        Version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+        var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+        Version = version[..Math.Min(version.Length, 14)];
     }
 }

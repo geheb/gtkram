@@ -13,7 +13,7 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile">
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
             <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb()</div>
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
@@ -42,7 +42,7 @@
         <div class="list">
             @foreach (var u in Model.Items)
             {
-                <div class="list-item list-item-clickable" data-url="@(Url.PageLink("EditUser", null, new { id = u.Id }))">
+                <div class="list-item">
                     <div class="list-item-image">
                         <i class="far fa-circle-user fa-2x has-text-info"></i>
                     </div>
@@ -64,11 +64,32 @@
                         </div>
                     </div>
                     <div class="list-item-controls">
-                        <div class="buttons is-right is-hidden-mobile">
+                        <div class="buttons is-right">
                             <a class="button" href="@(Url.PageLink("EditUser", null, new { id = u.Id }))">
-                                <span class="icon is-small"><i class="fas fa-edit"></i></span>
-                                <span>Bearbeiten</span>
+                                <span class="icon is-small"><i class="fas fa-pen"></i></span>
                             </a>
+                            <div class="dropdown is-hoverable is-right">
+                                <div class="dropdown-trigger">
+                                    <button class="button" aria-haspopup="true" aria-controls="row-action">
+                                        <span class="icon is-small">
+                                            <i class="fas fa-ellipsis-vertical"></i>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="row-action" role="menu">
+                                    <div class="dropdown-content">
+                                        <a class="confirm-email dropdown-item" href="#"
+                                           data-url="@(Url.PageLink(string.Empty, "confirmemail", new { id = u.Id }))">
+                                            Bestätigung anfordern
+                                        </a>
+                                        <a class="dropdown-item open-modal" href="#"
+                                           data-target="#resetTwoFactorModal"
+                                           data-url="@(Url.PageLink(string.Empty, "resettwofactor", new { id = u.Id }))">
+                                            2FA zurücksetzen
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -81,3 +102,40 @@
 
 @await Html.PartialAsync("_Footer")
 
+@Html.CreateModalTemplateWithOkCancel(
+    "resetTwoFactorModal",
+    "2FA zurücksetzen",
+    "Möchtest du wirklich die Zwei-Faktor-Authentifizierung für den aktuellen Benutzer zurücksetzen?")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+            $(".confirm-email").click(function (e) {
+                e.preventDefault();
+                const url = $(this).data('url');
+                $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
+                    if (data) {
+                        createToast('Eine E-Mail-Bestätigung wurde angefordert.');
+                    } else {
+                        createToast('Eine E-Mail-Bestätigung konnte nicht angefordert werden.', 'is-danger');
+                    }
+                });
+            });
+
+            handleModal({
+                id: '#resetTwoFactorModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () { window.location.reload(); },
+                    toast: {
+                        success: 'Die 2FA wurde zurückgesetzt.',
+                        failed: 'Die 2FA konnte nicht zurückgesetzt werden.'
+                    }
+                }
+            });
+
+        });
+    </script>
+}

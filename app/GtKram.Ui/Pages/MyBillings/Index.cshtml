@@ -13,7 +13,9 @@
 <section class="small-section">
     <div class="container">
 
-        @Html.CreateBreadcrumb()
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb()
+        </div>
 
         <div class="list">
             @if (Model.Items.Length == 0)
@@ -22,7 +24,7 @@
             }
             @foreach (var i in Model.Items)
             {
-                <div class="list-item list-item-clickable" data-url="@Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id })">
+                <div class="list-item">
                     <div class="list-item-image">
                         <i class="fas fa-store fa-2x has-text-info"></i>
                     </div>
@@ -33,10 +35,9 @@
                         </div>
                     </div>
                     <div class="list-item-controls">
-                        <div class="buttons is-right is-hidden-mobile">
+                        <div class="buttons is-right">
                             <a class="button" href="@(Url.PageLink("BazaarBilling", null, new { eventId = i.Event.Id }))">
                                 <span class="icon is-small"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <span>Kassenvorgänge</span>
                             </a>
                         </div>
                     </div>

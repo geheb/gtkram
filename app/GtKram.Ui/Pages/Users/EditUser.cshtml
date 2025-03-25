@@ -5,9 +5,7 @@
     ViewData["HasFooter"] = true;
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
 
-    var pageParam = new { id };
     var roleConverter = new RoleConverter();
-    var usersUrl = Url.PageLink("Index");
 }
 
 @await Html.PartialAsync("_Header")
@@ -15,35 +13,8 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam)</div>
-            <div class="column is-narrow">
-                <div class="dropdown is-hoverable is-right">
-                    <div class="dropdown-trigger">
-                        <button class="button" aria-haspopup="true" aria-controls="user-action">
-                            <span class="icon is-small">
-                                <i class="fas fa-ellipsis-vertical"></i>
-                            </span>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="user-action" role="menu">
-                        @if (!Model.IsDisabled)
-                        {
-                            <div class="dropdown-content">
-                                <a class="confirm-email dropdown-item" href="#"
-                                    data-url="@(Url.PageLink(string.Empty, "confirmemail", new { id }))">
-                                    Bestätigung anfordern
-                                </a>
-                                <a class="dropdown-item open-modal" href="#"
-                                   data-target="#resetTwoFactorModal"
-                                   data-url="@(Url.PageLink(string.Empty, "resettwofactor", new { id }))">
-                                    2FA zurücksetzen
-                                </a>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { id })
         </div>
 
         <div class="columns mt-4">
@@ -114,46 +85,3 @@
 </section>
 
 @await Html.PartialAsync("_Footer")
-
-@Html.CreateModalTemplateWithOkCancel(
-    "resetTwoFactorModal",
-    "2FA zurücksetzen",
-    "Möchtest du wirklich die Zwei-Faktor-Authentifizierung für den aktuellen Benutzer zurücksetzen?")
-
-@section Scripts {
-<script type="text/javascript">
-    $(function () {
-        $(".confirm-email").click(function (e) {
-            e.preventDefault();
-            const url = $(this).data('url');
-            const spinner = $('<i class="fas fa-spinner fa-spin"></i>');
-            $(this).append(spinner);
-            $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
-                if (data) {
-                    createToast('Eine E-Mail-Bestätigung wurde angefordert.');
-                } else {
-                    createToast('Eine E-Mail-Bestätigung konnte nicht angefordert werden.', 'is-danger');
-                }
-            }).always(function () {
-                spinner.remove();
-            });
-        });
-
-        handleModal({
-            id: '#resetTwoFactorModal',
-            token: {@Html.AjaxCsrfToken()},
-            confirm: {
-                dataurl: 'url',
-                action: function () {
-                    sleep(1000).then(() => window.location = '@Html.Raw(usersUrl)');
-                },
-                toast: {
-                    success: 'Die 2FA wurde zurückgesetzt.',
-                    failed: 'Die 2FA konnte nicht zurückgesetzt werden.'
-                }
-            }
-        });
-
-    });
-</script>
-}

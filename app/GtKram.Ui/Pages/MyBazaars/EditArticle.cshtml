@@ -13,10 +13,12 @@
 <section class="small-section">
     <div class="container">
 
-        @Html.CreateBreadcrumb(new { sellerId, id }, new { sellerId })
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { sellerId, id }, new { sellerId })
+        </div>
 
-         <h1 class="title is-4">@Model.Input.State_Event</h1>
-         <h2 class="subtitle">Bearbeitung endet am: @Model.Input.State_EditArticleEndDate</h2>
+        <h1 class="title is-4">@Model.Input.State_Event</h1>
+        <h2 class="subtitle">Bearbeitung endet am: @Model.Input.State_EditArticleEndDate</h2>
 
         @if (!ModelState.IsValid)
         {
