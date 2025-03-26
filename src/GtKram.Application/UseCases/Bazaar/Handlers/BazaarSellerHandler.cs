@@ -268,7 +268,7 @@ internal sealed class BazaarSellerHandler :
             else
             {
                 var userResult = await _mediator.Send(new CreateUserCommand(
-                    registration.Value.Name, registration.Value.Email, [UserRoleType.Seller], command.ConfirmUserCallbackUrl), 
+                    registration.Value.Name, registration.Value.Email, [UserRoleType.Seller], command.ConfirmUserCallbackUrl),
                     cancellationToken);
 
                 if (userResult.IsFailed)
@@ -293,13 +293,15 @@ internal sealed class BazaarSellerHandler :
                 return sellerResult.ToResult();
             }
 
-            registration.Value.Accepted = true;
             registration.Value.BazaarSellerId = sellerResult.Value;
-            var regResult = await _sellerRegistrationRepository.Update(registration.Value, cancellationToken);
-            if (regResult.IsFailed)
-            {
-                return regResult;
-            }
+        }
+
+        registration.Value.Accepted = true;
+            
+        var regResult = await _sellerRegistrationRepository.Update(registration.Value, cancellationToken);
+        if (regResult.IsFailed)
+        {
+            return regResult;
         }
 
         var result = await _emailService.EnqueueAcceptSeller(

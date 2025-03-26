@@ -46,6 +46,10 @@ public class SellersModel : PageModel
         
         var converter = new EventConverter();
         IsExpired = converter.IsExpired(@event.Value, _timeProvider);
+        if (IsExpired)
+        {
+            ModelState.AddError(Domain.Errors.Event.Expired);
+        }
         Event = converter.Format(@event.Value);
         Items = await _mediator.Send(new GetSellerRegistrationWithArticleCountQuery(eventId), cancellationToken);
 

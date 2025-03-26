@@ -8,7 +8,6 @@
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
 
     var pageParam = new { eventId, id };
-    var printLink = Url.PageLink("PrintSellerArticles", null, new { id });
 }
 
 @await Html.PartialAsync("_Header")
@@ -21,13 +20,13 @@
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
-                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
                             <span class="icon is-small">
                                 <i class="fas fa-ellipsis-vertical"></i>
                             </span>
                         </button>
                     </div>
-                    <div class="dropdown-menu" id="user-action" role="menu">
+                    <div class="dropdown-menu" id="menu-action" role="menu">
                         <div class="dropdown-content">
                             <div class="dropdown-item">
                                 <div>Gesamt: @Model.AvailableCount / @Model.MaxArticleCount</div>
@@ -36,10 +35,6 @@
                                 <div>Verkaufswert: @Model.SoldTotalValue.ToString("0.00") €</div>
                                 <div>Auszahlung: @Model.PayoutTotalValue.ToString("0.00") €</div>
                             </div>
-                            <hr class="dropdown-divider" />
-                            <a href="@printLink" class="dropdown-item" target="_blank" rel="noopener noreferrer">
-                                Etiketten drucken
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -57,38 +52,34 @@
             </div>
         }
 
-        <div class="table-container">
-            <table class="table is-striped is-hoverable is-fullwidth">
-                <thead>
-                    <tr>
-                        <th>Nummer</th>
-                        <th>Name</th>
-                        <th>Größe</th>
-                        <th>Preis</th>
-                        <th>Verkauft</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Items.Length < 1)
-                    {
-                        <tr>
-                            <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
-                        </tr>
-                    }
-                    @foreach (var a in Model.Items)
-                    {
-                        <tr>
-                            <td>@a.SellerArticle.LabelNumber</td>
-                            <td>@a.SellerArticle.Name</td>
-                            <td>@a.SellerArticle.Size</td>
-                            <td>@a.SellerArticle.Price.ToString("0.00") €</td>
-                            <td>
-                                <i class="@(a.IsSold ? "fas fa-check-circle has-text-success" : "")"></i>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Artikel gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-box-archive fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.SellerArticle.Name (#@i.SellerArticle.LabelNumber)</div>
+                        <div class="list-item-description">
+                            @if (!string.IsNullOrWhiteSpace(i.SellerArticle.Size))
+                            {
+                                <span class="tag is-rounded)">@i.SellerArticle.Size</span>
+                            }
+                            <span class="tag is-rounded">@i.SellerArticle.Price.ToString("0.00") €</span>
+                            @if (i.IsSold)
+                            {
+                                <span class="tag is-rounded is-success">Verkauft</span>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            }
         </div>
 
     </div>

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.Ui.Pages.Bazaars;
 
-[Node("Artikel", FromPage = typeof(EditSellerModel))]
+[Node("Artikel", FromPage = typeof(SellersModel))]
 [Authorize(Roles = "manager,admin")]
 public class SellerArticlesModel : PageModel
 {
@@ -46,6 +46,10 @@ public class SellerArticlesModel : PageModel
 
         var converter = new EventConverter();
         Event = converter.Format(@event.Value);
+        if (converter.IsExpired(@event.Value, _timeProvider))
+        {
+            ModelState.AddError(Domain.Errors.Event.Expired);
+        }
 
         var result = await _mediator.Send(new FindSellerWithRegistrationAndArticlesQuery(id), cancellationToken);
         if (result.IsFailed)

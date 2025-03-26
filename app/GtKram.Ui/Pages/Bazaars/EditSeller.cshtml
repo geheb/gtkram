@@ -6,8 +6,7 @@
 
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
-    
-    var pageParam = new { eventId, id };
+
     var sellerConverter = new SellerConverter();
 }
 
@@ -16,43 +15,22 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
-            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(pageParam, new { eventId }, new { id = eventId })</div>
-            <div class="column is-narrow">
-                <div class="dropdown is-hoverable is-right">
-                    <div class="dropdown-trigger">
-                        <button class="button" aria-haspopup="true" aria-controls="user-action">
-                            <span class="icon is-small">
-                                <i class="fas fa-ellipsis-vertical"></i>
-                            </span>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="user-action" role="menu">
-                        <div class="dropdown-content">
-                            <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, new { eventId, id }))">
-                                Artikel anzeigen
-                            </a>
-                            <a class="dropdown-item" href="@(Url.PageLink("PrintSellerArticles", null, new { id }))" target="_blank" rel="noopener noreferrer">
-                                Etiketten drucken
-                            </a>
-                        </div>
-                    </div> 
-                </div>
-            </div>
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { eventId, id }, new { eventId }, new { id = eventId })
         </div>
 
         <h1 class="title is-4">@Model.Input.State_Event</h1>
 
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
         <div class="columns mt-4">
             <div class="column is-half">
-
-                @if (!ModelState.IsValid)
-                {
-                    <div class="notification is-danger">
-                        <button class="delete"></button>
-                        <div asp-validation-summary="All"></div>
-                    </div>
-                }
 
                 <form method="post">
                     <fieldset disabled="@Model.IsDisabled">

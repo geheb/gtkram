@@ -18,13 +18,13 @@
             <div class="column is-narrow">
                 <div class="dropdown is-hoverable is-right">
                     <div class="dropdown-trigger">
-                        <button class="button" aria-haspopup="true" aria-controls="user-action">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
                             <span class="icon is-small">
                                 <i class="fas fa-ellipsis-vertical"></i>
                             </span>
                         </button>
                     </div>
-                    <div class="dropdown-menu" id="user-action" role="menu">
+                    <div class="dropdown-menu" id="menu-action" role="menu">
                         <div class="dropdown-content">
                             <a href="@(Url.PageLink("Add"))" class="dropdown-item">
                                 Kinderbasar anlegen
@@ -66,13 +66,13 @@
                             </a>
                             <div class="dropdown is-hoverable is-right">
                                 <div class="dropdown-trigger">
-                                    <button class="button" aria-haspopup="true" aria-controls="user-action">
+                                    <button class="button" aria-haspopup="true" aria-controls="row-action">
                                         <span class="icon is-small">
                                             <i class="fas fa-ellipsis-vertical"></i>
                                         </span>
                                     </button>
                                 </div>
-                                <div class="dropdown-menu" role="menu">
+                                <div class="dropdown-menu" id="row-action" role="menu">
                                     <div class="dropdown-content">
                                         <a class="dropdown-item copy-link" href="#" data-url="@(Url.PageLink("Register", null, new { id = i.Event.Id }))">
                                             Link für Registrierungen kopieren
