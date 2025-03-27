@@ -54,12 +54,12 @@
         @if (Model.CanEdit)
         {
             <div>
-                <a href="#" class="button is-floating is-danger open-modal" style="right:200px" data-target="#cancelModal" data-url="@cancelUrl">
+                <a href="#" class="button is-floating is-danger open-modal" data-target="#cancelModal" data-url="@cancelUrl">
                     <i class="fas fa-thumbs-down"></i>
                 </a>
                 @if (Model.CanComplete)
                 {
-                    <a href="#" class="button is-floating is-success open-modal" style="right:280px"
+                    <a href="#" class="button is-floating is-success open-modal" style="right:4em"
                         data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl">
                         <i class="fas fa-thumbs-up"></i>
                     </a>
@@ -77,46 +77,37 @@
             </div>
         }
 
-        <div class="table-container">
-            <table id="itemsTable" class="table is-striped is-hoverable is-fullwidth">
-                <thead>
-                    <tr>
-                        <th>Angelegt am</th>
-                        <th>Verkäufernummer</th>
-                        <th>Artikelnummer</th>
-                        <th>Name</th>
-                        <th>Preis</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Items.Length == 0)
-                    {
-                        <tr>
-                            <td colspan="5"><div class="has-text-centered">Keine Artikel gefunden.</div></td>
-                        </tr>
-                    }
-                    @foreach (var i in Model.Items)
-                    {
-                        <tr>
-                            <td>@dateConverter.ToDateTime(i.BillingCreatedOn!.Value)</td>
-                            <td>@i.SellerNumber</td>
-                            <td>@i.SellerArticle.LabelNumber</td>
-                            <td>@i.SellerArticle.Name</td>
-                            <td>@i.SellerArticle.Price.ToString("0.00") €</td>
-                            <td>
-                                @if (Model.CanEdit)
-                                {
-                                <a class="open-modal" href="#"
-                                   data-target="#deleteModal"
-                                   data-info="@i.Format()"
-                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">Löschen</a>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Kassenartikel gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-box-archive fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.SellerArticle.Name (#@i.SellerArticle.LabelNumber) - @i.SellerArticle.Price.ToString("0.00") €</div>
+                        <div class="list-item-description">
+                            <span class="tag is-rounded">Angelegt am @dateConverter.ToDateTime(i.BillingCreatedOn!.Value)</span>
+                            <span class="tag is-rounded">Verkäufer #@i.SellerNumber</span>
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            @if (Model.CanEdit)
+                            {
+                                <a class="button open-modal" href="#" data-target="#deleteModal" data-info="@i.Format()"
+                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">
+                                    <span class="icon is-small"><i class="fa-solid fa-eraser"></i></span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
     </div>

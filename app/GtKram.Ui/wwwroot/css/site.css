@@ -26,6 +26,7 @@ html {
     bottom: 0;
     width: 100%;
     height: 100px;
+    padding: 3em 0 0 0;
 }
 
 .login-bg {
@@ -146,10 +147,10 @@ td .label-wrapper {
 
 .button.is-floating {
     position: fixed;
-    width: 60px;
-    height: 60px;
-    bottom: 40px;
-    right: 40px;
+    width: 2.5em;
+    height: 2.5em;
+    bottom: 3em;
+    right: 1em;
     border-radius: 100px;
     text-align: center;
     font-size: 1.6rem;

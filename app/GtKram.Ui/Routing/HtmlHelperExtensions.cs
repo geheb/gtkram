@@ -21,26 +21,45 @@ public static class HtmlHelperExtensions
             throw new InvalidOperationException($"Current route isn't a Razor page");
         }
 
-        var node = breadcrumbGenerator.GetNode(actionDescriptor.HandlerTypeInfo);
+        var currentNode = breadcrumbGenerator.GetNode(actionDescriptor.HandlerTypeInfo);
         var routeEnum = routeValues.GetEnumerator();
-        var htmlContent = new StringBuilder();
+        var nodes = new List<(Node, string?)>();
 
-        while (node != null)
+        while (currentNode != null)
         {
-            var path = linkGenerator.GetPathByPage(node.Page, null, routeEnum.MoveNext() ? routeEnum.Current : null);
+            var path = linkGenerator.GetPathByPage(currentNode.Page, null, routeEnum.MoveNext() ? routeEnum.Current : null);
+            nodes.Add((currentNode, path));
+            currentNode = currentNode.Parent;
+        }
 
-            if (htmlContent.Length < 1) // the first is the active one
+        nodes.Reverse();
+        var htmlContent = new StringBuilder("<ul>");
+
+        for (var i = 0; i < nodes.Count; i++)
+        {
+            var (node, path) = nodes[i];
+
+            if (nodes.Count > 2 && i > 0 && i < nodes.Count - 1)
             {
-                htmlContent.Insert(0, $"<li class=\"is-active\"><a href=\"{path}\" aria-current=\"page\">{node.Title}</a></li>");
+                htmlContent.Append($"<li><a href=\"{path}\">");
+                htmlContent.Append($"<span class=\"is-hidden-mobile\">{node.Title}</span>");
+                htmlContent.Append($"<span class=\"is-hidden-tablet\">...</span>");
+                htmlContent.Append("</a></li>");
             }
             else
             {
-                htmlContent.Insert(0, $"<li><a href=\"{path}\">{node.Title}</a></li>");
+                if (i == nodes.Count - 1)
+                {
+                    htmlContent.Append("<li class=\"is-active\">");
+                    htmlContent.Append($"<a href=\"{path}\" aria-current=\"page\">{node.Title}</a>");
+                    htmlContent.Append("</li>");
+                }
+                else
+                {
+                    htmlContent.Append($"<li><a href=\"{path}\">{node.Title}</a></li>");
+                }
             }
-            node = node.Parent;
         }
-
-        htmlContent.Insert(0, "<ul>");
         htmlContent.Append("</ul>");
 
         nav.InnerHtml.AppendHtml(htmlContent.ToString());

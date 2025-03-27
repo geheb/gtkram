@@ -68,15 +68,15 @@
                 <a href="#" class="button is-floating is-warning open-modal scan-button" data-target="#scanModal">
                     <i class="fas fa-barcode"></i>
                 </a>
-                <a href="@articleAddUrl" class="button is-floating is-link" style="right:120px">
+                <a href="@articleAddUrl" class="button is-floating is-link" style="right:4em">
                     <i class="fas fa-keyboard"></i>
                 </a>
-                <a href="#" class="button is-floating is-danger open-modal" style="right:200px" data-target="#cancelModal" data-url="@cancelUrl">
+                <a href="#" class="button is-floating is-danger open-modal" style="right:7em" data-target="#cancelModal" data-url="@cancelUrl">
                     <i class="fas fa-thumbs-down"></i>
                 </a>
                 @if (Model.CanComplete)
                 {
-                    <a href="#" class="button is-floating is-success open-modal" style="right:280px"
+                    <a href="#" class="button is-floating is-success open-modal" style="right:10em"
                         data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl">
                         <i class="fas fa-thumbs-up"></i>
                     </a>

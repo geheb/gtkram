@@ -17,8 +17,6 @@ public class ArticleAddModel : PageModel
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
 
-    public string Event { get; private set; } = "Unbekannt";
-
     [BindProperty]
     public ArticleInput Input { get; set; } = new();
 

@@ -29,42 +29,37 @@
             </div>
         }
 
-        <div class="table-container mt-4">
-            <table class="table is-striped is-hoverable is-fullwidth">
-                <thead>
-                    <tr>
-                        <th>Erstellt am</th>
-                        <th>Kassierer</th>
-                        <th>Status</th>
-                        <th>Anzahl Artikel</th>
-                        <th>Summe</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!Model.Items.Any())
-                    {
-                        <tr>
-                            <td colspan="6"><div class="has-text-centered">Keine Kassenvorgänge gefunden.</div></td>
-                        </tr>
-                    }
-                    @foreach (var i in Model.Items)
-                    {
-                        <tr class="clickable-row" data-url="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">
-                            <td>@dateConverter.ToDateTime(i.Billing.CreatedOn)</td>
-                            <td>@i.CreatedBy</td>
-                            <td>@statusConverter.StatusToString(i.Billing.Status)</td>
-                            <td>@i.ArticleCount</td>
-                            <td>@i.Total.ToString("0.00") €</td>
-                            <td>
-                                <a href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">Artikel</a>
-                            </td>
-                        </tr>
-                    }
-
-                </tbody>
-            </table>
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Kassenvorgänge gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-cart-shopping fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@dateConverter.ToDateTime(i.Billing.CreatedOn)</div>
+                        <div class="list-item-description">
+                            <span class="tag is-rounded @(i.Billing.IsCompleted ? "is-success" : "is-warning")">@statusConverter.StatusToString(i.Billing.Status)</span>
+                            <span class="tag is-rounded">@i.CreatedBy</span>
+                            <span class="tag is-rounded">@i.ArticleCount Artikel</span>
+                            <span class="tag is-rounded">@i.Total.ToString("0.00") €</span>
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            <a class="button" href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Billing.Id }))">
+                                <span class="icon is-small"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
+
     </div>
 
 </section>
