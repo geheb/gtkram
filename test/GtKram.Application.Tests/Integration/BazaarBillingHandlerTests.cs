@@ -695,6 +695,25 @@ public sealed class BazaarBillingHandlerTests
     }
 
     [TestMethod]
+    public async Task OpenBilling_And_EventExpired_CompleteBillingCommand_IsSuccess()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CanCreateBillings(scope, context);
+        await CreateSellerArticles(scope, context.Seller);
+        var billingId = await CreateOpenBilling(scope, context.Seller);
+
+        var billingRepo = scope.ServiceProvider.GetRequiredService<IBazaarBillingRepository>();
+        var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
+
+        _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
+
+        var command = new CompleteBillingCommand(billingId);
+        var result = await sut.Handle(command, _cancellationToken);
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [TestMethod]
     public async Task EmptyBilling_FindBillingTotalQuery_IsSuccess()
     {
         using var scope = _serviceProvider.CreateAsyncScope();
@@ -959,8 +978,7 @@ public sealed class BazaarBillingHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<BazaarBillingHandler>();
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Event.Expired).ShouldBeTrue();
+        result.IsSuccess.ShouldBeTrue();
     }
 
     [TestMethod]

@@ -20,7 +20,6 @@ public class ArticlesModel : PageModel
 
     public string Event { get; private set; } = "Unbekannt";
     public BazaarSellerArticleWithBilling[] Items { get; private set; } = [];
-    public bool CanEdit { get; private set; }
     public bool CanComplete { get; private set; }
 
     public ArticlesModel(
@@ -48,11 +47,8 @@ public class ArticlesModel : PageModel
         {
             ModelState.AddError(Domain.Errors.Event.Expired);
         }
-        else
-        {
-            CanEdit = true;
-            CanComplete = Items.Length > 0 && !result.Value.Billing.IsCompleted;
-        }
+        
+        CanComplete = Items.Length > 0 && !result.Value.Billing.IsCompleted;
     }
 
     public async Task<IActionResult> OnPostSumAsync(Guid id, CancellationToken cancellationToken)

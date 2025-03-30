@@ -32,40 +32,34 @@
                         </button>
                     </div>
                     <div class="dropdown-menu" id="menu-action" role="menu">
-                        @if (Model.CanEdit)
-                        {
-                            <div class="dropdown-content">
-                                <a class="dropdown-item open-modal" data-target="#cancelModal" data-url="@cancelUrl" href="#">
-                                    Kassenvorgang abbrechen
+                        <div class="dropdown-content">
+                            <a class="dropdown-item open-modal" data-target="#cancelModal" data-url="@cancelUrl" href="#">
+                                Kassenvorgang abbrechen
+                            </a>
+                            @if (Model.CanComplete)
+                            {
+                                <a class="dropdown-item open-modal" data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl" href="#">
+                                    Kassenvorgang abschließen
                                 </a>
-                                @if (Model.CanComplete)
-                                {
-                                    <a class="dropdown-item open-modal" data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl" href="#">
-                                        Kassenvorgang abschließen
-                                    </a>
-                                }
-                            </div>
-                        }
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        @if (Model.CanEdit)
-        {
-            <div>
-                <a href="#" class="button is-floating is-danger open-modal" data-target="#cancelModal" data-url="@cancelUrl">
-                    <i class="fas fa-thumbs-down"></i>
+        <div>
+            <a href="#" class="button is-floating is-danger open-modal" data-target="#cancelModal" data-url="@cancelUrl">
+                <i class="fas fa-thumbs-down"></i>
+            </a>
+            @if (Model.CanComplete)
+            {
+                <a href="#" class="button is-floating is-success open-modal" style="right:4em"
+                    data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl">
+                    <i class="fas fa-thumbs-up"></i>
                 </a>
-                @if (Model.CanComplete)
-                {
-                    <a href="#" class="button is-floating is-success open-modal" style="right:4em"
-                        data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl">
-                        <i class="fas fa-thumbs-up"></i>
-                    </a>
-                }
-            </div>
-        }
+            }
+        </div>
 
         <h1 class="title is-4">@Model.Event</h1>
 
@@ -97,13 +91,10 @@
                     </div>
                     <div class="list-item-controls">
                         <div class="buttons is-right">
-                            @if (Model.CanEdit)
-                            {
-                                <a class="button open-modal" href="#" data-target="#deleteModal" data-info="@i.Format()"
-                                   data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">
-                                    <span class="icon is-small"><i class="fa-solid fa-eraser"></i></span>
-                                </a>
-                            }
+                            <a class="button open-modal" href="#" data-target="#deleteModal" data-info="@i.Format()"
+                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.BillingArticleId }))">
+                                <span class="icon is-small"><i class="fa-solid fa-eraser"></i></span>
+                            </a>
                         </div>
                     </div>
                 </div>

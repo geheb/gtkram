@@ -228,16 +228,6 @@ internal sealed class BazaarBillingHandler :
             return Result.Fail(Internal.InvalidData);
         }
 
-        var @event = await _eventRepository.Find(billing.Value.BazaarEventId, cancellationToken);
-        if (@event.IsFailed)
-        {
-            return Result.Fail(Internal.InvalidData);
-        }
-        var eventConverter = new EventConverter();
-        if (eventConverter.IsExpired(@event.Value, _timeProvider))
-        {
-            return Result.Fail(Event.Expired);
-        }
         return await _billingArticleRepository.Delete(command.Id, cancellationToken);
     }
 
