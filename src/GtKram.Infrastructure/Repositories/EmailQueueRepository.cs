@@ -1,65 +1,50 @@
 using GtKram.Domain.Base;
-using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class EmailQueueRepository
 {
-    private readonly UuidPkGenerator _pkGenerator = new();
     private readonly TimeProvider _timeProvider;
-    private readonly AppDbContext _dbContext;
+    private readonly IRepository<EmailQueue> _repo;
 
     public EmailQueueRepository(
         TimeProvider timeProvider,
-        AppDbContext dbContext)
+        IRepository<EmailQueue> repo)
     {
         _timeProvider = timeProvider;
-        _dbContext = dbContext;
+        _repo = repo;
     }
 
     public async Task<Result> Create(EmailQueue entity, CancellationToken cancellationToken)
     {
-        entity.Id = _pkGenerator.Generate();
-
-        var dbSet = _dbContext.Set<EmailQueue>();
-
-        await dbSet.AddAsync(entity, cancellationToken);
-
-        if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)
-        {
-            return Result.Fail(Domain.Errors.Internal.EmailSaveFailed);
-        }
-
+        await _repo.Create(entity, null, cancellationToken);
         return Result.Ok();
     }
 
-    public async Task<EmailQueue[]> GetBySentOnIsNull(CancellationToken cancellationToken)
+    public async Task<EmailQueue[]> GetBySentIsNull(CancellationToken cancellationToken)
     {
-        var dbSet = _dbContext.Set<EmailQueue>();
+        var entities = await _repo.Query(
+            [new(static e => e.Sent, null)],
+            null,
+            cancellationToken);
 
-        return await dbSet
-            .AsNoTracking()
-            .Take(128)
-            .Where(e => e.SentOn == null)
-            .OrderBy(e => e.CreatedOn)
-            .ToArrayAsync(cancellationToken);
+        return [.. entities.Select(e => e.Item)];
     }
 
-    public async Task<Result> UpdateSentOn(Guid id, CancellationToken cancellationToken)
+    public async Task<Result> UpdateSent(Guid id, CancellationToken cancellationToken)
     {
-        var dbSet = _dbContext.Set<EmailQueue>();
-
-        var entity = await dbSet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var entity = await _repo.Find(id, null, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Domain.Errors.Internal.EmailNotFound);
         }
 
-        entity.SentOn = _timeProvider.GetUtcNow();
+        entity.Value.Item.Sent = _timeProvider.GetUtcNow();
 
-        if (await _dbContext.SaveChangesAsync(cancellationToken) < 1)
+        var result = await _repo.Update(entity.Value.Item, null, cancellationToken);
+
+        if (result != UpdateResult.Success)
         {
             return Result.Fail(Domain.Errors.Internal.EmailSaveFailed);
         }

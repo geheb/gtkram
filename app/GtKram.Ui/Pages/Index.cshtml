@@ -27,7 +27,7 @@
 
         @if (Model.HasNodeAccess(
             typeof(MyBazaars.IndexModel), 
-            typeof(MyBillings.IndexModel)))
+            typeof(MyCheckouts.IndexModel)))
         {
             <p class="title">Meine Teilnahme</p>
             <nav class="bd-links">
@@ -45,9 +45,9 @@
                         </div>
                     </a>
                 }
-                @if (Model.HasNodeAccess(typeof(MyBillings.IndexModel)))
+                @if (Model.HasNodeAccess(typeof(MyCheckouts.IndexModel)))
                 {
-                    <a href="/MyBillings" class="bd-link has-text-grey">
+                    <a href="/MyCheckouts" class="bd-link has-text-grey">
                         <span class="icon bd-link-icon has-text-info">
                             <i class="fa-solid fa-cash-register"></i>
                         </span>
@@ -64,7 +64,7 @@
 
         @if (Model.HasNodeAccess(
             typeof(Bazaars.IndexModel), 
-            typeof(Billings.IndexModel),
+            typeof(Checkouts.IndexModel),
             typeof(Users.IndexModel)))
         {
             <p class="title">Verwaltung</p>
@@ -83,9 +83,9 @@
                     </div>
                 </a>
             }
-            @if (Model.HasNodeAccess(typeof(Billings.IndexModel)))
+            @if (Model.HasNodeAccess(typeof(Checkouts.IndexModel)))
             {
-                <a href="/Billings" class="bd-link has-text-grey">
+                <a href="/Checkouts" class="bd-link has-text-grey">
                     <span class="icon bd-link-icon has-text-info">
                         <i class="fa-solid fa-cash-register"></i>
                     </span>

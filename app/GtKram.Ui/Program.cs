@@ -1,15 +1,11 @@
 using GtKram.Application;
 using GtKram.Infrastructure;
-using GtKram.Ui.Annotations;
 using GtKram.Ui.Bindings;
-using GtKram.Ui.Constants;
 using GtKram.Ui.Filters;
 using GtKram.Ui.Middlewares;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
 using Serilog;
+using System.Net;
 
 void ConfigureApp(WebApplicationBuilder builder)
 {
@@ -23,6 +19,7 @@ void ConfigureApp(WebApplicationBuilder builder)
     var configuration = builder.Configuration;
 
     services.AddPersistence(configuration);
+    services.AddAuth(configuration, Policies.TwoFactorAuth);
 
     services.AddControllers();
     services.AddRazorPages()
@@ -33,65 +30,9 @@ void ConfigureApp(WebApplicationBuilder builder)
             options.Filters.Add<OperationCancelledExceptionFilter>();
         });
 
-    services.AddAuthorizationWith2FA(Policies.TwoFactorAuth);
-
-    services.Configure<IdentityOptions>(options =>
-    {
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireNonAlphanumeric = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequiredLength = PasswordLengthFieldAttribute.MinLen;
-        options.Password.RequiredUniqueChars = 5;
-
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromHours(3);
-        options.Lockout.MaxFailedAccessAttempts = 3;
-        options.Lockout.AllowedForNewUsers = true;
-
-        options.User.RequireUniqueEmail = true;
-    });
-
-    services.ConfigureDataProtection();
-
-    services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
-    {
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.Name = CookieNames.AppToken;
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
-
-        options.LoginPath = "/Login";
-        options.LogoutPath = "/Login/Exit";
-        options.AccessDeniedPath = "/Error/403";
-        options.SlidingExpiration = true;
-    });
-
-    services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme, options =>
-    {
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.Name = CookieNames.TwoFactorTrustToken;
-        options.SlidingExpiration = true;
-        options.ExpireTimeSpan = TimeSpan.FromDays(30);
-    });
-
-    services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorUserIdScheme, options =>
-    {
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.Name = CookieNames.TwoFactorIdToken;
-    });
-
     services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    });
-
-    services.Configure<AntiforgeryOptions>(options =>
-    {
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.Name = CookieNames.XcsrfToken;
     });
 
     services.AddSingleton<NodeGeneratorService>();
@@ -111,8 +52,8 @@ void ConfigurePipeline(WebApplication app)
         // Attach additional properties to the request completion event
         o.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
         {
-            diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
-            diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress);
+            diagnosticContext.Set("RequestHost", httpContext?.Request.Host.Value ?? "-");
+            diagnosticContext.Set("RemoteIpAddress", httpContext?.Connection.RemoteIpAddress ?? IPAddress.None);
         };
     });
 
@@ -153,6 +94,7 @@ try
 
     ConfigureApp(builder);
     using var app = builder.Build();
+    
     ConfigurePipeline(app);
     app.MapRazorPages();
     app.MapControllers();

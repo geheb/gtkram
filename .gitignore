@@ -403,3 +403,4 @@ app/GtKram.Ui/wwwroot/lib
 appsettings.*.json
 logs/
 
+.data_protection_keys/

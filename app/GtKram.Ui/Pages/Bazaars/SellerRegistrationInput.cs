@@ -30,22 +30,22 @@ public class SellerRegistrationInput
 
     [Display(Name = "Darf kassieren")]
     [RequiredField]
-    public bool CanCreateBillings { get; set; }
+    public bool CanCheckout { get; set; }
 
-    internal void InitDefault(BazaarSellerRegistration registration)
+    internal void InitDefault(SellerRegistration registration)
     {
         Name = registration.Name;
         Email = registration.Email;
         Phone = registration.Phone;
     }
 
-    internal void Init(BazaarSeller seller)
+    internal void Init(Seller seller)
     {
         SellerNumber = seller.SellerNumber;
         Role = (int)seller.Role;
-        CanCreateBillings = seller.CanCreateBillings;
+        CanCheckout = seller.CanCheckout;
     }
 
     internal UpdateSellerCommand ToCommand(Guid id) =>
-        new(id, SellerNumber, (SellerRole)Role, CanCreateBillings);
+        new(id, SellerNumber, (SellerRole)Role, CanCheckout);
 }

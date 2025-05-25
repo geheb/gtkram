@@ -23,6 +23,7 @@ internal sealed class HostedWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await HandleRequiredTables(stoppingToken);
         await HandleSuperUser();
 
         while (!stoppingToken.IsCancellationRequested)
@@ -33,21 +34,28 @@ internal sealed class HostedWorker : BackgroundService
         }
     }
 
+    public async Task HandleRequiredTables(CancellationToken cancellationToken)
+    {
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
+        var bootstrapper = scope.ServiceProvider.GetRequiredService<MySqlBootstrapper>();
+        await bootstrapper.Bootstrap(cancellationToken);
+    }
+
     private async Task HandleSuperUser()
     {
-        using var scope = _serviceScopeFactory.CreateScope();
-        var contextInitializer = scope.ServiceProvider.GetRequiredService<AppDbContextInitializer>();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
+        var contextInitializer = scope.ServiceProvider.GetRequiredService<DbContextInitializer>();
         await contextInitializer.CreateSuperAdmin();
     }
 
     private async Task HandleEmails(CancellationToken cancellationToken)
     {
-        using var scope = _serviceScopeFactory.CreateScope();
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
         var emailQueueRepository = scope.ServiceProvider.GetRequiredService<EmailQueueRepository>();
         var smtpDispatcher = scope.ServiceProvider.GetRequiredService<SmtpDispatcher>();
 
-        var emailEntities = await emailQueueRepository.GetBySentOnIsNull(cancellationToken);
+        var emailEntities = await emailQueueRepository.GetBySentIsNull(cancellationToken);
 
         foreach (var entity in emailEntities)
         {
@@ -61,7 +69,7 @@ internal sealed class HostedWorker : BackgroundService
 
                 await smtpDispatcher.Send(entity.Recipient!, entity.Subject!, entity.Body!, attachment);
 
-                var result = await emailQueueRepository.UpdateSentOn(entity.Id, cancellationToken);
+                var result = await emailQueueRepository.UpdateSent(entity.Id, cancellationToken);
                 if (result.IsFailed)
                 {
                     _logger.LogError(string.Join(", ", result.Errors.Select(e => e.Message)));

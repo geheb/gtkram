@@ -30,7 +30,7 @@ public class UpdateUserInput
         Roles[0] = user.Roles.Contains(UserRoleType.Administrator);
         Roles[1] = user.Roles.Contains(UserRoleType.Manager);
         Roles[2] = user.Roles.Contains(UserRoleType.Seller);
-        Roles[3] = user.Roles.Contains(UserRoleType.Billing);
+        Roles[3] = user.Roles.Contains(UserRoleType.Checkout);
     }
 
     public UpdateUserCommand ToCommand(Guid id)
@@ -39,7 +39,7 @@ public class UpdateUserInput
         if (Roles[0]) roles.Add(UserRoleType.Administrator);
         if (Roles[1]) roles.Add(UserRoleType.Manager);
         if (Roles[2]) roles.Add(UserRoleType.Seller);
-        if (Roles[3]) roles.Add(UserRoleType.Billing);
+        if (Roles[3]) roles.Add(UserRoleType.Checkout);
 
         return new(id, Name, [.. roles]);
     }

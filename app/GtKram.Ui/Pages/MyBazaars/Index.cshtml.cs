@@ -13,7 +13,7 @@ public class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
-    public BazaarEventWithSellerAndArticleCount[] Items { get; private set; } = [];
+    public EventWithSellerAndArticleCount[] Items { get; private set; } = [];
 
     public IndexModel(IMediator mediator)
     {

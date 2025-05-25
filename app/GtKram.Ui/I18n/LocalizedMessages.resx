@@ -117,50 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArticleNotFound" xml:space="preserve">
-    <value>Artikel wurde nicht gefunden.</value>
-  </data>
-  <data name="BazaarExpired" xml:space="preserve">
-    <value>Der Kinderbasar ist bereits abgelaufen.</value>
-  </data>
-  <data name="BazaarNoAssigned" xml:space="preserve">
-    <value>Der Kinderbasar ist nicht freigegeben.</value>
-  </data>
-  <data name="BazaarNotFound" xml:space="preserve">
-    <value>Kinderbasar wurde nicht gefunden.</value>
-  </data>
-  <data name="BazaarRegsiterUncomplete" xml:space="preserve">
-    <value>Die Registrierungen für den Kinderbasar sind nicht abgeschlossen.</value>
-  </data>
-  <data name="BillingNotFound" xml:space="preserve">
-    <value>Kassen-Vorgang wurde nicht gefunden.</value>
-  </data>
-  <data name="CreateBillingsForbidden" xml:space="preserve">
-    <value>Das Kassieren ist nicht erlaubt.</value>
-  </data>
-  <data name="EditArticleExpired" xml:space="preserve">
-    <value>Artikel können nicht bearbeitet werden. Die Bearbeitungszeit ist abgelaufen.</value>
-  </data>
   <data name="InvalidAccountConfirmationLink" xml:space="preserve">
     <value>Der Link zum Bestätigen der Registrierung ist ungültig oder abgelaufen. Eine neue Anfrage ist notwendig.</value>
-  </data>
-  <data name="InvalidEmail" xml:space="preserve">
-    <value>Die E-Mail-Adresse ist ungültig.</value>
-  </data>
-  <data name="InvalidNewEmailConfirmationLink" xml:space="preserve">
-    <value>Der Link zum Bestätigen der neuen E-Mail-Adresse ist ungültig oder abgelaufen. Eine neue Anfrage ist notwendig.</value>
-  </data>
-  <data name="InvalidPasswordResetLink" xml:space="preserve">
-    <value>Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen. Eine neue Anfrage ist notwendig.</value>
-  </data>
-  <data name="InvalidRequest" xml:space="preserve">
-    <value>Die Anfrage ist ungültig.</value>
-  </data>
-  <data name="SaveFailed" xml:space="preserve">
-    <value>Fehler beim Speichern.</value>
-  </data>
-  <data name="SellerNotFound" xml:space="preserve">
-    <value>Der Verkäufer wurde nicht gefunden.</value>
   </data>
   <data name="ValueMustBeANumberAccessor" xml:space="preserve">
     <value>Das Feld '{0}' muss eine Zahl sein.</value>

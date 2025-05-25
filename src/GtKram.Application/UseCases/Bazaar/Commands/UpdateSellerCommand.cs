@@ -8,4 +8,4 @@ public record struct UpdateSellerCommand(
     Guid SellerRegistrationId,
     int SellerNumber,
     SellerRole Role,
-    bool CanCreateBillings) : ICommand<Result>;
+    bool CanCheckout) : ICommand<Result>;

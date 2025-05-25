@@ -25,7 +25,7 @@ public class CreateUserInput
         if (Roles[0]) roles.Add(UserRoleType.Administrator);
         if (Roles[1]) roles.Add(UserRoleType.Manager);
         if (Roles[2]) roles.Add(UserRoleType.Seller);
-        if (Roles[3]) roles.Add(UserRoleType.Billing);
+        if (Roles[3]) roles.Add(UserRoleType.Checkout);
 
         return new(Name!, Email!, [.. roles], callbackUrl);
     }

@@ -19,7 +19,7 @@ public class AddSellerInput
 
     public CreateSellerRegistrationCommand ToCommand(Guid eventId) => new(new()
     {
-        BazaarEventId = eventId,
+        EventId = eventId,
         Name = Name!,
         Email = Email!,
         Phone = Phone!,

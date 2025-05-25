@@ -17,20 +17,17 @@ internal sealed class UserHandler :
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
     private readonly IUserRepository _repository;
-    private readonly IUserAuthenticator _userAuthenticator;
     private readonly IEmailValidatorService _emailValidatorService;
 
     public UserHandler(
         IdentityErrorDescriber errorDescriber,
         IMediator mediator,
         IUserRepository repository, 
-        IUserAuthenticator userAuthenticator,
         IEmailValidatorService emailValidatorService)
     {
         _errorDescriber = errorDescriber;
         _mediator = mediator;
         _repository = repository;
-        _userAuthenticator = userAuthenticator;
         _emailValidatorService = emailValidatorService;
     }
 

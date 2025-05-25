@@ -3,13 +3,13 @@ using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Ui.Annotations;
-using GtKram.Ui.Constants;
 using GtKram.Ui.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using GtKram.Application.Options;
 
 namespace GtKram.Ui.Pages.MyAccount;
 
@@ -88,6 +88,6 @@ public class EditTwoFactorModel : PageModel
             Response.Cookies.Delete(CookieNames.TwoFactorTrustToken);
         }
 
-        return RedirectToPage("Index", new { message = IsTwoFactorEnabled ? 3 : 4 });
+        return RedirectToPage("Index", new { message = IsTwoFactorEnabled ? 4 : 3 });
     }
 }

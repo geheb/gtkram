@@ -1,11 +1,9 @@
-using GtKram.Domain.Base;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Application.UseCases.User.Queries;
+using GtKram.Domain.Base;
 using Mediator;
-using GtKram.Domain.Errors;
-using Microsoft.AspNetCore.Identity;
 
 namespace GtKram.Application.UseCases.User.Handlers;
 
@@ -26,17 +24,11 @@ internal sealed class AuthHandler :
     ICommandHandler<SignInOtpCommand, Result>,
     IQueryHandler<GetOtpQuery, Result<UserOtp>>
 {
-    private readonly IdentityErrorDescriber _errorDescriber;
-    private readonly IEmailValidatorService _emailValidatorService;
     private readonly IUserAuthenticator _userAuthenticator;
 
     public AuthHandler(
-        IdentityErrorDescriber errorDescriber,
-        IEmailValidatorService emailValidatorService,
         IUserAuthenticator userAuthenticator)
     {
-        _errorDescriber = errorDescriber;
-        _emailValidatorService = emailValidatorService;
         _userAuthenticator = userAuthenticator;
     }
 
@@ -58,12 +50,6 @@ internal sealed class AuthHandler :
     {
         if (!string.IsNullOrWhiteSpace(command.Email))
         {
-            if (!await _emailValidatorService.Validate(command.Email, cancellationToken))
-            {
-                var error = _errorDescriber.InvalidEmail(command.Email);
-                return Result.Fail(error.Code, error.Description);
-            }
-
             var result = await _userAuthenticator.UpdateEmail(command.Id, command.Email, cancellationToken);
             if (result.IsFailed)
             {

@@ -15,6 +15,9 @@ public static class SellerArticle
     public static Error NotFound { get; } =
         new($"{_prefix}.not.found", "Der Artikel wurde nicht gefunden.");
 
+    public static Error DeleteFailed { get; } =
+        new($"{_prefix}.delete.failed", "Der Artikel konnte nicht gelöscht werden.");
+
     public static Error Empty { get; } =
         new($"{_prefix}.empty", "Keine Artikel vorhanden.");
 

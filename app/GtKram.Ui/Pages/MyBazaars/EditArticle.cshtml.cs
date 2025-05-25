@@ -32,7 +32,7 @@ public class EditArticleModel : PageModel
 
     public async Task OnGetAsync(Guid sellerId, Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new FindSellerArticleByUserQuery(User.GetId(), id), cancellationToken);
+        var result = await _mediator.Send(new FindArticleByUserQuery(User.GetId(), id), cancellationToken);
         if (result.IsFailed)
         {
             IsDisabled = true;
@@ -42,8 +42,8 @@ public class EditArticleModel : PageModel
 
         var eventConverter = new EventConverter();
         Input.State_Event = eventConverter.Format(result.Value.Event);
-        Input.State_EditArticleEndDate = result.Value.Event.EditArticleEndsOn is not null
-            ? new GermanDateTimeConverter().ToDateTime(result.Value.Event.EditArticleEndsOn.Value)
+        Input.State_EditArticleEndDate = result.Value.Event.EditArticleEnd is not null
+            ? new GermanDateTimeConverter().ToDateTime(result.Value.Event.EditArticleEnd.Value)
             : null;
         Input.Init(result.Value.Article);
 
@@ -55,7 +55,7 @@ public class EditArticleModel : PageModel
             ModelState.AddError(SellerArticle.EditExpired);
         }
 
-        if (result.Value.IsBooked)
+        if (result.Value.HasBooked)
         {
             IsDisabled = true;
             ModelState.AddError(SellerArticle.EditFailedDueToBooked);

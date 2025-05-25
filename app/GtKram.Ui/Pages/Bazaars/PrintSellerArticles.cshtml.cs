@@ -13,8 +13,7 @@ public class PrintSellerArticlesModel : PageModel
 {
     private readonly IMediator _mediator;
 
-    public int SellerNumber { get; set; }
-    public BazaarSellerArticleWithBilling[] Items { get; private set; } = [];
+    public ArticleWithCheckout[] Items { get; private set; } = [];
 
     public PrintSellerArticlesModel(
         IMediator mediator)
@@ -32,6 +31,5 @@ public class PrintSellerArticlesModel : PageModel
         }
 
         Items = result.Value.Articles;
-        SellerNumber = result.Value.Seller.SellerNumber;
     }
 }

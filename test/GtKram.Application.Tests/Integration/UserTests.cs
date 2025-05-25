@@ -1,10 +1,7 @@
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using Shouldly;
 
 namespace GtKram.Application.Tests.Integration;
@@ -24,15 +21,7 @@ public class UserTests
     [TestInitialize]
     public void Init()
     {
-        var mockUserManager = Substitute.For<MockUserManager>();
-        mockUserManager.CreateAsync(Arg.Any<IdentityUserGuid>()).Returns(IdentityResult.Success);
-        mockUserManager.AddToRolesAsync(Arg.Any<IdentityUserGuid>(), Arg.Any<IEnumerable<string>>()).Returns(IdentityResult.Success);
-
-        _fixture.Services.AddSingleton(TimeProvider.System);
-        _fixture.Services.AddScoped<UserManager<IdentityUserGuid>>(s => mockUserManager);
-        _fixture.Services.AddScoped(s => Substitute.For<IdentityErrorDescriber>());
         _fixture.Services.AddScoped<IUserRepository, UserRepository>();
-
         _serviceProvider = _fixture.Build();
     }
 

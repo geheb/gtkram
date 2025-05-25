@@ -1,14 +1,27 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+
 namespace GtKram.Infrastructure.Persistence.Entities;
 
-internal sealed class EmailQueue
+[Table("email_queue")]
+internal sealed class EmailQueue : IEntity
 {
     public Guid Id { get; set; }
-    public DateTimeOffset CreatedOn {  get; set; }
-    public DateTimeOffset? SentOn { get; set; }
+
+    public DateTimeOffset? Sent { get; set; }
+
     public string? Recipient { get; set; }
+
     public string? Subject { get; set; }
+
     public string? Body { get; set; }
+
     public byte[]? AttachmentBlob { get; set; }
+
     public string? AttachmentName { get; set; }
+
     public string? AttachmentMimeType { get; set; }
+
+    [JsonIgnore]
+    public int Version {  get; set; }
 }

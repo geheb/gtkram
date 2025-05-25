@@ -1,12 +1,9 @@
 using GtKram.Infrastructure;
 using GtKram.Infrastructure.Email;
-using GtKram.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -50,7 +47,6 @@ public sealed class Program
 
         switch (args[0])
         {
-            case "--migrate-db": return await MigrateDatabase(host.Services);
             case "--create-dataprotection-cert": return CreateDataProtectionCert();
             case "--test-email": return await TestEmail(host.Services);
         }
@@ -96,42 +92,6 @@ public sealed class Program
         return 0;
     }
 
-    private static async Task<int> MigrateDatabase(IServiceProvider serviceProvider)
-    {
-        using var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
-        using var context = serviceScope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var pendingMigrations = context.Database.GetPendingMigrations();
-        var migrations = pendingMigrations as IList<string> ?? pendingMigrations.ToList();
-        if (!migrations.Any())
-        {
-            Console.WriteLine("No pending migrations found.");
-            return 1;
-        }
-
-        Console.WriteLine("Pending migrations {0}", migrations.Count());
-        foreach (var migration in migrations)
-        {
-            Console.WriteLine($"\t{migration}");
-        }
-
-        Console.WriteLine("Press RETURN to continue.");
-        if (Console.ReadKey().Key != ConsoleKey.Enter) return 1;
-
-        Console.WriteLine("Migrate database...");
-        var watch = Stopwatch.StartNew();
-        try
-        {
-            await context.Database.MigrateAsync();
-        }
-        finally
-        {
-            watch.Stop();
-            Console.WriteLine($"Migration done, elapsed time: {watch.Elapsed}");
-        }
-
-        return 0;
-    }
     private static async Task<int> TestEmail(IServiceProvider serviceProvider)
     {
         using var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();

@@ -30,7 +30,7 @@ public class ArticleInput
 
     public bool HasPriceClosestToFifty => Price.HasValue && Price.Value == Math.Ceiling(2 * Price.Value) / 2;
 
-    public void Init(BazaarSellerArticle model)
+    public void Init(Article model)
     {
         LabelNumber = model.LabelNumber;
         Name = model.Name;
@@ -38,9 +38,9 @@ public class ArticleInput
         Price = model.Price;
     }
 
-    internal CreateSellerArticleByUserCommand ToCreateCommand(Guid userId, Guid sellerId) =>
+    internal CreateArticleByUserCommand ToCreateCommand(Guid userId, Guid sellerId) =>
         new(userId, sellerId, Name!, Size!, Price!.Value);
 
-    internal UpdateSellerArticleByUserCommand ToUpdateCommand(Guid userId, Guid articleId) =>
+    internal UpdateArticleByUserCommand ToUpdateCommand(Guid userId, Guid articleId) =>
         new(userId, articleId, Name!, Size!, Price!.Value);
 }

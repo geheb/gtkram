@@ -124,11 +124,10 @@
                                             data-target="#deleteSellerModal"
                                             data-seller="@i.Registration.Name (@i.Registration.Email)"
                                             data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.Registration.Id }))">Löschen</a>
-
-                                            <hr class="dropdown-divider" />
                                         }
                                         @if (i.Seller is not null)
                                         {
+                                            <hr class="dropdown-divider" />
                                             <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, new { eventId, id = i.Registration.Id }))">
                                                 Artikel
                                             </a>

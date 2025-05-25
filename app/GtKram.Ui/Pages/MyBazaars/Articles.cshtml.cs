@@ -30,7 +30,7 @@ public class ArticlesModel : PageModel
     public int SoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
     public decimal PayoutTotalValue { get; set; }
-    public BazaarSellerArticleWithBilling[] Items { get; set; } = [];
+    public ArticleWithCheckout[] Items { get; set; } = [];
 
     public ArticlesModel(
         TimeProvider timeProvider,
@@ -55,8 +55,8 @@ public class ArticlesModel : PageModel
         Items = result.Value.Articles;
         Event = eventConverter.Format(@event);
         MaxArticleCount = result.Value.Seller.MaxArticleCount;
-        EditArticleEndDate = @event.EditArticleEndsOn is not null 
-            ? new GermanDateTimeConverter().ToDateTime(@event.EditArticleEndsOn.Value)
+        EditArticleEndDate = @event.EditArticleEnd is not null 
+            ? new GermanDateTimeConverter().ToDateTime(@event.EditArticleEnd.Value)
             : null;
         CanEdit = 
             !eventConverter.IsExpired(@event, _timeProvider) &&
@@ -69,16 +69,16 @@ public class ArticlesModel : PageModel
         }
 
         AvailableCount = Items.Length;
-        AvailableTotalValue = Items.Sum(a => a.SellerArticle.Price);
-        var sold = Items.Where(a => a.IsSold);
+        AvailableTotalValue = Items.Sum(a => a.Article.Price);
+        var sold = Items.Where(a => a.Checkout?.IsCompleted == true);
         SoldCount = sold.Count();
-        SoldTotalValue = sold.Sum(a => a.SellerArticle.Price);
+        SoldTotalValue = sold.Sum(a => a.Article.Price);
         PayoutTotalValue = eventConverter.CalcPayout(@event, SoldTotalValue);
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new DeleteSellerArticleByUserCommand(User.GetId(), id), cancellationToken);
+        var result = await _mediator.Send(new DeleteArticleByUserCommand(User.GetId(), id), cancellationToken);
         return new JsonResult(result.IsSuccess);
     }
 

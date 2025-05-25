@@ -16,20 +16,17 @@ internal sealed class EmailHandler :
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IUserRepository _userRepository;
     private readonly IUserAuthenticator _userAuthenticator;
-    private readonly IEmailValidatorService _emailValidatorService;
     private readonly IEmailService _emailService;
 
     public EmailHandler(
         IdentityErrorDescriber errorDescriber,
         IUserRepository userRepository,
         IUserAuthenticator userAuthenticator,
-        IEmailValidatorService emailValidatorService,
         IEmailService emailService)
     {
         _errorDescriber = errorDescriber;
         _userRepository = userRepository;
         _userAuthenticator = userAuthenticator;
-        _emailValidatorService = emailValidatorService;
         _emailService = emailService;
     }
 
@@ -74,12 +71,6 @@ internal sealed class EmailHandler :
         if ((await _userRepository.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
         {
             var error = _errorDescriber.DuplicateEmail(command.NewEmail);
-            return Result.Fail(error.Code, error.Description);
-        }
-
-        if (!await _emailValidatorService.Validate(command.NewEmail , cancellationToken))
-        {
-            var error = _errorDescriber.InvalidEmail(command.NewEmail);
             return Result.Fail(error.Code, error.Description);
         }
 

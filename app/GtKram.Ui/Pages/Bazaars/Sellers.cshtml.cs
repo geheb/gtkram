@@ -18,7 +18,7 @@ public class SellersModel : PageModel
     private readonly IMediator _mediator;
 
     public string Event { get; set; } = "Unbekannt";
-    public BazaarSellerRegistrationWithArticleCount[] Items { get; set; } = [];
+    public SellerRegistrationWithArticleCount[] Items { get; set; } = [];
 
     public int AcceptedCount { get; set; }
     public int CancelledCount { get; set; }

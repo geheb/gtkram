@@ -46,7 +46,7 @@ public sealed class RegisterSellerInput
 
         return new(new()
         {
-            BazaarEventId = eventId,
+            EventId = eventId,
             Email = SellerEmail!,
             Name = SellerName!,
             Phone = SellerPhone!,

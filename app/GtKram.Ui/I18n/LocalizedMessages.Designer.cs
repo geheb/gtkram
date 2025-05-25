@@ -61,83 +61,11 @@ namespace GtKram.Ui.I18n {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Artikel wurde nicht gefunden..
-        /// </summary>
-        internal static string ArticleNotFound {
-            get {
-                return ResourceManager.GetString("ArticleNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Der Wert &apos;{0}&apos; ist für das Feld &apos;{1}&apos; ungültig..
         /// </summary>
         internal static string AttemptedValueIsInvalidAccessor {
             get {
                 return ResourceManager.GetString("AttemptedValueIsInvalidAccessor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Der Kinderbasar ist bereits abgelaufen..
-        /// </summary>
-        internal static string BazaarExpired {
-            get {
-                return ResourceManager.GetString("BazaarExpired", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Der Kinderbasar ist nicht freigegeben..
-        /// </summary>
-        internal static string BazaarNoAssigned {
-            get {
-                return ResourceManager.GetString("BazaarNoAssigned", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Kinderbasar wurde nicht gefunden..
-        /// </summary>
-        internal static string BazaarNotFound {
-            get {
-                return ResourceManager.GetString("BazaarNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Die Registrierungen für den Kinderbasar sind nicht abgeschlossen..
-        /// </summary>
-        internal static string BazaarRegsiterUncomplete {
-            get {
-                return ResourceManager.GetString("BazaarRegsiterUncomplete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Kassen-Vorgang wurde nicht gefunden..
-        /// </summary>
-        internal static string BillingNotFound {
-            get {
-                return ResourceManager.GetString("BillingNotFound", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Das Kassieren ist nicht erlaubt..
-        /// </summary>
-        internal static string CreateBillingsForbidden {
-            get {
-                return ResourceManager.GetString("CreateBillingsForbidden", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Artikel können nicht bearbeitet werden. Die Bearbeitungszeit ist abgelaufen..
-        /// </summary>
-        internal static string EditArticleExpired {
-            get {
-                return ResourceManager.GetString("EditArticleExpired", resourceCulture);
             }
         }
         
@@ -160,65 +88,11 @@ namespace GtKram.Ui.I18n {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Die E-Mail-Adresse ist ungültig..
-        /// </summary>
-        internal static string InvalidEmail {
-            get {
-                return ResourceManager.GetString("InvalidEmail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Der Link zum Bestätigen der neuen E-Mail-Adresse ist ungültig oder abgelaufen. Eine neue Anfrage ist notwendig..
-        /// </summary>
-        internal static string InvalidNewEmailConfirmationLink {
-            get {
-                return ResourceManager.GetString("InvalidNewEmailConfirmationLink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen. Eine neue Anfrage ist notwendig..
-        /// </summary>
-        internal static string InvalidPasswordResetLink {
-            get {
-                return ResourceManager.GetString("InvalidPasswordResetLink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Die Anfrage ist ungültig..
-        /// </summary>
-        internal static string InvalidRequest {
-            get {
-                return ResourceManager.GetString("InvalidRequest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Der Wert &apos;{0}&apos; ist ungültig..
         /// </summary>
         internal static string NonPropertyAttemptedValueIsInvalidAccessor {
             get {
                 return ResourceManager.GetString("NonPropertyAttemptedValueIsInvalidAccessor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Fehler beim Speichern..
-        /// </summary>
-        internal static string SaveFailed {
-            get {
-                return ResourceManager.GetString("SaveFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Der Verkäufer wurde nicht gefunden..
-        /// </summary>
-        internal static string SellerNotFound {
-            get {
-                return ResourceManager.GetString("SellerNotFound", resourceCulture);
             }
         }
         

@@ -51,15 +51,21 @@ public class RegisterModel : PageModel
             IsDisabled = true;
             ModelState.AddError(Event.Expired);
         }
+
+        if (@event.Value.Event.HasRegistrationsLocked)
+        {
+            IsDisabled = true;
+            ModelState.AddError(SellerRegistration.IsLocked);
+        }
         else if (!converter.IsRegisterExpired(@event.Value.Event, _timeProvider))
         {
             IsDisabled = true;
-            ModelState.AddError(EventRegistration.Expired);
+            ModelState.AddError(SellerRegistration.IsExpired);
         }
         else if(@event.Value.RegistrationCount >= @event.Value.Event.MaxSellers)
         {
             IsDisabled = true;
-            ModelState.AddError(EventRegistration.LimitExceeded);
+            ModelState.AddError(SellerRegistration.LimitExceeded);
         }
 
         Input.State_Event = converter.Format(@event.Value.Event);
@@ -89,7 +95,7 @@ public class RegisterModel : PageModel
         {
             IsDisabled = result.Errors!.Any(e => 
                 e == Domain.Errors.Event.Expired ||
-                e == Domain.Errors.EventRegistration.LimitExceeded);
+                e == Domain.Errors.SellerRegistration.LimitExceeded);
 
             ModelState.AddError(result.Errors);
             return Page();

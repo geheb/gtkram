@@ -6,27 +6,26 @@ using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories.Mappings;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class UserRepository : IUserRepository
 {
-    private readonly UuidPkGenerator _pkGenerator = new();
+    private readonly PkGenerator _pkGenerator = new();
     private readonly TimeProvider _timeProvider;
-    private readonly UserManager<IdentityUserGuid> _userManager;
-    private readonly AppDbContext _dbContext;
+    private readonly IRepository<Identity> _repo;
+    private readonly UserManager<Identity> _userManager;
     private readonly IdentityErrorDescriber _errorDescriber;
 
     public UserRepository(
         TimeProvider timeProvider,
-        UserManager<IdentityUserGuid> userManager,
-        AppDbContext dbContext,
+        IRepository<Identity> repo,
+        UserManager<Identity> userManager,
         IdentityErrorDescriber errorDescriber)
     {
         _timeProvider = timeProvider;
+        _repo = repo;
         _userManager = userManager;
-        _dbContext = dbContext;
         _errorDescriber = errorDescriber;
     }
 
@@ -43,11 +42,13 @@ internal sealed class UserRepository : IUserRepository
             return Result.Fail(error.Code, error.Description);
         }
 
-        var entity = new IdentityUserGuid()
+        var id = _pkGenerator.Generate();
+
+        var entity = new Identity
         {
-            Id = _pkGenerator.Generate(),
-            UserName = Guid.NewGuid().ToString().Replace("-", string.Empty),
+            Id = id,
             Email = email,
+            UserName = id.ToString().Replace("-", string.Empty),
             Name = name
         };
 
@@ -104,11 +105,11 @@ internal sealed class UserRepository : IUserRepository
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
-        user.Email = $"{user.UserName}@deactivated";
+        user.Email = user.UserName + "@disabled";
         user.PasswordHash = null;
         user.Name = new string(user.Name!.Split(' ').Select(u => u[0]).ToArray()) + "*";
-        user.EmailConfirmed = false;
-        user.DisabledOn = _timeProvider.GetUtcNow();
+        user.IsEmailConfirmed = false;
+        user.Disabled = _timeProvider.GetUtcNow();
         user.LastLogin = null;
 
         var result = await _userManager.UpdateAsync(user);
@@ -125,9 +126,7 @@ internal sealed class UserRepository : IUserRepository
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
-
-        return Result.Ok(user.MapToDomain(roles, _timeProvider.GetUtcNow(), new()));
+        return Result.Ok(user.MapToDomain(_timeProvider.GetUtcNow(), new()));
     }
 
     public async Task<Result<Domain.Models.User>> FindById(Guid id, CancellationToken cancellationToken)
@@ -137,22 +136,25 @@ internal sealed class UserRepository : IUserRepository
         {
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
-        var roles = await _userManager.GetRolesAsync(user);
-        return Result.Ok(user.MapToDomain(roles, _timeProvider.GetUtcNow(), new()));
+
+        return Result.Ok(user.MapToDomain(_timeProvider.GetUtcNow(), new()));
     }
 
     public async Task<Domain.Models.User[]> GetAll(CancellationToken cancellationToken)
     {
-        var dbSet = _dbContext.Set<IdentityUserGuid>();
-        var result = await dbSet
-            .Include(e => e.UserRoles!)
-            .ThenInclude(e => e.Role!)
-            .Where(e => e.DisabledOn == null)
-            .ToArrayAsync(cancellationToken);
+        var entities = await _repo.Query(
+            [new(static e => e.Disabled, null)],
+            null,
+            cancellationToken);
+
+        if (entities.Length == 0)
+        {
+            return [];
+        }
 
         var dc = new GermanDateTimeConverter();
         var now = _timeProvider.GetUtcNow();
-        return result.Select(e => e.MapToDomain(e.UserRoles!.Select(r => r.Role!.Name!), now, dc)).ToArray();
+        return entities.Select(e => e.Item.MapToDomain(now, dc)).ToArray();
     }
 
     public async Task<Result> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)
@@ -174,7 +176,7 @@ internal sealed class UserRepository : IUserRepository
         return Result.Ok();
     }
 
-    private async Task<Result> MergeRoles(IdentityUserGuid user, UserRoleType[] roles, CancellationToken cancellationToken)
+    private async Task<Result> MergeRoles(Identity user, UserRoleType[] roles, CancellationToken cancellationToken)
     {
         IdentityResult result;
         var currentStringRoles = await _userManager.GetRolesAsync(user);

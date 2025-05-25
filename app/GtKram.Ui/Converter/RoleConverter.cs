@@ -12,7 +12,7 @@ public class RoleConverter
             UserRoleType.Administrator => "Administrator",
             UserRoleType.Manager => "Manager",
             UserRoleType.Seller => "Verkäufer",
-            UserRoleType.Billing => "Kassierer",
+            UserRoleType.Checkout => "Kassierer",
             _ => string.Empty
         };
     }
@@ -24,7 +24,7 @@ public class RoleConverter
             UserRoleType.Administrator => "is-danger",
             UserRoleType.Manager => "is-warning",
             UserRoleType.Seller => "is-info",
-            UserRoleType.Billing => "is-success",
+            UserRoleType.Checkout => "is-success",
             _ => string.Empty
         };
     }

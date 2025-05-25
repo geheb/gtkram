@@ -10,6 +10,11 @@ public static class ServiceExtensions
     {
         services.Configure<AppSettings>(config.GetSection("App"));
 
+        services.AddMediatorHandler();
+    }
+
+    public static void AddMediatorHandler(this IServiceCollection services)
+    {
         services.AddMediator(options =>
         {
             options.Namespace = "GtKram.Application.MediatorGenerated";

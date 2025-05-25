@@ -25,7 +25,7 @@ public class SellerArticlesModel : PageModel
     public decimal SoldTotalValue { get; set; }
     public int Commission { get; set; }
     public decimal PayoutTotalValue { get; set; }
-    public BazaarSellerArticleWithBilling[] Items { get; private set; } = [];
+    public ArticleWithCheckout[] Items { get; private set; } = [];
 
     public SellerArticlesModel(
         TimeProvider timeProvider,
@@ -63,11 +63,11 @@ public class SellerArticlesModel : PageModel
         MaxArticleCount = result.Value.Seller.MaxArticleCount;
         Items = result.Value.Articles;
         AvailableCount = Items.Length;
-        AvailableTotalValue = Items.Sum(a => a.SellerArticle.Price);
+        AvailableTotalValue = Items.Sum(a => a.Article.Price);
         Commission =  @event.Value.Commission;
-        var sold = Items.Where(i => i.IsSold);
+        var sold = Items.Where(i => i.Checkout?.IsCompleted == true);
         SoldCount = sold.Count();
-        SoldTotalValue = sold.Sum(a => a.SellerArticle.Price);
+        SoldTotalValue = sold.Sum(a => a.Article.Price);
         PayoutTotalValue = converter.CalcPayout(@event.Value, SoldTotalValue);
     }
 }

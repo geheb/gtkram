@@ -79,21 +79,21 @@ public class BazaarEventInput
         PickUpLabelsEndDate = dc.ToIso(baseStartDate.AddDays(-1).AddHours(1));
     }
 
-    public void Init(BazaarEvent model)
+    public void Init(Event model)
     {
         var dc = new GermanDateTimeConverter();
         Name = model.Name;
         Description = model.Description;
-        StartDate = dc.ToIso(model.StartsOn);
-        EndDate = dc.ToIso(model.EndsOn);
+        StartDate = dc.ToIso(model.Start);
+        EndDate = dc.ToIso(model.End);
         Address = model.Address;
         MaxSellers = model.MaxSellers;
-        RegisterStartDate = dc.ToIso(model.RegisterStartsOn);
-        RegisterEndDate = dc.ToIso(model.RegisterEndsOn);
-        EditArticleEndDate = model.EditArticleEndsOn is not null ? dc.ToIso(model.EditArticleEndsOn.Value) : null;
-        PickUpLabelsStartDate = model.PickUpLabelsStartsOn is not null ? dc.ToIso(model.PickUpLabelsStartsOn.Value) : null;
-        PickUpLabelsEndDate = model.PickUpLabelsEndsOn is not null ? dc.ToIso(model.PickUpLabelsEndsOn.Value) : null;
-        IsRegistrationsLocked = model.IsRegistrationsLocked;
+        RegisterStartDate = dc.ToIso(model.RegisterStart);
+        RegisterEndDate = dc.ToIso(model.RegisterEnd);
+        EditArticleEndDate = model.EditArticleEnd is not null ? dc.ToIso(model.EditArticleEnd.Value) : null;
+        PickUpLabelsStartDate = model.PickUpLabelsStart is not null ? dc.ToIso(model.PickUpLabelsStart.Value) : null;
+        PickUpLabelsEndDate = model.PickUpLabelsEnd is not null ? dc.ToIso(model.PickUpLabelsEnd.Value) : null;
+        IsRegistrationsLocked = model.HasRegistrationsLocked;
     }
 
     public CreateEventCommand ToCreateCommand()
@@ -103,16 +103,16 @@ public class BazaarEventInput
         {
             Name = Name!,
             Description = Description,
-            StartsOn = dc.FromIsoDateTime(StartDate)!.Value,
-            EndsOn = dc.FromIsoDateTime(EndDate)!.Value,
+            Start = dc.FromIsoDateTime(StartDate)!.Value,
+            End = dc.FromIsoDateTime(EndDate)!.Value,
             Address = Address,
             MaxSellers = MaxSellers,
-            RegisterStartsOn = dc.FromIsoDateTime(RegisterStartDate)!.Value,
-            RegisterEndsOn = dc.FromIsoDateTime(RegisterEndDate)!.Value,
-            EditArticleEndsOn = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
-            PickUpLabelsStartsOn = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
-            PickUpLabelsEndsOn = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
-            IsRegistrationsLocked = IsRegistrationsLocked
+            RegisterStart = dc.FromIsoDateTime(RegisterStartDate)!.Value,
+            RegisterEnd = dc.FromIsoDateTime(RegisterEndDate)!.Value,
+            EditArticleEnd = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
+            PickUpLabelsStart = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
+            PickUpLabelsEnd = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
+            HasRegistrationsLocked = IsRegistrationsLocked
         });
     }
 
@@ -124,16 +124,16 @@ public class BazaarEventInput
             Id = id,
             Name = Name!,
             Description = Description,
-            StartsOn = dc.FromIsoDateTime(StartDate)!.Value,
-            EndsOn = dc.FromIsoDateTime(EndDate)!.Value,
+            Start = dc.FromIsoDateTime(StartDate)!.Value,
+            End = dc.FromIsoDateTime(EndDate)!.Value,
             Address = Address,
             MaxSellers = MaxSellers,
-            RegisterStartsOn = dc.FromIsoDateTime(RegisterStartDate)!.Value,
-            RegisterEndsOn = dc.FromIsoDateTime(RegisterEndDate)!.Value,
-            EditArticleEndsOn = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
-            PickUpLabelsStartsOn = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
-            PickUpLabelsEndsOn = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
-            IsRegistrationsLocked = IsRegistrationsLocked
+            RegisterStart = dc.FromIsoDateTime(RegisterStartDate)!.Value,
+            RegisterEnd = dc.FromIsoDateTime(RegisterEndDate)!.Value,
+            EditArticleEnd = dc.FromIsoDateTime(EditArticleEndDate)!.Value,
+            PickUpLabelsStart = dc.FromIsoDateTime(PickUpLabelsStartDate)!.Value,
+            PickUpLabelsEnd = dc.FromIsoDateTime(PickUpLabelsEndDate)!.Value,
+            HasRegistrationsLocked = IsRegistrationsLocked
         });
     }
 }

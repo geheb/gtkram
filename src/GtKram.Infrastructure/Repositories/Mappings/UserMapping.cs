@@ -1,27 +1,26 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
-using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Infrastructure.Persistence.Entities;
-using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories.Mappings;
 
 internal static class UserMapping
 {
-    public static Domain.Models.User MapToDomain(this IdentityUserGuid entity, IEnumerable<string> roles, DateTimeOffset now, GermanDateTimeConverter dc) => new()
+    public static Domain.Models.User MapToDomain(this Identity entity, DateTimeOffset now, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
         Name = entity.Name!,
         Email = entity.Email!,
-        Roles = [.. roles.Select(r => r.MapToRole())],
-        IsEmailConfirmed = entity.EmailConfirmed,
+        Roles = [.. entity.Claims.Where(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Select(c => c.Value.MapToRole())],
+        IsEmailConfirmed = entity.IsEmailConfirmed,
         LastLoginDate = entity.LastLogin is not null ? dc.ToLocal(entity.LastLogin!.Value) : null,
-        LockoutEndDate = 
+        LockoutEndDate =
             now < entity.LockoutEnd
-            ? dc.ToLocal(entity.LockoutEnd.Value) 
+            ? dc.ToLocal(entity.LockoutEnd.Value)
             : null,
-        IsTwoFactorEnabled = entity.TwoFactorEnabled
+        IsTwoFactorEnabled = entity.Claims.Contains(IdentityClaim.TwoFactorClaim)
     };
 
     public static string MapToRole(this UserRoleType role) => role switch
@@ -29,7 +28,7 @@ internal static class UserMapping
         UserRoleType.Administrator => Roles.Admin,
         UserRoleType.Manager => Roles.Manager,
         UserRoleType.Seller => Roles.Seller,
-        UserRoleType.Billing => Roles.Billing,
+        UserRoleType.Checkout => Roles.Checkout,
         _ => throw new NotImplementedException()
     };
 
@@ -38,7 +37,7 @@ internal static class UserMapping
         Roles.Admin => UserRoleType.Administrator,
         Roles.Manager => UserRoleType.Manager,
         Roles.Seller => UserRoleType.Seller,
-        Roles.Billing => UserRoleType.Billing,
+        Roles.Checkout => UserRoleType.Checkout,
         _ => throw new NotImplementedException()
     };
 }

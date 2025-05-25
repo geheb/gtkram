@@ -26,24 +26,24 @@
                                     <img src="~/images/logo.svg" asp-append-version="true" width="180" height="47" />
                                 </div>
                                 <div class="column is-4">
-                                    <span class="is-size-2 has-text-weight-bold">@Model.SellerNumber</span>
-                                    <span class="is-size-4 has-text-weight-bold"> / @a.SellerArticle.LabelNumber</span>
+                                    <span class="is-size-2 has-text-weight-bold">@a.SellerNumber</span>
+                                    <span class="is-size-4 has-text-weight-bold"> / @a.Article.LabelNumber</span>
                                 </div>
                                 <div class="column is-8">
                                     <div class="columns is-gapless">
                                         <div class="column is-7">
-                                            <div class="label-name">@a.SellerArticle.Name</div>
+                                            <div class="label-name">@a.Article.Name</div>
                                         </div>
                                         <div class="column is-5">
                                             <p>Euro:</p>
-                                            <span class="is-size-4 has-text-weight-bold">@a.SellerArticle.Price.ToString("0.00")</span>
+                                            <span class="is-size-4 has-text-weight-bold">@a.Article.Price.ToString("0.00")</span>
                                             <p>Größe:</p>
-                                            <span class="is-size-4 has-text-weight-bold">@a.SellerArticle.Size</span>
+                                            <span class="is-size-4 has-text-weight-bold">@a.Article.Size</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="column is-4">
-                                    <canvas class="qrcode" data-payload="@a.SellerArticle.Id"></canvas>
+                                    <canvas class="qrcode" data-payload="@a.Article.Id"></canvas>
                                 </div>
                             </div>
                             <img src="~/images/label-dot.svg" asp-append-version="true" width="25" height="25" class="label-dot" />

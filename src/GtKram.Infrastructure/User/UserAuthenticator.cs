@@ -1,9 +1,9 @@
 namespace GtKram.Infrastructure.User;
 
-using GtKram.Domain.Base;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Models;
+using GtKram.Domain.Base;
 using GtKram.Infrastructure.Persistence.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -16,18 +16,21 @@ using System.Threading.Tasks;
 internal sealed class UserAuthenticator : IUserAuthenticator
 {
     private readonly ILogger _logger;
+    private readonly IEmailValidatorService _emailValidator;
     private readonly IdentityErrorDescriber _errorDescriber;
-    private readonly SignInManager<IdentityUserGuid> _signInManager;
+    private readonly SignInManager<Identity> _signInManager;
     private readonly string _appTitle;
 
     public UserAuthenticator(
         ILogger<UserAuthenticator> logger,
         IOptions<AppSettings> appSettings,
+        IEmailValidatorService emailValidator,
         IdentityErrorDescriber errorDescriber,
-        SignInManager<IdentityUserGuid> signInManager)
+        SignInManager<Identity> signInManager)
     {
         _appTitle = appSettings.Value.Title;
         _logger = logger;
+        _emailValidator = emailValidator;
         _errorDescriber = errorDescriber;
         _signInManager = signInManager;
     }
@@ -66,6 +69,12 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Result.Ok();
         }
 
+        if (!await _emailValidator.Validate(newEmail, cancellationToken))
+        {
+            var error = _errorDescriber.InvalidEmail(newEmail);
+            return Result.Fail(error.Code, error.Description);
+        }
+
         var hasFound = await userManager.FindByEmailAsync(newEmail) is not null;
         if (hasFound)
         {
@@ -80,7 +89,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
-        if (!user.EmailConfirmed)
+        if (!user.IsEmailConfirmed)
         {
             token = await userManager.GenerateEmailConfirmationTokenAsync(user);
             result = await userManager.ConfirmEmailAsync(user, token);
@@ -109,7 +118,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Result.Fail(result.Errors.Select(e => (e.Code, e.Description)));
         }
 
-        if (!user.EmailConfirmed)
+        if (!user.IsEmailConfirmed)
         {
             token = await userManager.GenerateEmailConfirmationTokenAsync(user);
             result = await userManager.ConfirmEmailAsync(user, token);
@@ -173,7 +182,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Result.Fail(Domain.Errors.Identity.NotFound);
         }
 
-        if (user.EmailConfirmed)
+        if (user.IsEmailConfirmed)
         {
             return Result.Fail(Domain.Errors.Identity.AlreadyActivated);
         }
@@ -192,7 +201,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
 
         var isValid = await _signInManager.UserManager.VerifyUserTokenAsync(user,
             _signInManager.UserManager.Options.Tokens.EmailConfirmationTokenProvider,
-            UserManager<IdentityUserGuid>.ConfirmEmailTokenPurpose,
+            UserManager<Identity>.ConfirmEmailTokenPurpose,
             token);
 
         if (!isValid)
@@ -235,6 +244,12 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         if (user is null)
         {
             return Result.Fail(Domain.Errors.Identity.NotFound);
+        }
+
+        if (!await _emailValidator.Validate(newEmail, cancellationToken))
+        {
+            var error = _errorDescriber.InvalidEmail(newEmail);
+            return Result.Fail(error.Code, error.Description);
         }
 
         var token = await _signInManager.UserManager.GenerateChangeEmailTokenAsync(user, newEmail);
@@ -280,7 +295,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
 
         var isValid = await _signInManager.UserManager.VerifyUserTokenAsync(user,
             _signInManager.UserManager.Options.Tokens.PasswordResetTokenProvider,
-            UserManager<IdentityUserGuid>.ResetPasswordTokenPurpose,
+            UserManager<Identity>.ResetPasswordTokenPurpose,
             token);
 
         if (!isValid)
@@ -438,7 +453,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         return (await HandleResult(user, result)).ToResult();
     }
 
-    private async Task<Result<AuthResult>> HandleResult(IdentityUserGuid user, SignInResult result)
+    private async Task<Result<AuthResult>> HandleResult(Identity user, SignInResult result)
     {
         if (result.Succeeded)
         {

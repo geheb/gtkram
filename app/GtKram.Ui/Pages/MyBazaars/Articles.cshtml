@@ -82,14 +82,14 @@
                         <i class="fas fa-box-archive fa-2x has-text-info"></i>
                     </div>
                     <div class="list-item-content">
-                        <div class="list-item-title">@i.SellerArticle.Name (#@i.SellerArticle.LabelNumber)</div>
+                        <div class="list-item-title">@i.Article.Name (#@i.Article.LabelNumber)</div>
                         <div class="list-item-description">
-                            @if (!string.IsNullOrWhiteSpace(i.SellerArticle.Size))
+                            @if (!string.IsNullOrWhiteSpace(i.Article.Size))
                             {
-                                <span class="tag is-rounded)">@i.SellerArticle.Size</span>
+                                <span class="tag is-rounded)">@i.Article.Size</span>
                             }
-                            <span class="tag is-rounded">@i.SellerArticle.Price.ToString("0.00") €</span>
-                            @if (i.IsSold)
+                            <span class="tag is-rounded">@i.Article.Price.ToString("0.00") €</span>
+                            @if (i.Checkout?.IsCompleted == true)
                             {
                                 <span class="tag is-rounded is-success">Verkauft</span>
                             }
@@ -100,11 +100,11 @@
                             @if (Model.CanEdit)
                             {
                                 <a class="button open-modal" href="#" data-target="#deleteArticleModal"
-                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.SellerArticle.Id }))">
+                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.Article.Id }))">
                                     <span class="icon is-small"><i class="fa-solid fa-trash"></i></span>
                                 </a>
                             }
-                            <a class="button" href="@(Url.PageLink("EditArticle", null, new { id = i.SellerArticle.Id, sellerId = i.SellerArticle.BazaarSellerId }))">
+                            <a class="button" href="@(Url.PageLink("EditArticle", null, new { id = i.Article.Id, sellerId = i.Article.SellerId }))">
                                 <span class="icon is-small"><i class="fa-solid fa-pen"></i></span>
                             </a>
                         </div>

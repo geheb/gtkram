@@ -14,7 +14,7 @@ public class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
-    public BazaarEventWithRegistrationCount[] Items { get; private set; } = [];
+    public EventWithRegistrationCount[] Items { get; private set; } = [];
 
     public IndexModel(IMediator mediator)
     {

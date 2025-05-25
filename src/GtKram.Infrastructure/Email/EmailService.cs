@@ -1,7 +1,7 @@
-using GtKram.Domain.Base;
 using GtKram.Application.Converter;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
+using GtKram.Domain.Base;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
@@ -14,13 +14,11 @@ internal sealed class EmailService : IEmailService
 {
     private readonly TemplateRenderer _templateRenderer;
     private readonly AppSettings _appSettings;
-    private readonly TimeProvider _timeProvider;
     private readonly EmailQueueRepository _repository;
     private readonly TimeSpan _confirmEmailTimeout;
     private readonly TimeSpan _changeEmailOrPasswordTimeout;
 
     public EmailService(
-        TimeProvider timeProvider,
         EmailQueueRepository repository,
         IOptions<AppSettings> appSettings,
         IOptions<ConfirmEmailDataProtectionTokenProviderOptions> confirmEmailOptions,
@@ -28,7 +26,6 @@ internal sealed class EmailService : IEmailService
     {
         _templateRenderer = new(GetType().Assembly);
         _appSettings = appSettings.Value;
-        _timeProvider = timeProvider;
         _repository = repository;
         _confirmEmailTimeout = confirmEmailOptions.Value.TokenLifespan;
         _changeEmailOrPasswordTimeout = changeEmailOrPasswordOptions.Value.TokenLifespan;
@@ -51,7 +48,6 @@ internal sealed class EmailService : IEmailService
 
         var entity = new EmailQueue
         {
-            CreatedOn = _timeProvider.GetUtcNow(),
             Recipient = user.Email,
             Subject = model.title,
             Body = message
@@ -77,7 +73,6 @@ internal sealed class EmailService : IEmailService
 
         var entity = new EmailQueue
         {
-            CreatedOn = _timeProvider.GetUtcNow(),
             Recipient = user.Email,
             Subject = model.title,
             Body = message
@@ -103,7 +98,6 @@ internal sealed class EmailService : IEmailService
 
         var entity = new EmailQueue
         {
-            CreatedOn = _timeProvider.GetUtcNow(),
             Recipient = user.Email,
             Subject = model.title,
             Body = message
@@ -112,11 +106,11 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueAcceptSeller(Domain.Models.BazaarEvent @event, string email, string name, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueAcceptSeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
     {
-        var editEndDate = @event.EditArticleEndsOn ?? @event.StartsOn;
-        var pickUpStart = @event.PickUpLabelsStartsOn ?? @event.StartsOn;
-        var pickUpEnd = @event.PickUpLabelsEndsOn ?? @event.StartsOn;
+        var editEndDate = @event.EditArticleEnd ?? @event.Start;
+        var pickUpStart = @event.PickUpLabelsStart?? @event.Start;
+        var pickUpEnd = @event.PickUpLabelsEnd ?? @event.Start;
         var dc = new GermanDateTimeConverter();
 
         var model = new
@@ -124,7 +118,7 @@ internal sealed class EmailService : IEmailService
             title = $"Registrierung zum {@event.Name}",
             name = name.Split(' ')[0],
             eventname = @event.Name,
-            date = dc.FormatFull(@event.StartsOn, @event.EndsOn),
+            date = dc.FormatFull(@event.Start, @event.End),
             address = @event.Address,
             editenddate = dc.FormatFull(editEndDate, editEndDate),
             appurl = _appSettings.PublicUrl,
@@ -137,7 +131,6 @@ internal sealed class EmailService : IEmailService
 
         var entity = new EmailQueue
         {
-            CreatedOn = _timeProvider.GetUtcNow(),
             Recipient = email,
             Subject = model.title,
             Body = message,
@@ -149,7 +142,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(entity, cancellationToken);
     }
 
-    public async Task<Result> EnqueueDenySeller(Domain.Models.BazaarEvent @event, string email, string name, CancellationToken cancellationToken)
+    public async Task<Result> EnqueueDenySeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
@@ -158,7 +151,7 @@ internal sealed class EmailService : IEmailService
             title = $"Registrierung zum {@event.Name}",
             name = name.Split(' ')[0],
             eventname = @event.Name,
-            date = dc.FormatFull(@event.StartsOn, @event.EndsOn),
+            date = dc.FormatFull(@event.Start, @event.End),
             address = @event.Address,
             signature = _appSettings.Organizer,
         };
@@ -167,7 +160,6 @@ internal sealed class EmailService : IEmailService
 
         var entity = new EmailQueue
         {
-            CreatedOn = _timeProvider.GetUtcNow(),
             Recipient = email,
             Subject = model.title,
             Body = message

@@ -15,6 +15,6 @@ public static class Seller
     public static Error Locked { get; } =
         new($"{_prefix}.locked", "Der Verkäufer ist gesperrt.");
 
-    public static Error BillingNotAllowed { get; } =
-        new($"{_prefix}.billing.not.allowed", "Das Anlegen der Kassenvorgänge ist nicht erlaubt.");
+    public static Error CheckoutNotAllowed { get; } =
+        new($"{_prefix}.checkout.not.allowed", "Das Anlegen der Kassenvorgänge ist nicht erlaubt.");
 }

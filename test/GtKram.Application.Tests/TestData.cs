@@ -4,16 +4,16 @@ namespace GtKram.Application.Tests;
 
 public static class TestData
 {
-    public static BazaarEvent CreateEvent(DateTimeOffset now) => new()
+    public static Event CreateEvent(DateTimeOffset now) => new()
     {
         Name = "Kinderbasar",
         MaxSellers = 3,
-        StartsOn = now.AddDays(1),
-        EndsOn = now.AddDays(2),
-        RegisterStartsOn = now,
-        RegisterEndsOn = now.AddHours(1),
-        EditArticleEndsOn = now.AddHours(2),
-        PickUpLabelsStartsOn = now.AddHours(3),
-        PickUpLabelsEndsOn = now.AddHours(4)
+        Start = now.AddDays(1),
+        End = now.AddDays(2),
+        RegisterStart = now,
+        RegisterEnd = now.AddHours(1),
+        EditArticleEnd = now.AddHours(2),
+        PickUpLabelsStart = now.AddHours(3),
+        PickUpLabelsEnd = now.AddHours(4)
     };
 }
