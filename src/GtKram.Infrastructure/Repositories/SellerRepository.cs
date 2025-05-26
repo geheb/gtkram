@@ -171,7 +171,7 @@ internal sealed class SellerRepository : ISellerRepository
                 entity
             };
 
-            var max = entities.Max(e => e.Item.SellerNumber);
+            var max = entities.Where(e => e.Id != model.Id).Max(e => e.Item.SellerNumber);
             foreach (var e in entities.Where(e => e.Id != entity.Id && e.Item.SellerNumber == entity.SellerNumber))
             {
                 e.Item.SellerNumber = ++max;
