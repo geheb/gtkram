@@ -2,8 +2,6 @@ using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Base;
-using GtKram.Domain.Errors;
-using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
 

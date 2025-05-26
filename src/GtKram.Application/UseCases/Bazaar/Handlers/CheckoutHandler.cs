@@ -566,8 +566,9 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.NotFound);
         }
 
-        var hasBooked = checkout.Value.ArticleIds.Contains(command.SellerArticleId);
-        if (hasBooked)
+        var checkouts = await _checkoutRepository.GetByEventId(@checkout.Value.EventId, cancellationToken);
+        var articleIds = checkouts.SelectMany(c => c.ArticleIds).ToHashSet();
+        if (articleIds.Contains(article.Value.Id))
         {
             return Result.Fail(Domain.Errors.Checkout.AlreadyBooked);
         }
@@ -629,9 +630,10 @@ internal sealed class CheckoutHandler :
         {
             return article;
         }
-
-        var hasBooked = checkout.Value.ArticleIds.Contains(article.Value.Id);
-        if (hasBooked)
+    
+        var checkouts = await _checkoutRepository.GetByEventId(@event.Value.Id, cancellationToken);
+        var articleIds = checkouts.SelectMany(c => c.ArticleIds).ToHashSet();
+        if (articleIds.Contains(article.Value.Id))
         {
             return Result.Fail(Domain.Errors.Checkout.AlreadyBooked);
         }

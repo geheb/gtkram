@@ -878,7 +878,43 @@ public sealed class CheckoutHandlerTests
         result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
     }
 
-    
+    [TestMethod]
+    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CanCreateCheckout(scope, context);
+        var articles = await CreateSellerArticles(scope, context.Seller);
+        await CreateCompletedCheckout(scope, context.Seller, 2);
+        var checkoutId = await CreateEmptyCheckout(scope, context.Seller);
+
+        var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var command = new CreateCheckoutArticleByUserCommand(context.Seller.UserId, checkoutId, articles[0].Id);
+        var result = await sut.Send(command, _cancellationToken);
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
+    }
+
+    [TestMethod]
+    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleManuallyByUserCommand_IsFailed()
+    {
+        using var scope = _serviceProvider.CreateAsyncScope();
+        var context = await CreateEventAndSeller(scope);
+        await CanCreateCheckout(scope, context);
+        var articles = await CreateSellerArticles(scope, context.Seller);
+        await CreateOpenCheckout(scope, context.Seller, 2);
+        var checkoutId = await CreateEmptyCheckout(scope, context.Seller);
+
+        var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
+        var command = new CreateCheckoutArticleManuallyByUserCommand(context.Seller.UserId, checkoutId, context.Seller.SellerNumber, articles[0].LabelNumber);
+        var result = await sut.Send(command, _cancellationToken);
+        result.IsFailed.ShouldBeTrue();
+
+        result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
+    }
+
+
     [TestMethod]
     public async Task OpenCheckout_DeleteCheckoutArticleByUserCommand_IsSuccess()
     {
@@ -1076,7 +1112,7 @@ public sealed class CheckoutHandlerTests
         return result.Value;
     }
 
-    private async Task<Guid> CreateOpenCheckout(IServiceScope scope, Domain.Models.Seller seller)
+    private async Task<Guid> CreateOpenCheckout(IServiceScope scope, Domain.Models.Seller seller, int articleCount = 3)
     {
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var checkoutCommand = new CreateCheckoutByUserCommand(seller.UserId, seller.EventId);
@@ -1086,7 +1122,7 @@ public sealed class CheckoutHandlerTests
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
         var articles = await sellerArticleRepo.GetBySellerId(seller.Id, _cancellationToken);
 
-        foreach (var article in articles)
+        foreach (var article in articles.Take(articleCount))
         {
             var command = new CreateCheckoutArticleByUserCommand(seller.UserId, checkoutResult.Value, article.Id);
             var result = await sut.Send(command, _cancellationToken);
