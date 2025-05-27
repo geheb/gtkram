@@ -143,8 +143,9 @@ internal sealed class UserRepository : IUserRepository
     public async Task<Domain.Models.User[]> GetAll(CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.Disabled, null)],
-            null,
+            [
+                new(static e => e.Disabled, null)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)

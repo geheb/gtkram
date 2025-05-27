@@ -129,7 +129,7 @@ internal sealed class RepositoryMock<T> : IRepository<T> where T : IEntity
         return Task.FromResult(items.Select(item => new Entity<T>(item.Id, item.Created, item.Modified, (T)item.Item)).ToArray());
     }
 
-    public Task<Entity<T>[]> Get(IDbTransaction? trans, CancellationToken cancellationToken)
+    public Task<Entity<T>[]> GetAll(IDbTransaction? trans, CancellationToken cancellationToken)
     {
         if (!_entities.TryGetValue(_prefix + _tableName, out var entities))
         {

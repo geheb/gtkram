@@ -25,7 +25,7 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
         try
         {
             var entity = model.MapToEntity(new(), new());
-            await _repo.Create(entity, null, cancellationToken);
+            await _repo.Create(entity, cancellationToken);
             return Result.Ok();
         }
         finally
@@ -36,7 +36,7 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
 
     public async Task<Result<Domain.Models.SellerRegistration>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(id, null, cancellationToken);
+        var entity = await _repo.Find(id, cancellationToken);
 
         if (entity is null)
         {
@@ -49,8 +49,9 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
     public async Task<Result<Domain.Models.SellerRegistration>> FindBySellerId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.SellerId, id)],
-            null,
+            [
+                new(static e => e.SellerId, id)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -68,7 +69,6 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
                 new(static e => e.EventId, eventId),
                 new(static e => e.Email, email),
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -81,7 +81,7 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
 
     public async Task<Domain.Models.SellerRegistration[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _repo.Get(null, cancellationToken);
+        var entities = await _repo.GetAll(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
         return [.. entities.Select(e => e.Item.MapToDomain(dc))];
@@ -89,7 +89,7 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
 
     public async Task<Domain.Models.SellerRegistration[]> GetAllByAccepted(CancellationToken cancellationToken)
     {
-        var entities = await _repo.Get(null, cancellationToken);
+        var entities = await _repo.GetAll(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
         return [.. entities.Where(e => e.Item.Accepted == true).Select(e => e.Item.MapToDomain(dc))];
@@ -101,7 +101,6 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
             [
                 new(static e => e.EventId, id),
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -125,7 +124,6 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
                 [
                     new(static e => e.SellerId, chunk),
                 ],
-                null,
                 cancellationToken);
 
             result.AddRange(entities.Select(e => e.Item.MapToDomain(dc)));
@@ -136,21 +134,21 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
 
     public async Task<Result> Update(Domain.Models.SellerRegistration model, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(model.Id, null, cancellationToken);
+        var entity = await _repo.Find(model.Id, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Domain.Errors.SellerRegistration.NotFound);
         }
 
         model.MapToEntity(entity.Value.Item, new());
-        var result = await _repo.Update(entity.Value.Item, null, cancellationToken);
+        var result = await _repo.Update(entity.Value.Item, cancellationToken);
 
         return result == UpdateResult.Success ? Result.Ok() : Result.Fail(Domain.Errors.SellerRegistration.SaveFailed);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _repo.Delete(id, null, cancellationToken);
+        var result = await _repo.Delete(id, cancellationToken);
         return result > 0 ? Result.Ok() : Result.Fail(Domain.Errors.SellerRegistration.SaveFailed);
     }
 
@@ -166,8 +164,7 @@ internal sealed class SellerRegistrationRepository : ISellerRegistrationReposito
             var count = await _repo.Count(
                 [
                     new(static e => e.EventId, id)
-                ], 
-                null,
+                ],
                 cancellationToken);
 
             return Result.Ok(count);

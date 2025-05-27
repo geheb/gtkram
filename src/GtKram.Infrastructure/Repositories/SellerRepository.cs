@@ -34,7 +34,9 @@ internal sealed class SellerRepository : ISellerRepository
             {
                 var maxSellerNumber = await _repo.Max<int>(
                     e => e.SellerNumber,
-                    [new(static e => e.EventId, model.EventId)],
+                    [
+                        new(static e => e.EventId, model.EventId)
+                    ],
                     trans,
                     cancellationToken);
 
@@ -43,7 +45,9 @@ internal sealed class SellerRepository : ISellerRepository
             else
             {
                 var entities = await _repo.Query(
-                    [new(static e => e.EventId, model.EventId)],
+                    [
+                        new(static e => e.EventId, model.EventId)
+                    ],
                     trans,
                     cancellationToken);
 
@@ -80,7 +84,7 @@ internal sealed class SellerRepository : ISellerRepository
 
     public async Task<Result<Domain.Models.Seller>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(id, null, cancellationToken);
+        var entity = await _repo.Find(id, cancellationToken);
 
         if (entity is null)
         {
@@ -93,8 +97,9 @@ internal sealed class SellerRepository : ISellerRepository
     public async Task<Domain.Models.Seller[]> GetByEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.EventId, id)],
-            null,
+            [
+                new(static e => e.EventId, id)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -109,8 +114,9 @@ internal sealed class SellerRepository : ISellerRepository
     public async Task<Domain.Models.Seller[]> GetByUserId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.UserId, id)],
-            null,
+            [
+                new(static e => e.UserId, id)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -129,7 +135,6 @@ internal sealed class SellerRepository : ISellerRepository
                 new(static e => e.UserId, userId),
                 new(static e => e.EventId, eventId)
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -142,7 +147,7 @@ internal sealed class SellerRepository : ISellerRepository
 
     public async Task<Result> Update(Domain.Models.Seller model, CancellationToken cancellationToken)
     {
-        var entityItem = await _repo.Find(model.Id, null, cancellationToken);
+        var entityItem = await _repo.Find(model.Id, cancellationToken);
         if (entityItem is null)
         {
             return Result.Fail(Domain.Errors.Seller.NotFound);
@@ -162,7 +167,9 @@ internal sealed class SellerRepository : ISellerRepository
             await using var trans = await _repo.BeginTransaction(cancellationToken);
 
             var entities = await _repo.Query(
-                [new(static e => e.EventId, entity.EventId!.Value)],
+                [
+                    new(static e => e.EventId, entity.EventId!.Value)
+                ],
                 trans,
                 cancellationToken);
 
@@ -171,7 +178,11 @@ internal sealed class SellerRepository : ISellerRepository
                 entity
             };
 
-            var max = entities.Where(e => e.Id != model.Id).Max(e => e.Item.SellerNumber);
+            var max = entities
+                .Where(e => e.Id != model.Id)
+                .DefaultIfEmpty()
+                .Max(e => e.Item?.SellerNumber ?? 0);
+
             foreach (var e in entities.Where(e => e.Id != entity.Id && e.Item.SellerNumber == entity.SellerNumber))
             {
                 e.Item.SellerNumber = ++max;
@@ -199,14 +210,14 @@ internal sealed class SellerRepository : ISellerRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var affectedRows = await _repo.Delete(id, null, cancellationToken);
+        var affectedRows = await _repo.Delete(id, cancellationToken);
 
         return affectedRows > 0 ? Result.Ok() : Result.Fail(Domain.Errors.Seller.SaveFailed);
     }
 
     public async Task<Domain.Models.Seller[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _repo.Get(null, cancellationToken);
+        var entities = await _repo.GetAll(cancellationToken);
 
         if (entities.Length == 0)
         {
@@ -221,7 +232,6 @@ internal sealed class SellerRepository : ISellerRepository
     {
         var entities = await _repo.Get(
             ids,
-            null,
             cancellationToken);
 
         var dc = new GermanDateTimeConverter();
@@ -235,7 +245,6 @@ internal sealed class SellerRepository : ISellerRepository
                 new(static e => e.EventId, eventId),
                 new(static e => e.SellerNumber, sellerNumber)
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)

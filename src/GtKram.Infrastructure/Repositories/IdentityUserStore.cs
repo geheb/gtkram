@@ -45,13 +45,13 @@ internal sealed class IdentityUserStore :
 
     public async Task<IdentityResult> CreateAsync(Identity user, CancellationToken cancellationToken)
     {
-        await _repo.Create(user, null, cancellationToken);
+        await _repo.Create(user, cancellationToken);
         return IdentityResult.Success;
     }
 
     public async Task<IdentityResult> DeleteAsync(Identity user, CancellationToken cancellationToken)
     {
-        var affectedRows = await _repo.Delete(user.Id, null, cancellationToken);
+        var affectedRows = await _repo.Delete(user.Id, cancellationToken);
         if (affectedRows > 0)
         {
             return IdentityResult.Success;
@@ -62,8 +62,9 @@ internal sealed class IdentityUserStore :
     public async Task<Identity?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.Email, normalizedEmail)],
-            null,
+            [
+                new(static e => e.Email, normalizedEmail)
+            ],
             cancellationToken);
 
         return entities.Any() ? Map(entities[0]) : default;
@@ -71,15 +72,16 @@ internal sealed class IdentityUserStore :
 
     public async Task<Identity?> FindByIdAsync(string userId, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(Guid.Parse(userId), null, cancellationToken);
+        var entity = await _repo.Find(Guid.Parse(userId), cancellationToken);
         return entity is null ? default : Map(entity.Value);
     }
 
     public async Task<Identity?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.UserName, normalizedUserName)],
-            null,
+            [
+                new(static e => e.UserName, normalizedUserName)
+            ],
             cancellationToken);
 
         return entities.Any() ? Map(entities[0]) : default;
@@ -127,8 +129,9 @@ internal sealed class IdentityUserStore :
     public async Task<IList<Identity>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.Disabled, null)],
-            null,
+            [
+                new(static e => e.Disabled, null)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -220,7 +223,7 @@ internal sealed class IdentityUserStore :
 
     public async Task<IdentityResult> UpdateAsync(Identity user, CancellationToken cancellationToken)
     {
-        var result = await _repo.Update(user, null, cancellationToken);
+        var result = await _repo.Update(user, cancellationToken);
         if (result == UpdateResult.Success)
         {
             return IdentityResult.Success;
@@ -263,8 +266,9 @@ internal sealed class IdentityUserStore :
     public async Task<IList<Identity>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.Disabled, null)],
-            null,
+            [
+                new(static e => e.Disabled, null)
+            ],
             cancellationToken);
 
         var identityClaim = new IdentityClaim(ClaimsIdentity.DefaultRoleClaimType, roleName);

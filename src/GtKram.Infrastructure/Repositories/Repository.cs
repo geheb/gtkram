@@ -103,7 +103,7 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
         return [.. result];
     }
 
-    public async Task<Entity<T>[]> Get(IDbTransaction? trans, CancellationToken cancellationToken)
+    public async Task<Entity<T>[]> GetAll(IDbTransaction? trans, CancellationToken cancellationToken)
     {
         var connection = trans?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var sql = string.Format(_select, _tableName);

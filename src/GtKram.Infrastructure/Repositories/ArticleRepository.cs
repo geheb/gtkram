@@ -25,14 +25,15 @@ internal sealed class ArticleRepository : IArticleRepository
         {
             var maxLabelNumber = await _repo.Max<int>(
                 e => e.LabelNumber,
-                [new(static e => e.SellerId, model.SellerId)],
-                null,
+                [
+                    new(static e => e.SellerId, model.SellerId)
+                ],
                 cancellationToken);
 
             var entity = model.MapToEntity(new());
             entity.LabelNumber = (maxLabelNumber ?? 0) + 1;
 
-            await _repo.Create(entity, null, cancellationToken);
+            await _repo.Create(entity, cancellationToken);
 
             return Result.Ok();
         }
@@ -60,7 +61,9 @@ internal sealed class ArticleRepository : IArticleRepository
 
             var maxLabelNumber = await _repo.Max<int>(
                 e => e.LabelNumber,
-                [new(static e => e.SellerId, sellerId)],
+                [
+                    new(static e => e.SellerId, sellerId)
+                ],
                 trans,
                 cancellationToken);
 
@@ -87,13 +90,13 @@ internal sealed class ArticleRepository : IArticleRepository
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _repo.Delete(id, null, cancellationToken);
+        var result = await _repo.Delete(id, cancellationToken);
         return result > 0 ? Result.Ok() : Result.Fail(Domain.Errors.SellerArticle.DeleteFailed);
     }
 
     public async Task<Result<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(id, null, cancellationToken);
+        var entity = await _repo.Find(id, cancellationToken);
 
         if (entity is null)
         {
@@ -110,7 +113,6 @@ internal sealed class ArticleRepository : IArticleRepository
                 new(static e => e.SellerId, sellerId),
                 new(static e => e.LabelNumber, labelNumber),
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -123,7 +125,7 @@ internal sealed class ArticleRepository : IArticleRepository
 
     public async Task<Domain.Models.Article[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _repo.Get(null, cancellationToken);
+        var entities = await _repo.GetAll(cancellationToken);
 
         return [.. entities.Select(e => e.Item.MapToDomain())];
     }
@@ -134,7 +136,6 @@ internal sealed class ArticleRepository : IArticleRepository
             [
                 new(static e => e.SellerId, id)
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -155,7 +156,6 @@ internal sealed class ArticleRepository : IArticleRepository
                 [
                     new(static e => e.SellerId, chunk),
                 ],
-                null,
                 cancellationToken);
 
             result.AddRange(entities.Select(e => e.Item.MapToDomain()));
@@ -168,7 +168,6 @@ internal sealed class ArticleRepository : IArticleRepository
     {
         var entities = await _repo.Get(
             ids,
-            null,
             cancellationToken);
 
         return [.. entities.Select(e => e.Item.MapToDomain())];
@@ -187,7 +186,6 @@ internal sealed class ArticleRepository : IArticleRepository
                 [
                     new(static e => e.SellerId, id)
                 ],
-                null,
                 cancellationToken);
 
             return Result.Ok(count);
@@ -200,14 +198,14 @@ internal sealed class ArticleRepository : IArticleRepository
 
     public async Task<Result> Update(Domain.Models.Article model, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(model.Id, null, cancellationToken);
+        var entity = await _repo.Find(model.Id, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Domain.Errors.SellerArticle.NotFound);
         }
 
         model.MapToEntity(entity.Value.Item);
-        var result = await _repo.Update(entity.Value.Item, null, cancellationToken);
+        var result = await _repo.Update(entity.Value.Item, cancellationToken);
 
         return result == UpdateResult.Success ? Result.Ok() : Result.Fail(Domain.Errors.SellerArticle.SaveFailed);
     }

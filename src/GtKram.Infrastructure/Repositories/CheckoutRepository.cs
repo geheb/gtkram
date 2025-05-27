@@ -24,21 +24,21 @@ internal sealed class CheckoutRepository : ICheckoutRepository
             Status = (int)CheckoutStatus.InProgress
         };
 
-        await _repo.Create(entity, null, cancellationToken);
+        await _repo.Create(entity, cancellationToken);
 
         return Result.Ok(entity.Id);
     }
 
     public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var affectedRows = await _repo.Delete(id, null, cancellationToken);
+        var affectedRows = await _repo.Delete(id, cancellationToken);
 
         return affectedRows > 0 ? Result.Ok() : Result.Fail(Domain.Errors.Checkout.SaveFailed);
     }
 
     public async Task<Result<Domain.Models.Checkout>> Find(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(id, null, cancellationToken);
+        var entity = await _repo.Find(id, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Domain.Errors.Checkout.NotFound);
@@ -49,7 +49,7 @@ internal sealed class CheckoutRepository : ICheckoutRepository
 
     public async Task<Domain.Models.Checkout[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _repo.Get(null, cancellationToken);
+        var entities = await _repo.GetAll(cancellationToken);
 
         if (entities.Length == 0)
         {
@@ -64,8 +64,9 @@ internal sealed class CheckoutRepository : ICheckoutRepository
     public async Task<Domain.Models.Checkout[]> GetByEventId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.EventId, id)],
-            null,
+            [
+                new(static e => e.EventId, id)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -85,7 +86,6 @@ internal sealed class CheckoutRepository : ICheckoutRepository
                 new(static e => e.EventId, eventId),
                 new(static e => e.UserId, userId)
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -104,7 +104,6 @@ internal sealed class CheckoutRepository : ICheckoutRepository
 
         var entities = await _repo.Get(
             ids,
-            null,
             cancellationToken);
 
         return [.. entities.Select(e => e.MapToDomain(dc))];
@@ -113,8 +112,9 @@ internal sealed class CheckoutRepository : ICheckoutRepository
     public async Task<Domain.Models.Checkout[]> GetByUserId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repo.Query(
-            [new(static e => e.UserId, id)],
-            null,
+            [
+                new(static e => e.UserId, id)
+            ],
             cancellationToken);
 
         if (entities.Length == 0)
@@ -133,7 +133,6 @@ internal sealed class CheckoutRepository : ICheckoutRepository
             [
                 new(static e => e.EventId, eventId)
             ],
-            null,
             cancellationToken);
 
         if (entities.Length == 0)
@@ -146,14 +145,14 @@ internal sealed class CheckoutRepository : ICheckoutRepository
 
     public async Task<Result> Update(Domain.Models.Checkout model, CancellationToken cancellationToken)
     {
-        var entity = await _repo.Find(model.Id, null, cancellationToken);
+        var entity = await _repo.Find(model.Id, cancellationToken);
         if (entity is null)
         {
             return Result.Fail(Domain.Errors.Checkout.NotFound);
         }
 
         model.MapToEntity(entity.Value.Item);
-        var result = await _repo.Update(entity.Value.Item, null, cancellationToken);
+        var result = await _repo.Update(entity.Value.Item, cancellationToken);
 
         return result == UpdateResult.Success ? Result.Ok() : Result.Fail(Domain.Errors.Checkout.SaveFailed);
     }
