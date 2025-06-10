@@ -1,7 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Domain.Base;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Repositories.Mappings;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -20,7 +19,7 @@ internal sealed class SellerRepository : ISellerRepository
     public async Task<Result<Guid>> Create(Domain.Models.Seller model, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new());
-        entity.UserId = model.UserId.ToChar32();
+        entity.UserId = model.UserId;
 
         if (!await _sellerNumberSemaphore.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
         {

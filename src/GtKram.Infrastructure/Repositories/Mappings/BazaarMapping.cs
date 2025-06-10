@@ -44,26 +44,26 @@ internal static class BazaarMapping
     public static Domain.Models.SellerRegistration MapToDomain(this SellerRegistration entity, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
-        EventId = entity.EventId!.FromChar32(),
+        EventId = entity.EventId!.Value,
         Email = entity.Email!,
         Name = entity.Name!,
         Phone = entity.Phone!,
         ClothingType = entity.Clothing?.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => int.Parse(c)).ToArray(),
         Accepted = entity.Accepted,
         PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.PreferredType,
-        SellerId = entity.SellerId?.FromChar32()
+        SellerId = entity.SellerId
     };
 
     public static SellerRegistration MapToEntity(this Domain.Models.SellerRegistration model, SellerRegistration entity, GermanDateTimeConverter dc)
     {
-        entity.EventId = model.EventId.ToChar32();
+        entity.EventId = model.EventId;
         entity.Email = model.Email;
         entity.Name = model.Name;
         entity.Phone = model.Phone;
         entity.Clothing = model.ClothingType is not null ? string.Join(';', model.ClothingType) : null;
         entity.Accepted = model.Accepted;
         entity.PreferredType = (int)model.PreferredType;
-        entity.SellerId = model.SellerId?.ToChar32();
+        entity.SellerId = model.SellerId;
         return entity;
     }
 
@@ -72,24 +72,24 @@ internal static class BazaarMapping
         Id = entity.Id,
         Created = dc.ToLocal(entity.Created),
         Status = (Domain.Models.CheckoutStatus)entity.Item.Status,
-        EventId = new Guid(entity.Item.EventId!),
-        UserId = new Guid(entity.Item.UserId!),
-        ArticleIds = new HashSet<Guid>(entity.Item.ArticleIds.Select(id => id.FromChar32()))
+        EventId = entity.Item.EventId!.Value,
+        UserId = entity.Item.UserId!.Value,
+        ArticleIds = [.. entity.Item.ArticleIds]
     };
 
     public static Checkout MapToEntity(this Domain.Models.Checkout model, Checkout entity)
     {
         entity.Status = (int)model.Status;
-        entity.EventId = model.EventId.ToChar32();
-        entity.UserId = model.UserId.ToChar32();
-        entity.ArticleIds = [.. model.ArticleIds.Select(id => id.ToChar32())];
+        entity.EventId = model.EventId;
+        entity.UserId = model.UserId;
+        entity.ArticleIds = [.. model.ArticleIds];
         return entity;
     }
 
     public static Domain.Models.Article MapToDomain(this Article entity) => new()
     {
         Id = entity.Id,
-        SellerId = entity.SellerId!.FromChar32(),
+        SellerId = entity.SellerId!.Value,
         LabelNumber = entity.LabelNumber,
         Name = entity.Name,
         Size = entity.Size,
@@ -98,7 +98,7 @@ internal static class BazaarMapping
 
     public static Article MapToEntity(this Domain.Models.Article model, Article entity)
     {
-        entity.SellerId = model.SellerId.ToChar32();
+        entity.SellerId = model.SellerId;
         entity.LabelNumber = model.LabelNumber;
         entity.Name = model.Name;
         entity.Size = model.Size;
@@ -109,9 +109,9 @@ internal static class BazaarMapping
     public static Domain.Models.Seller MapToDomain(this Entity<Seller> entity, GermanDateTimeConverter dc) => new()
     {
         Id = entity.Id,
-        UserId = entity.Item.UserId!.FromChar32(),
+        UserId = entity.Item.UserId!.Value,
         Created = dc.ToLocal(entity.Created),
-        EventId = entity.Item.EventId!.FromChar32(),
+        EventId = entity.Item.EventId!.Value,
         SellerNumber = entity.Item.SellerNumber,
         Role = (Domain.Models.SellerRole)entity.Item.Role,
         MaxArticleCount = entity.Item.MaxArticleCount,
@@ -120,7 +120,7 @@ internal static class BazaarMapping
 
     public static Seller MapToEntity(this Domain.Models.Seller model, Seller entity)
     {
-        entity.EventId = model.EventId.ToChar32();
+        entity.EventId = model.EventId;
         entity.SellerNumber = model.SellerNumber;
         entity.Role = (int)model.Role;
         entity.MaxArticleCount = model.MaxArticleCount;

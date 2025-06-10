@@ -64,13 +64,13 @@ internal sealed class Migration
             var checkout = new Entities.Checkout
             {
                 Id = id.FromBinary16(),
-                EventId = eventId.FromBinary16().ToChar32(),
+                EventId = eventId.FromBinary16(),
                 Status = e.Status,
-                UserId = userId.FromBinary16().ToChar32(),
+                UserId = userId.FromBinary16(),
             };
 
             var articles = await connection.QueryAsync<byte[]>("select BazaarSellerArticleId from bazaar_billing_articles where BazaarBillingId=@id", new { id });
-            checkout.ArticleIds = articles.Select(id => id.FromBinary16().ToChar32()).ToArray();
+            checkout.ArticleIds = articles.Select(id => id.FromBinary16()).ToArray();
 
             await _checkoutRepository.Create(checkout, cancellationToken);
         }
@@ -93,7 +93,7 @@ internal sealed class Migration
             await _articleRepository.Create(new()
             {
                 Id = id.FromBinary16(),
-                SellerId = sellerId.FromBinary16().ToChar32(),
+                SellerId = sellerId.FromBinary16(),
                 LabelNumber = e.LabelNumber,
                 Name = e.Name,
                 Size = e.Size,
@@ -121,8 +121,8 @@ internal sealed class Migration
             await _sellerRepository.Create(new()
             {
                 Id = id.FromBinary16(),
-                EventId = eventId.FromBinary16().ToChar32(),
-                UserId = userId.FromBinary16().ToChar32(),
+                EventId = eventId.FromBinary16(),
+                UserId = userId.FromBinary16(),
                 SellerNumber = e.SellerNumber,
                 Role = e.Role,
                 CanCheckout = e.CanCreateBillings,
@@ -149,13 +149,13 @@ internal sealed class Migration
             await _sellerRegistationRepository.Create(new()
             {
                 Id = id.FromBinary16(),
-                EventId = eventId.FromBinary16().ToChar32(),
+                EventId = eventId.FromBinary16(),
                 Email = e.Email,
                 Name = e.Name,
                 Phone = e.Phone,
                 Clothing = e.Clothing,
                 Accepted = e.Accepted,
-                SellerId = sellerId?.FromBinary16().ToChar32(),
+                SellerId = sellerId?.FromBinary16(),
                 PreferredType = e.PreferredType,
             }, cancellationToken);
         }

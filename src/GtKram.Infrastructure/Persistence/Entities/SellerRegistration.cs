@@ -6,9 +6,11 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 [Table("seller_registrations")]
 internal sealed class SellerRegistration : IEntity
 {
+    [JsonConverter(typeof(GuidJsonConverter))]
     public Guid Id { get; set; }
 
-    public string? EventId { get; set; }
+    [JsonConverter(typeof(GuidJsonConverter))]
+    public Guid? EventId { get; set; }
 
     public string? Email { get; set; }
 
@@ -22,7 +24,8 @@ internal sealed class SellerRegistration : IEntity
 
     public int PreferredType { get; set; }
 
-    public string? SellerId { get; set; }
+    [JsonConverter(typeof(GuidJsonConverter))]
+    public Guid? SellerId { get; set; }
 
     [JsonIgnore]
     public int Version { get; set; }

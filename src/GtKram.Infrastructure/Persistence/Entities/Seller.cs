@@ -6,11 +6,14 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 [Table("sellers")]
 internal sealed class Seller : IEntity
 {
+    [JsonConverter(typeof(GuidJsonConverter))]
     public Guid Id { get; set; }
 
-    public string? EventId { get; set; }
+    [JsonConverter(typeof(GuidJsonConverter))]
+    public Guid? EventId { get; set; }
 
-    public string? UserId { get; set; }
+    [JsonConverter(typeof(GuidJsonConverter))]
+    public Guid? UserId { get; set; }
 
     public int SellerNumber { get; set; }
 

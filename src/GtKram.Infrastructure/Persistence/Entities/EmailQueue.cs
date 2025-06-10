@@ -6,6 +6,7 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 [Table("email_queue")]
 internal sealed class EmailQueue : IEntity
 {
+    [JsonConverter(typeof(GuidJsonConverter))]
     public Guid Id { get; set; }
 
     public DateTimeOffset? Sent { get; set; }

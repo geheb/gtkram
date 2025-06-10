@@ -6,6 +6,7 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 [Table("events")]
 internal sealed class Event : IEntity
 {
+    [JsonConverter(typeof(GuidJsonConverter))]
     public Guid Id { get; set; }
 
     public string? Name { get; set; }

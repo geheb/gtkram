@@ -6,7 +6,8 @@ namespace GtKram.Infrastructure.Persistence.Entities;
 [Table("identities")]
 internal sealed class Identity : IEntity
 {
-    public required Guid Id { get; set; }
+    [JsonConverter(typeof(GuidJsonConverter))]
+    public Guid Id { get; set; }
 
     public required string Email { get; set; }
 
