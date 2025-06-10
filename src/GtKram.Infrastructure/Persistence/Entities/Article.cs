@@ -8,8 +8,7 @@ internal sealed class Article : IEntity
 {
     public Guid Id { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? SellerId { get; set; }
+    public string? SellerId { get; set; }
 
     public int LabelNumber { get; set; }
 

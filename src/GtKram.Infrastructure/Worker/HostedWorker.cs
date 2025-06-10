@@ -39,6 +39,9 @@ internal sealed class HostedWorker : BackgroundService
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var bootstrapper = scope.ServiceProvider.GetRequiredService<MySqlBootstrapper>();
         await bootstrapper.Bootstrap(cancellationToken);
+
+        var migration = scope.ServiceProvider.GetRequiredService<Migration>();
+        await migration.Migrate(cancellationToken);
     }
 
     private async Task HandleSuperUser()

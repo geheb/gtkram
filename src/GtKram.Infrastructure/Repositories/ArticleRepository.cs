@@ -1,5 +1,6 @@
 using GtKram.Domain.Base;
 using GtKram.Domain.Repositories;
+using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Repositories.Mappings;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -72,7 +73,7 @@ internal sealed class ArticleRepository : IArticleRepository
             foreach (var model in models)
             {
                 var entity = model.MapToEntity(new());
-                entity.SellerId = sellerId;
+                entity.SellerId = sellerId.ToChar32();
                 entity.LabelNumber = ++nextValue;
 
                 await _repo.Create(entity, trans, cancellationToken);

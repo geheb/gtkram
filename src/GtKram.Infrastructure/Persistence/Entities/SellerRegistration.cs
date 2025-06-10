@@ -8,8 +8,7 @@ internal sealed class SellerRegistration : IEntity
 {
     public Guid Id { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? EventId { get; set; }
+    public string? EventId { get; set; }
 
     public string? Email { get; set; }
 
@@ -23,8 +22,7 @@ internal sealed class SellerRegistration : IEntity
 
     public int PreferredType { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? SellerId { get; set; }
+    public string? SellerId { get; set; }
 
     [JsonIgnore]
     public int Version { get; set; }

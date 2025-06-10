@@ -2,6 +2,7 @@ using GtKram.Application.Converter;
 using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
+using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Repositories.Mappings;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -19,8 +20,8 @@ internal sealed class CheckoutRepository : ICheckoutRepository
     {
         var entity = new Persistence.Entities.Checkout
         {
-            EventId = eventId,
-            UserId = userId,
+            EventId = eventId.ToChar32(),
+            UserId = userId.ToChar32(),
             Status = (int)CheckoutStatus.InProgress
         };
 
@@ -140,7 +141,8 @@ internal sealed class CheckoutRepository : ICheckoutRepository
             return false;
         }
 
-        return entities.Any(e => e.Item.ArticleIds.Contains(articleId));
+        var id = articleId.ToChar32();
+        return entities.Any(e => e.Item.ArticleIds.Contains(id));
     }
 
     public async Task<Result> Update(Domain.Models.Checkout model, CancellationToken cancellationToken)

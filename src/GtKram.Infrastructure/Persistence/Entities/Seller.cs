@@ -8,11 +8,9 @@ internal sealed class Seller : IEntity
 {
     public Guid Id { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? EventId { get; set; }
+    public string? EventId { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? UserId { get; set; }
+    public string? UserId { get; set; }
 
     public int SellerNumber { get; set; }
 

@@ -60,13 +60,16 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
 
     public async Task Create(T entity, IDbTransaction? trans, CancellationToken cancellationToken)
     {
-        entity.Id = _pkGenerator.Generate();
+        if (entity.Id == Guid.Empty)
+        {
+            entity.Id = _pkGenerator.Generate();
+        }
 
         var connection = trans?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var sql = string.Format(_insert, _tableName);
         var parameters = new Dictionary<string, object>
         {
-            { "@Id", entity.Id.ToByteArray() },
+            { "@Id", entity.Id.ToBinary16() },
             { "@Created", _timeProvider.GetUtcNow() },
             { "@Version", 1 },
             { "@Json", JsonSerializer.Serialize(entity as object) }
@@ -81,9 +84,9 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
     {
         var connection = trans?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var sql = string.Format(_selectById, _tableName);
-        var entity = await connection.QueryFirstOrDefaultAsync<JsonEntity>(sql, new { Id = id.ToByteArray() }, trans);
+        var entity = await connection.QueryFirstOrDefaultAsync<JsonEntity>(sql, new { Id = id.ToBinary16() }, trans);
 
-        return entity.Id is null ? default : Map(entity);
+        return entity.Id is null ? null : Map(entity);
     }
 
     public async Task<Entity<T>[]> Get(Guid[] ids, IDbTransaction? trans, CancellationToken cancellationToken)
@@ -96,7 +99,7 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
 
         foreach (var chunk in ids.Chunk(100))
         {
-            var entities = await connection.QueryAsync<JsonEntity>(sql, new { Ids = chunk.Select(c => c.ToByteArray()) }, trans);
+            var entities = await connection.QueryAsync<JsonEntity>(sql, new { Ids = chunk.Select(c => c.ToBinary16()) }, trans);
             result.AddRange(Map(entities));
         }
 
@@ -131,11 +134,13 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
 
     public async Task<int> Count(WhereFieldPair<T>[] where, IDbTransaction? trans, CancellationToken cancellationToken)
     {
-        if (where.Length == 0) throw new ArgumentException(nameof(where));
-
         var connection = trans?.Connection ?? await _dbContext.GetConnection(cancellationToken);
 
         var sql = string.Format(_selectCount, _tableName, "*");
+        if (where.Length == 0)
+        {
+            return await connection.ExecuteScalarAsync<int>(sql, transaction: trans);
+        }
 
         var (query, parameters) = CreateQuery(sql, where);
 
@@ -164,7 +169,7 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
         var sql = string.Format(_updateByIdAndVersion, _tableName, 0);
         var parameters = new Dictionary<string, object>
         {
-            { "@Id", entity.Id.ToByteArray() },
+            { "@Id", entity.Id.ToBinary16() },
             { "@Modified", _timeProvider.GetUtcNow() },
             { "@Version", entity.Version + 1 },
             { "@Json", JsonSerializer.Serialize(entity as object) },
@@ -194,7 +199,7 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
         foreach (var entity in entities)
         {
             parameters.Clear();
-            parameters["@Id"] = entity.Id.ToByteArray();
+            parameters["@Id"] = entity.Id.ToBinary16();
             parameters["@Modified"] = _timeProvider.GetUtcNow();
             parameters["@Version"] = entity.Version + 1;
             parameters["@Json"] = JsonSerializer.Serialize(entity as object);
@@ -217,14 +222,14 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
         var connection = trans?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var sql = string.Format(_deleteById, _tableName);
 
-        return await connection.ExecuteAsync(sql, new { Id = id.ToByteArray() }, trans);
+        return await connection.ExecuteAsync(sql, new { Id = id.ToBinary16() }, trans);
     }
 
     private static Entity<T> Map(JsonEntity entity)
     {
         var item = JsonSerializer.Deserialize<T>(entity.Json!)!;
         item.Version = entity.Version;
-        return new Entity<T>(new Guid(entity.Id!), entity.Created, entity.Modified, item);
+        return new Entity<T>(entity.Id!.FromBinary16(), entity.Created, entity.Modified, item);
     }
 
     private static Entity<T>[] Map(IEnumerable<JsonEntity> entities) =>
@@ -252,18 +257,19 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
 
                 if (v.Value is Guid id)
                 {
-                    parameters[param] = id.ToString("N");
+                    parameters[param] = id.ToChar32();
                 }
                 else if (v.Value is Guid[] ids)
                 {
-                    parameters[param] = ids.Select(id => id.ToString("N")).ToArray();
+                    parameters[param] = ids.Select(id => id.ToChar32()).ToArray();
                 }
                 else
                 {
                     parameters[param] = v.Value;
                 }
 
-                if (v.IsCollection)
+                var isCollection = v.Value is not string && v.Value is System.Collections.IEnumerable;
+                if (isCollection)
                 {
                     sql.Append($"_{v.Field} IN {param}");
                 }

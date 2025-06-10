@@ -80,14 +80,14 @@ internal sealed class MySqlBootstrapper
         private const string _createTable = """
         CREATE TABLE IF NOT EXISTS {0}
         (
-        	Id BINARY(16) NOT NULL,
+            Id BINARY(16) NOT NULL,
             Created DATETIME(6) NOT NULL,
             Modified DATETIME(6) NULL,
             Version INT NOT NULL,
-        	Json JSON NOT NULL
+            Json JSON NOT NULL
 
             CHECK (JSON_VALID(Json)),
-        	PRIMARY KEY (Id)
+            PRIMARY KEY (Id)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
         """;
 

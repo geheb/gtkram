@@ -10,13 +10,11 @@ internal sealed class Checkout : IEntity
 
     public int Status { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? EventId { get; set; }
+    public string? EventId { get; set; }
 
-    [JsonConverter(typeof(GuidToChar32Converter))]
-    public Guid? UserId { get; set; }
+    public string? UserId { get; set; }
 
-    public Guid[] ArticleIds { get; set; } = [];
+    public string[] ArticleIds { get; set; } = [];
 
     [JsonIgnore]
     public int Version { get; set; }

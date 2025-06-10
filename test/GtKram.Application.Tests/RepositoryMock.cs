@@ -1,7 +1,6 @@
 using GtKram.Infrastructure.Persistence;
 using GtKram.Infrastructure.Persistence.Entities;
 using GtKram.Infrastructure.Repositories;
-using System.Collections;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
@@ -251,9 +250,10 @@ internal sealed class RepositoryMock<T> : IRepository<T> where T : IEntity
 
             foreach (var v in where)
             {
-                if (v.IsCollection)
+                var isCollection = v.Value is not string && v.Value is System.Collections.IEnumerable;
+                if (isCollection)
                 {
-                    foreach (var arrayValue in (IEnumerable)v.Value!)
+                    foreach (var arrayValue in (System.Collections.IEnumerable)v.Value!)
                     {
                         var value = arrayValue;
                         if (arrayValue is byte[] byteArray)

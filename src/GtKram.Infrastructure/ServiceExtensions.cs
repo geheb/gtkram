@@ -39,6 +39,8 @@ public static class ServiceExtensions
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
         services.AddScoped<IArticleRepository, ArticleRepository>();
         services.AddScoped<ISellerRepository, SellerRepository>();
+
+        services.AddScoped<Migration>();
     }
 
     public static void AddPersistence(this IServiceCollection services, IConfiguration config)
