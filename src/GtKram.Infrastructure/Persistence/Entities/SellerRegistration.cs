@@ -29,4 +29,7 @@ internal sealed class SellerRegistration : IEntity
 
     [JsonIgnore]
     public int Version { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset? Created { get; set; }
 }

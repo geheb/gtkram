@@ -70,7 +70,7 @@ internal sealed class Repository<T> : IRepository<T> where T : IEntity
         var parameters = new Dictionary<string, object>
         {
             { "@Id", entity.Id.ToBinary16() },
-            { "@Created", _timeProvider.GetUtcNow() },
+            { "@Created", entity.Created ?? _timeProvider.GetUtcNow() },
             { "@Version", 1 },
             { "@Json", JsonSerializer.Serialize(entity as object) }
         };

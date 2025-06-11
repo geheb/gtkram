@@ -155,7 +155,7 @@ internal sealed class UserRepository : IUserRepository
 
         var dc = new GermanDateTimeConverter();
         var now = _timeProvider.GetUtcNow();
-        return entities.Select(e => e.Item.MapToDomain(now, dc)).ToArray();
+        return entities.Select(e => e.Item.MapToDomain(now, dc)).OrderBy(e => e.Name).ToArray();
     }
 
     public async Task<Result> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)

@@ -54,7 +54,9 @@ internal sealed class Migration
             return;
         }
 
-        var checkouts = await connection.QueryAsync("select Id,BazaarEventId,Status,UserId from bazaar_billings");
+        var trans = await _checkoutRepository.BeginTransaction(cancellationToken);
+
+        var checkouts = await connection.QueryAsync("select Id,BazaarEventId,Status,UserId,CreatedOn from bazaar_billings", transaction: trans);
         foreach (var e in checkouts)
         {
             byte[] id = e.Id;
@@ -67,13 +69,16 @@ internal sealed class Migration
                 EventId = eventId.FromBinary16(),
                 Status = e.Status,
                 UserId = userId.FromBinary16(),
+                Created = new DateTimeOffset((DateTime)e.CreatedOn, TimeSpan.Zero)
             };
 
-            var articles = await connection.QueryAsync<byte[]>("select BazaarSellerArticleId from bazaar_billing_articles where BazaarBillingId=@id", new { id });
+            var articles = await connection.QueryAsync<byte[]>("select BazaarSellerArticleId from bazaar_billing_articles where BazaarBillingId=@id", new { id }, trans);
             checkout.ArticleIds = articles.Select(id => id.FromBinary16()).ToArray();
 
-            await _checkoutRepository.Create(checkout, cancellationToken);
+            await _checkoutRepository.Create(checkout, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 
     private async Task InsertArticles(DbConnection connection, CancellationToken cancellationToken)
@@ -84,7 +89,9 @@ internal sealed class Migration
             return;
         }
 
-        var articles = await connection.QueryAsync("select Id,BazaarSellerId,LabelNumber,Name,Size,Price from bazaar_seller_articles");
+        var trans = await _articleRepository.BeginTransaction(cancellationToken);
+
+        var articles = await connection.QueryAsync("select Id,BazaarSellerId,LabelNumber,Name,Size,Price,CreatedOn from bazaar_seller_articles", transaction: trans);
         foreach (var e in articles)
         {
             byte[] id = e.Id;
@@ -98,8 +105,11 @@ internal sealed class Migration
                 Name = e.Name,
                 Size = e.Size,
                 Price = e.Price,
-            }, cancellationToken);
+                Created = new DateTimeOffset((DateTime)e.CreatedOn, TimeSpan.Zero)
+            }, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 
 
@@ -111,7 +121,9 @@ internal sealed class Migration
             return;
         }
 
-        var sellers = await connection.QueryAsync("select Id,BazaarEventId,UserId,SellerNumber,Role,CanCreateBillings,MaxArticleCount from bazaar_sellers");
+        var trans = await _sellerRepository.BeginTransaction(cancellationToken);
+
+        var sellers = await connection.QueryAsync("select Id,BazaarEventId,UserId,SellerNumber,Role,CanCreateBillings,MaxArticleCount from bazaar_sellers", transaction: trans);
         foreach (var e in sellers)
         {
             byte[] id = e.Id;
@@ -127,8 +139,10 @@ internal sealed class Migration
                 Role = e.Role,
                 CanCheckout = e.CanCreateBillings,
                 MaxArticleCount = e.MaxArticleCount
-            }, cancellationToken);
+            }, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 
     private async Task InsertSellerRegistration(DbConnection connection, CancellationToken cancellationToken)
@@ -139,7 +153,9 @@ internal sealed class Migration
             return;
         }
 
-        var registrations = await connection.QueryAsync("select Id,BazaarEventId,Email,Name,Phone,Clothing,Accepted,BazaarSellerId,PreferredType from bazaar_seller_registrations");
+        var trans = await _sellerRegistationRepository.BeginTransaction(cancellationToken);
+
+        var registrations = await connection.QueryAsync("select Id,BazaarEventId,Email,Name,Phone,Clothing,Accepted,BazaarSellerId,PreferredType,CreatedOn from bazaar_seller_registrations", transaction: trans);
         foreach (var e in registrations)
         {
             byte[] id = e.Id;
@@ -157,8 +173,11 @@ internal sealed class Migration
                 Accepted = e.Accepted,
                 SellerId = sellerId?.FromBinary16(),
                 PreferredType = e.PreferredType,
-            }, cancellationToken);
+                Created = new DateTimeOffset((DateTime)e.CreatedOn, TimeSpan.Zero)
+            }, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 
     private async Task InsertIdentities(DbConnection connection, CancellationToken cancellationToken)
@@ -169,26 +188,28 @@ internal sealed class Migration
             return;
         }
 
-        var users = await connection.QueryAsync("select Id,Name,LastLogin,Email,EmailConfirmed,PasswordHash,SecurityStamp,ConcurrencyStamp from users");
+        var trans = await _identityRepository.BeginTransaction(cancellationToken);
+
+        var users = await connection.QueryAsync("select Id,Name,LastLogin,Email,EmailConfirmed,PasswordHash,SecurityStamp,ConcurrencyStamp from users", transaction: trans);
         foreach (var e in users)
         {
             byte[] id = e.Id;
 
             var claims = new List<Entities.IdentityClaim>();
             
-            var roles = await connection.QueryAsync<string>("select Name from roles r join user_roles ur on ur.RoleId=r.Id where ur.UserId=@id", new { id });
+            var roles = await connection.QueryAsync<string>("select Name from roles r join user_roles ur on ur.RoleId=r.Id where ur.UserId=@id", new { id }, trans);
             foreach (var role in roles)
             {
                 claims.Add(new Entities.IdentityClaim(ClaimsIdentity.DefaultRoleClaimType, role == "billing" ? Roles.Checkout : role));
             }
 
-            var tfa = await connection.QueryFirstOrDefaultAsync<string?>("select ClaimValue from user_claims where UserId=@id", new { id });
+            var tfa = await connection.QueryFirstOrDefaultAsync<string?>("select ClaimValue from user_claims where UserId=@id", new { id }, trans);
             if (tfa == "1")
             {
                 claims.Add(new Entities.IdentityClaim(UserClaims.TwoFactorClaim));
             }
 
-            var authKey = await connection.QueryFirstOrDefaultAsync<string?>("select Value from user_tokens where UserId=@id and Name=\"AuthenticatorKey\"", new { id });
+            var authKey = await connection.QueryFirstOrDefaultAsync<string?>("select Value from user_tokens where UserId=@id and Name=\"AuthenticatorKey\"", new { id }, trans);
 
             await _identityRepository.Create(new()
             {
@@ -204,9 +225,12 @@ internal sealed class Migration
                 IsLockoutEnabled = true,
                 Claims = claims,
                 AuthenticatorKey = authKey,
+                Created = e.LastLogin is not null ? new DateTimeOffset((DateTime)e.LastLogin, TimeSpan.Zero) : null,
 
-            }, cancellationToken);
+            }, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 
     public async Task InsertEvents(DbConnection connection, CancellationToken cancellationToken)
@@ -217,10 +241,14 @@ internal sealed class Migration
             return;
         }
 
-        var events = await connection.QueryAsync("select Id,Name,Description,StartDate,EndDate,Address,MaxSellers,Commission,RegisterStartDate,RegisterEndDate,IsRegistrationsLocked,EditArticleEndDate,PickUpLabelsStartDate,PickUpLabelsEndDate from bazaar_events");
+        var trans = await _eventRepository.BeginTransaction(cancellationToken);
+
+        var events = await connection.QueryAsync("select Id,Name,Description,StartDate,EndDate,Address,MaxSellers,Commission,RegisterStartDate,RegisterEndDate,IsRegistrationsLocked,EditArticleEndDate,PickUpLabelsStartDate,PickUpLabelsEndDate,CreatedOn from bazaar_events", transaction: trans);
         foreach(var e in events)
         {
             byte[] id = e.Id;
+            DateTime? pickUpLabelsStartDate = e.PickUpLabelsStartDate;
+            DateTime? pickUpLabelsEndDate = e.PickUpLabelsEndDate;
             await _eventRepository.Create(new()
             {
                 Id = id.FromBinary16(),
@@ -235,9 +263,16 @@ internal sealed class Migration
                 RegisterEnd = new DateTimeOffset((DateTime)e.RegisterEndDate, TimeSpan.Zero),
                 HasRegistrationsLocked = e.IsRegistrationsLocked,
                 EditArticleEnd = new DateTimeOffset((DateTime)e.EditArticleEndDate, TimeSpan.Zero),
-                PickUpLabelsStart = new DateTimeOffset((DateTime)e.PickUpLabelsStartDate, TimeSpan.Zero),
-                PickUpLabelsEnd = new DateTimeOffset((DateTime)e.PickUpLabelsEndDate, TimeSpan.Zero),
-            }, cancellationToken);
+                PickUpLabelsStart = 
+                    pickUpLabelsStartDate is null ? null : 
+                    new DateTimeOffset(pickUpLabelsStartDate.Value, TimeSpan.Zero),
+                PickUpLabelsEnd =
+                    pickUpLabelsEndDate is null ? null :
+                    new DateTimeOffset(pickUpLabelsEndDate.Value, TimeSpan.Zero),
+                Created = new DateTimeOffset((DateTime)e.CreatedOn, TimeSpan.Zero)
+            }, trans, cancellationToken);
         }
+
+        await trans.CommitAsync(cancellationToken);
     }
 }

@@ -94,7 +94,7 @@ internal sealed class CheckoutHandler :
             result.Add(new(checkout, usersNameById[checkout.UserId], articleCount, total));
         }
 
-        return Result.Ok(new CheckoutWithTotalsAndEvent([.. result], @event.Value));
+        return Result.Ok(new CheckoutWithTotalsAndEvent([.. result.OrderByDescending(r => r.Checkout.Created)], @event.Value));
     }
 
     public async ValueTask<EventWithCheckoutTotals[]> Handle(GetEventWithCheckoutTotalsQuery query, CancellationToken cancellationToken)
@@ -191,7 +191,7 @@ internal sealed class CheckoutHandler :
                 sellersById[article.SellerId].SellerNumber));
         }
 
-        return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, [.. result]));
+        return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, [.. result.OrderBy(r => r.Article.Name)]));
     }
 
     public async ValueTask<Result> Handle(DeleteCheckoutArticleCommand command, CancellationToken cancellationToken)
@@ -440,7 +440,7 @@ internal sealed class CheckoutHandler :
             result.Add(new(checkout, user.Value.Name, articleCount, total));
         }
 
-        return Result.Ok(new CheckoutWithTotalsAndEvent([.. result], @event.Value));
+        return Result.Ok(new CheckoutWithTotalsAndEvent([.. result.OrderByDescending(r => r.Checkout.Created)], @event.Value));
     }
 
     public async ValueTask<Result<Guid>> Handle(CreateCheckoutByUserCommand command, CancellationToken cancellationToken)
@@ -527,7 +527,7 @@ internal sealed class CheckoutHandler :
                 sellersById[article.SellerId].SellerNumber));
         }
 
-        return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, [.. result]));
+        return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, [.. result.OrderBy(r => r.Article.Name)]));
 
     }
 

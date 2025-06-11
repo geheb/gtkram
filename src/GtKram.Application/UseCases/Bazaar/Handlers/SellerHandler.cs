@@ -116,6 +116,7 @@ internal sealed class SellerHandler :
                 r,
                 r.SellerId is null ? null : (sellersById.TryGetValue(r.SellerId.Value, out var seller) ? seller : null),
                 r.SellerId is null ? 0 : (countBySellerId.TryGetValue(r.SellerId.Value, out var count) ? count : 0)))
+            .OrderBy(r => r.Registration.Name)
             .ToArray();
     }
 
@@ -445,7 +446,7 @@ internal sealed class SellerHandler :
             result.Add(new(@event, seller, count));
         }
 
-        return result.ToArray();
+        return result.OrderByDescending(r => r.Event.Start).ToArray();
     }
 
     public async ValueTask<Result<SellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
