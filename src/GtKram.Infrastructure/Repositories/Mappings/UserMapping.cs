@@ -1,7 +1,7 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Domain.Models;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories.Mappings;

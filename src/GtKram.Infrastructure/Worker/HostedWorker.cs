@@ -1,5 +1,5 @@
 using GtKram.Infrastructure.Email;
-using GtKram.Infrastructure.Persistence;
+using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -1,6 +1,6 @@
 using GtKram.Application.Converter;
-using GtKram.Infrastructure.Persistence;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database;
+using GtKram.Infrastructure.Database.Entities;
 
 namespace GtKram.Infrastructure.Repositories.Mappings;
 

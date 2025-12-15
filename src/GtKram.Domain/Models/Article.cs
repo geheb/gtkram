@@ -1,5 +1,3 @@
-using System.ComponentModel;
-
 namespace GtKram.Domain.Models;
 
 public sealed class Article

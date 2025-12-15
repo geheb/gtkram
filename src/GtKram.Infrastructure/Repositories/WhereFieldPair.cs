@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
-using GtKram.Infrastructure.Persistence;
+using GtKram.Infrastructure.Database;
 
 namespace GtKram.Infrastructure.Repositories;
 
-internal struct WhereFieldPair<T>
+internal readonly struct WhereFieldPair<T>
 {
     public string Field { get; init; }
 

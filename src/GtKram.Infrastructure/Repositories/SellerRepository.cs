@@ -9,9 +9,9 @@ internal sealed class SellerRepository : ISellerRepository
 {
     private static readonly SemaphoreSlim _sellerNumberSemaphore = new SemaphoreSlim(1, 1);
 
-    private readonly IRepository<Persistence.Entities.Seller> _repo;
+    private readonly IRepository<Database.Entities.Seller> _repo;
 
-    public SellerRepository(IRepository<Persistence.Entities.Seller> repo)
+    public SellerRepository(IRepository<Database.Entities.Seller> repo)
     {
         _repo = repo;
     }
@@ -51,7 +51,7 @@ internal sealed class SellerRepository : ISellerRepository
                     trans,
                     cancellationToken);
 
-                var updates = new List<Persistence.Entities.Seller>();
+                var updates = new List<Database.Entities.Seller>();
 
                 var max = entities.Max(e => e.Item.SellerNumber);
                 foreach (var e in entities.Where(e => e.Item.SellerNumber == entity.SellerNumber))
@@ -173,7 +173,7 @@ internal sealed class SellerRepository : ISellerRepository
                 trans,
                 cancellationToken);
 
-            var updates = new List<Persistence.Entities.Seller>
+            var updates = new List<Database.Entities.Seller>
             {
                 entity
             };

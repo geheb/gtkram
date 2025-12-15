@@ -1,0 +1,85 @@
+﻿@page
+@model GtKram.WebApp.Pages.MyAccount.EditTwoFactorModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb()
+        </div>
+
+        <div class="content">
+            <blockquote>
+                Für die <a target="_blank" rel="noopener noreferrer" href="https://de.wikipedia.org/wiki/Zwei-Faktor-Authentisierung">Zwei-Faktor-Authentifizierung (2FA)</a> 
+                wird eine separate App benötigt. Zum Beispiel Microsoft Authenticator für 
+                <a target="_blank" rel="noopener noreferrer" href="https://play.google.com/store/apps/details?id=com.azure.authenticator">Android</a>
+                oder <a target="_blank" rel="noopener noreferrer" href="https://appstore.com/microsoft-authenticator">iOS</a>.
+                Scanne dann den QR-Code mit der App oder gebe den geheimen Schlüssel manuell ein.
+                Anschließend muss die Aktivierung mit einem 6-stelligen Bestätigungscode, aus der App, bestätigt werden.
+            </blockquote>
+        </div>
+
+        <div class="columns">
+            <div class="column is-one-third">
+
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+ 
+                <form method="post">
+                    <div class="field">
+                        <label class="label" for="qrcode">QR-Code</label>
+                        <div class="control">
+                            <a href="@Model.AuthUri"><canvas id="qrcode"></canvas></a>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" asp-for="SecretKey"></label>
+                        <div class="control">
+                            <input class="input" type="text" asp-for="SecretKey" readonly="readonly" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" asp-for="Code"></label>
+                        <div class="control">
+                            <input class="input" type="text" asp-for="Code" autocomplete="off" autofocus="" />
+                        </div>
+                        <span asp-validation-for="Code"></span>
+                    </div>
+
+                    @if (Model.IsTwoFactorEnabled)
+                    {
+                        <button class="button is-primary" type="submit">Deaktivieren</button>
+                    }
+                    else
+                    {
+                        <button class="button is-primary" type="submit">Aktivieren</button>
+                    }
+                </form>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts {
+    <script type="text/javascript">
+        $(function () {
+            const payload = '@Model.AuthUri';
+            const element = document.getElementById('qrcode')
+            QRCode.toCanvas(element, payload, { errorCorrectionLevel: 'H', width: 256, margin: 0, type: 'svg' });
+        });
+    </script>
+}

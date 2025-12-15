@@ -60,7 +60,7 @@ public sealed class SellerHandlerTests
 
         await using var scope = _serviceProvider.CreateAsyncScope();
         var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Persistence.Entities.Identity>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Database.Entities.Identity>>();
         var result = await userRepo.Create("foo", _mockUserEmail, [UserRoleType.Manager], _cancellationToken);
         var identity = await userManager.FindByEmailAsync(_mockUserEmail);
         identity!.IsEmailConfirmed = true;

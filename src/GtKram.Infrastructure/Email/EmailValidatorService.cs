@@ -15,6 +15,7 @@ internal sealed class EmailValidatorService : IEmailValidatorService
 {
     private readonly string[] _knownProviderList = new[]
     {
+        "arcor.de",
         "aol.com",
         "gmx.de",
         "gmx.net",
@@ -28,11 +29,13 @@ internal sealed class EmailValidatorService : IEmailValidatorService
         "hotmail.com",
         "hotmail.de",
         "web.de",
+        "yahoo.de",
         "yahoo.com",
         "yandex.com",
         "icloud.com",
         "me.com",
         "mac.com",
+        "posteo.de",
         "freenet.de",
         "t-online.de",
         "o2online.de",

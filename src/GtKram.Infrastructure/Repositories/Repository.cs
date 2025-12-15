@@ -1,6 +1,6 @@
 using Dapper;
-using GtKram.Infrastructure.Persistence;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database;
+using GtKram.Infrastructure.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;

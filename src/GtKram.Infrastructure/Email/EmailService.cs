@@ -2,7 +2,7 @@ using GtKram.Application.Converter;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Domain.Base;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;

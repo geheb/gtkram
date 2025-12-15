@@ -57,7 +57,7 @@ public sealed class CheckoutHandlerTests
 
         await using var scope = _serviceProvider.CreateAsyncScope();
         var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Persistence.Entities.Identity>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Database.Entities.Identity>>();
         var result = await userRepo.Create("foo", _mockUserSeller, [UserRoleType.Seller], _cancellationToken);
         var identity = await userManager.FindByEmailAsync(_mockUserSeller);
         identity!.IsEmailConfirmed = true;

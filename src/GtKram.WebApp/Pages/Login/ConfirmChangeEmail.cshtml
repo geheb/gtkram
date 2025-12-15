@@ -1,0 +1,61 @@
+﻿@page
+@model GtKram.WebApp.Pages.Login.ConfirmChangeEmailModel
+@{
+    ViewData["Title"] = "E-Mail-Adresse ändern";
+}
+
+<div class="login-wrapper columns is-gapless">
+
+    <div class="column is-6 is-hidden-mobile">
+        <div class="hero is-fullheight login-bg">
+        </div>
+    </div>
+
+    <div class="column is-6">
+        <div class="hero is-fullheight">
+            <div class="hero-heading pt-6 px-6">
+
+                <h1 class="title has-text-centered">
+                    @appSettings.Value.HeaderTitle
+                </h1>
+
+                <h2 class="subtitle has-text-centered">
+                    @ViewData["Title"]
+                </h2>
+
+            </div>
+            <div class="hero-body">
+
+                <div class="column is-three-fifths-fullhd is-offset-one-fifth-fullhd">
+
+                    <div class="box my-3">
+                        @if (ModelState.IsValid)
+                        {
+                            <figure class="avatar-big mb-4 has-text-centered has-text-success">
+                                <i class="fas fa-heart fa-7x"></i>
+                            </figure>
+                            <p class="subtitle has-text-success">Deine neue E-Mail-Adresse "@Model.ConfirmedEmail" wurde erfolgreich bestätigt.</p>
+                        }
+                        else
+                        {
+                            <figure class="avatar-big mb-4 has-text-centered has-text-danger">
+                                <i class="fas fa-heart-broken fa-7x"></i>
+                            </figure>
+                            <p class="subtitle has-text-danger">Deine neue E-Mail-Adresse konnte nicht bestätigt werden.</p>
+                            <div class="content" asp-validation-summary="All"></div>
+                        }
+                    </div>
+
+                    <p class="has-text-grey has-text-centered">
+                        GT Kram &nbsp;·&nbsp;
+                        <a href="/Login">Login</a> &nbsp;·&nbsp;
+                        <a href="/Privacy">Datenschutz</a> &nbsp;·&nbsp;
+                        <a href="/">Startseite</a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>

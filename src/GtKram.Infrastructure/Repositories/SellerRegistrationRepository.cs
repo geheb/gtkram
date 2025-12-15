@@ -8,9 +8,9 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class SellerRegistrationRepository : ISellerRegistrationRepository
 {
     private static readonly SemaphoreSlim _registerSemaphore = new SemaphoreSlim(1, 1);
-    private readonly IRepository<Persistence.Entities.SellerRegistration> _repo;
+    private readonly IRepository<Database.Entities.SellerRegistration> _repo;
 
-    public SellerRegistrationRepository(IRepository<Persistence.Entities.SellerRegistration> repo)
+    public SellerRegistrationRepository(IRepository<Database.Entities.SellerRegistration> repo)
     {
         _repo = repo;
     }

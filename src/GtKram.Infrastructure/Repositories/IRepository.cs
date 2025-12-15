@@ -1,4 +1,4 @@
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;

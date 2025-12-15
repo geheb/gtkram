@@ -1,0 +1,67 @@
+﻿@page "/Checkouts/Bazaar/{eventId:guid}"
+@model GtKram.WebApp.Pages.Checkouts.CheckoutModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+
+    var statusConverter = new CheckoutStatusConverter();
+    var dateConverter = new GermanDateTimeConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { eventId })
+        </div>
+
+        <h1 class="title is-4">@Model.Event</h1>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Kassenvorgänge gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-cart-shopping fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@dateConverter.ToDateTime(i.Checkout.Created)</div>
+                        <div class="list-item-description">
+                            <span class="tag is-rounded @(i.Checkout.IsCompleted ? "is-success" : "is-warning")">@statusConverter.StatusToString(i.Checkout.Status)</span>
+                            <span class="tag is-rounded">@i.CreatedBy</span>
+                            <span class="tag is-rounded">@i.ArticleCount Artikel</span>
+                            <span class="tag is-rounded">@i.Total.ToString("0.00") €</span>
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            <a class="button" href="@(Url.PageLink("Articles", null, new { eventId, id = @i.Checkout.Id }))">
+                                <span class="icon is-small"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+
+</section>
+
+@await Html.PartialAsync("_Footer")

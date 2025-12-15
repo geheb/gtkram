@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <ResolveStaticWebAssetsInputsDependsOn>RemoveIdentityAssets</ResolveStaticWebAssetsInputsDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove=".logs\**" />
+    <Content Remove=".logs\**" />
+    <EmbeddedResource Remove=".logs\**" />
+    <None Remove=".logs\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.LibraryManager.Build" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Async" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\GtKram.Application\GtKram.Application.csproj" />
+    <ProjectReference Include="..\..\src\GtKram.Domain\GtKram.Domain.csproj" />
+    <ProjectReference Include="..\..\src\GtKram.Infrastructure\GtKram.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="I18n\LocalizedMessages.Designer.cs">
+      <DependentUpon>LocalizedMessages.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="I18n\LocalizedMessages.resx">
+      <LastGenOutput>LocalizedMessages.Designer.cs</LastGenOutput>
+      <Generator>ResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="RemoveIdentityAssets">
+    <ItemGroup>
+      <StaticWebAsset Remove="@(StaticWebAsset)" Condition="%(SourceId) == 'Microsoft.AspNetCore.Identity.UI'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

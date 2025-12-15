@@ -7,9 +7,9 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class EventRepository : IEventRepository
 {
-    private readonly IRepository<Persistence.Entities.Event> _repo;
+    private readonly IRepository<Database.Entities.Event> _repo;
 
-    public EventRepository(IRepository<Persistence.Entities.Event> repo)
+    public EventRepository(IRepository<Database.Entities.Event> repo)
     {
         _repo = repo;
     }

@@ -1,5 +1,5 @@
 using GtKram.Infrastructure.Email;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;

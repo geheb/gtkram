@@ -4,7 +4,7 @@ using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Domain.Base;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

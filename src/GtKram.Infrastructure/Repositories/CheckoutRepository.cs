@@ -8,16 +8,16 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class CheckoutRepository : ICheckoutRepository
 {
-    private readonly IRepository<Persistence.Entities.Checkout> _repo;
+    private readonly IRepository<Database.Entities.Checkout> _repo;
 
-    public CheckoutRepository(IRepository<Persistence.Entities.Checkout> repo)
+    public CheckoutRepository(IRepository<Database.Entities.Checkout> repo)
     {
         _repo = repo;
     }
 
     public async Task<Result<Guid>> Create(Guid eventId, Guid userId, CancellationToken cancellationToken)
     {
-        var entity = new Persistence.Entities.Checkout
+        var entity = new Database.Entities.Checkout
         {
             EventId = eventId,
             UserId = userId,

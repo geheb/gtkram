@@ -2,8 +2,8 @@ using GtKram.Application.Converter;
 using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Persistence;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database;
+using GtKram.Infrastructure.Database.Entities;
 using GtKram.Infrastructure.Repositories.Mappings;
 using Microsoft.AspNetCore.Identity;
 

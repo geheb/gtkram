@@ -1,5 +1,5 @@
 using GtKram.Domain.Base;
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 
 namespace GtKram.Infrastructure.Repositories;
 

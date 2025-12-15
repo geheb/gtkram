@@ -7,9 +7,9 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class ArticleRepository : IArticleRepository
 {
     private static readonly SemaphoreSlim _labelSemaphore = new SemaphoreSlim(1, 1);
-    private readonly IRepository<Persistence.Entities.Article> _repo;
+    private readonly IRepository<Database.Entities.Article> _repo;
 
-    public ArticleRepository(IRepository<Persistence.Entities.Article> repo)
+    public ArticleRepository(IRepository<Database.Entities.Article> repo)
     {
         _repo = repo;
     }

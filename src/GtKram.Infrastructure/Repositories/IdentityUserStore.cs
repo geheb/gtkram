@@ -1,6 +1,6 @@
 namespace GtKram.Infrastructure.Repositories;
 
-using GtKram.Infrastructure.Persistence.Entities;
+using GtKram.Infrastructure.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
