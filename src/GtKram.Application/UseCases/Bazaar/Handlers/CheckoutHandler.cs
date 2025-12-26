@@ -413,9 +413,9 @@ internal sealed class CheckoutHandler :
         }
 
         var user = await _users.FindById(query.UserId, cancellationToken);
-        if (user.IsFailed)
+        if (user.IsError)
         {
-            return user.ToResult();
+            return Result.Fail(user.FirstError.Code, "error");
         }
 
         Dictionary<Guid, Article> articlesById = [];
@@ -452,7 +452,7 @@ internal sealed class CheckoutHandler :
         }
 
         var user = await _users.FindById(command.UserId, cancellationToken);
-        if (user.IsFailed)
+        if (user.IsError)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
         }

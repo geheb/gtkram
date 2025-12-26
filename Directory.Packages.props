@@ -2,6 +2,7 @@
   <ItemGroup>
     <PackageVersion Include="Dapper" Version="2.1.66" />
     <PackageVersion Include="DnsClient" Version="1.8.0" />
+    <PackageVersion Include="ErrorOr" Version="2.0.1" />
     <PackageVersion Include="FluentMigrator" Version="7.2.0" />
     <PackageVersion Include="FluentMigrator.Runner.SQLite" Version="7.2.0" />
     <PackageVersion Include="Mediator.Abstractions" Version="3.0.1" />

@@ -214,7 +214,8 @@ internal sealed class SellerHandler :
             return result;
         }
 
-        return await _users.AddRole(seller.Value.IdentityId, UserRoleType.Checkout, cancellationToken);
+        var resultRole = await _users.AddRole(seller.Value.IdentityId, UserRoleType.Checkout, cancellationToken);
+        return resultRole.IsError ? Result.Fail(resultRole.FirstError.Code, "error") : Result.Ok();
     }
 
     public async ValueTask<Result> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
@@ -258,12 +259,12 @@ internal sealed class SellerHandler :
         {
             Guid userId;
             var user = await _users.FindByEmail(registration.Value.Email, cancellationToken);
-            if (user.IsSuccess)
+            if (!user.IsError)
             {
                 var resultUser = await _users.AddRole(user.Value.Id, UserRoleType.Seller, cancellationToken);
-                if (resultUser.IsFailed)
+                if (resultUser.IsError)
                 {
-                    return resultUser;
+                    return Result.Fail(resultUser.FirstError.Code, "error");
                 }
                 userId = user.Value.Id;
             }
@@ -275,7 +276,7 @@ internal sealed class SellerHandler :
 
                 if (userResult.IsFailed)
                 {
-                    return user.ToResult();
+                    return userResult.ToResult();
                 }
 
                 userId = userResult.Value;

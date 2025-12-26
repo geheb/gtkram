@@ -33,9 +33,9 @@ internal sealed class EmailHandler :
     public async ValueTask<Result> Handle(SendConfirmRegistrationCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindById(command.Id, cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
-            return resultUser.ToResult();
+            return Result.Fail(resultUser.FirstError.Code, "error");
         }
 
         var resultToken = await _userAuthenticator.CreateConfirmRegistrationToken(command.Id, cancellationToken);
@@ -63,12 +63,12 @@ internal sealed class EmailHandler :
     public async ValueTask<Result> Handle(SendChangeEmailCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindById(command.Id, cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
-            return resultUser.ToResult();
+            return Result.Fail(resultUser.FirstError.Code, "error");
         }
 
-        if ((await _users.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
+        if (!(await _users.FindByEmail(command.NewEmail, cancellationToken)).IsError)
         {
             var error = _errorDescriber.DuplicateEmail(command.NewEmail);
             return Result.Fail(error.Code, error.Description);
@@ -107,9 +107,9 @@ internal sealed class EmailHandler :
     public async ValueTask<Result> Handle(SendResetPasswordCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindByEmail(command.Email, cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
-            return resultUser.ToResult();
+            return Result.Fail(resultUser.FirstError.Code, "error");
         }
 
         var resultToken = await _userAuthenticator.CreateResetPasswordToken(resultUser.Value.Id, cancellationToken);

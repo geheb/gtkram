@@ -13,4 +13,13 @@ public static class ErrorExtensions
             modelState.AddModelError(err.Code, err.Message);
         }
     }
+
+    public static void AddError(this ModelStateDictionary modelState, params ErrorOr.Error[] errors)
+    {
+        foreach (var err in errors)
+        {
+            if (modelState.ContainsKey(err.Code)) continue;
+            modelState.AddModelError(err.Code, err.Description);
+        }
+    }
 }

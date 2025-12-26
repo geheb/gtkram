@@ -45,7 +45,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         if (user == null)
         {
             _logger.LogWarning("Der Benutzer {Email} wurde nicht gefunden.", email);
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await _signInManager.PasswordSignInAsync(user, password, isPersistent: false, lockoutOnFailure: true);
@@ -65,7 +65,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         if (user.Email == newEmail)
@@ -112,7 +112,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
@@ -140,7 +140,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Json.PasswordHash!, currentPassword);
@@ -165,7 +165,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Json.PasswordHash!, password);
@@ -183,12 +183,12 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         if (user.Json.IsEmailConfirmed)
         {
-            return Result.Fail(Domain.Errors.Identity.AlreadyActivated);
+            return Result.Fail(Domain.Errors.Identity.AlreadyActivated.Code, "error");
         }
 
         var token = await _signInManager.UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -200,7 +200,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var isValid = await _signInManager.UserManager.VerifyUserTokenAsync(user,
@@ -223,7 +223,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await userManager.ConfirmEmailAsync(user, token);
@@ -247,7 +247,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         if (!await _emailValidator.Validate(newEmail, cancellationToken))
@@ -265,7 +265,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await _signInManager.UserManager.ChangeEmailAsync(user, newEmail, token);
@@ -282,7 +282,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var token = await _signInManager.UserManager.GeneratePasswordResetTokenAsync(user);
@@ -294,7 +294,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var isValid = await _signInManager.UserManager.VerifyUserTokenAsync(user,
@@ -316,7 +316,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await _signInManager.UserManager.ResetPasswordAsync(user, token, newPassword);
@@ -333,13 +333,13 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var key = await _signInManager.UserManager.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(key))
         {
-            return Result.Fail(Domain.Errors.Identity.TwoFactorNotEnabled);
+            return Result.Fail(Domain.Errors.Identity.TwoFactorNotEnabled.Code, "error");
         }
 
         var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
@@ -354,7 +354,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await _signInManager.UserManager.ResetAuthenticatorKeyAsync(user);
@@ -381,7 +381,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user == null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var isValid = await _signInManager.UserManager.VerifyTwoFactorTokenAsync(
@@ -421,13 +421,13 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user == null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
         if (!isEnabled)
         {
-            return Result.Fail(Domain.Errors.Identity.TwoFactorNotEnabled);
+            return Result.Fail(Domain.Errors.Identity.TwoFactorNotEnabled.Code, "error");
         }
 
         var result = await _signInManager.UserManager.SetTwoFactorEnabledAsync(user, false);
@@ -450,7 +450,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Result.Fail(Domain.Errors.Identity.NotFound.Code, "error");
         }
 
         var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, false, isRememberClient);
@@ -469,12 +469,12 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         else if (result.IsLockedOut)
         {
             _logger.LogWarning("Der Benutzer {Id} ist gesperrt", user.Id);
-            return Result.Fail(Domain.Errors.Identity.Locked);
+            return Result.Fail(Domain.Errors.Identity.Locked.Code, "error");
         }
         else if (result.IsNotAllowed)
         {
             _logger.LogWarning("Der Benutzer {Id} darf sich nicht anmelden.", user.Id);
-            return Result.Fail(Domain.Errors.Identity.LoginNotAllowed);
+            return Result.Fail(Domain.Errors.Identity.LoginNotAllowed.Code, "error");
         }
         else if (result.RequiresTwoFactor)
         {
@@ -482,7 +482,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         }
 
         _logger.LogWarning("Die Anmeldung für Benutzer {Id} ist fehlgeschlagen.", user.Id);
-        return Result.Fail(Domain.Errors.Identity.LoginFailed);
+        return Result.Fail(Domain.Errors.Identity.LoginFailed.Code, "error");
     }
 
     private static string GenerateQrCodeUri(string issuer, string user, string secret)

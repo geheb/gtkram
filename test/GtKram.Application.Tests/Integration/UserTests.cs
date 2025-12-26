@@ -43,6 +43,6 @@ public class UserTests
         var users = scope.ServiceProvider.GetRequiredService<IUsers>();
 
         var result = await users.Create("foo", "foo@bar", [UserRoleType.Manager], _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 }

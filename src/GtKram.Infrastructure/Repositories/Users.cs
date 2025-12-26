@@ -1,5 +1,5 @@
+using ErrorOr;
 using GtKram.Application.Converter;
-using GtKram.Domain.Base;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
@@ -28,13 +28,13 @@ internal sealed class Users : IUsers
         _errorDescriber = errorDescriber;
     }
 
-    public async Task<Result<Guid>> Create(string name, string email, UserRoleType[] roles, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> Create(string name, string email, UserRoleType[] roles, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.Email, email, cancellationToken);
         if (entities.Length > 0)
         {
             var error = _errorDescriber.DuplicateEmail(email);
-            return Result.Fail(error.Code, error.Description);
+            return Error.Failure(error.Code, error.Description);
         }
 
         var entity = new Identity
@@ -54,12 +54,12 @@ internal sealed class Users : IUsers
         return entity.Id;
     }
 
-    public async Task<Result> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Domain.Errors.Identity.NotFound;
         }
 
         var roleClaim = new IdentityClaim(ClaimTypes.Role, role.MapToRole());
@@ -70,15 +70,15 @@ internal sealed class Users : IUsers
 
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Ok() : Result.Fail(Domain.Errors.Internal.ConflictData);
+        return result ? Result.Success : Error.Failure(Domain.Errors.Internal.ConflictData.Code);
     }
 
-    public async Task<Result> Update(Guid id, string? newName, UserRoleType[]? newRoles, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Update(Guid id, string? newName, UserRoleType[]? newRoles, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Domain.Errors.Identity.NotFound;
         }
 
         if (!string.IsNullOrWhiteSpace(newName) && entity.Json.Name != newName)
@@ -97,15 +97,15 @@ internal sealed class Users : IUsers
 
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Ok() : Result.Fail(Domain.Errors.Internal.ConflictData);
+        return result ? Result.Success : Error.Failure(Domain.Errors.Internal.ConflictData.Code);
     }
 
-    public async Task<Result> Disable(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Disable(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Domain.Errors.Identity.NotFound;
         }
 
         var name = new string([.. entity.Json.Name!.Split(' ').Select(u => u[0])]);
@@ -119,7 +119,7 @@ internal sealed class Users : IUsers
 
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Ok() : Result.Fail(Domain.Errors.Internal.ConflictData);
+        return result ? Result.Success : Error.Failure(Domain.Errors.Internal.ConflictData.Code);
     }
 
     public async Task<User[]> GetAll(CancellationToken cancellationToken)
@@ -136,27 +136,27 @@ internal sealed class Users : IUsers
         return entities.Select(e => e.MapToDomain(now, dc)).OrderBy(e => e.Name).ToArray();
     }
 
-    public async Task<Result<User>> FindByEmail(string email, CancellationToken cancellationToken)
+    public async Task<ErrorOr<User>> FindByEmail(string email, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
 
         var entity = await _repository.SelectBy(0, e => e.Email, email, cancellationToken);
         if (entity.Length == 0)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Domain.Errors.Identity.NotFound;
         }
 
-        return Result.Ok(entity[0].MapToDomain(_timeProvider.GetUtcNow(), new()));
+        return entity[0].MapToDomain(_timeProvider.GetUtcNow(), new());
     }
 
-    public async Task<Result<User>> FindById(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<User>> FindById(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Identity.NotFound);
+            return Domain.Errors.Identity.NotFound;
         }
 
-        return Result.Ok(entity.MapToDomain(_timeProvider.GetUtcNow(), new()));
+        return entity.MapToDomain(_timeProvider.GetUtcNow(), new());
     }
 }

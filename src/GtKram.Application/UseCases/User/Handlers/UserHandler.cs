@@ -34,8 +34,11 @@ internal sealed class UserHandler :
     public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken) =>
         await _users.GetAll(cancellationToken);
 
-    public async ValueTask<Result<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken) =>
-        await _users.FindById(query.Id, cancellationToken);
+    public async ValueTask<Result<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken)
+    {
+        var result = await _users.FindById(query.Id, cancellationToken);
+        return result.IsError ? Result.Fail(result.FirstError.Code, "error") : result.Value;
+    }
 
     public async ValueTask<Result<Guid>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
     {
@@ -46,9 +49,9 @@ internal sealed class UserHandler :
         }
         
         var idResult = await _users.Create(command.Name, command.Email, command.Roles, cancellationToken);
-        if (idResult.IsFailed)
+        if (idResult.IsError)
         {
-            return idResult;
+            return Result.Fail(idResult.FirstError.Code, "error");
         }
 
         var result = await _mediator.Send(new SendConfirmRegistrationCommand(idResult.Value, command.CallbackUrl), cancellationToken);
@@ -57,9 +60,12 @@ internal sealed class UserHandler :
             return result;
         }
 
-        return idResult;
+        return idResult.Value;
     }
 
-    public async ValueTask<Result> Handle(UpdateUserCommand command, CancellationToken cancellationToken) =>
-        await _users.Update(command.Id, command.Name, command.Roles, cancellationToken);
+    public async ValueTask<Result> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _users.Update(command.Id, command.Name, command.Roles, cancellationToken);
+        return result.IsError ? Result.Fail(result.FirstError.Code, "error") : Result.Ok();
+    }
 }
