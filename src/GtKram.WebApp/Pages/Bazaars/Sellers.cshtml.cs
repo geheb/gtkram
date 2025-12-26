@@ -53,10 +53,10 @@ public class SellersModel : PageModel
         Event = converter.Format(@event.Value);
         Items = await _mediator.Send(new GetSellerRegistrationWithArticleCountQuery(eventId), cancellationToken);
 
-        AcceptedCount = Items.Count(r => r.Registration.Accepted == true);
-        CancelledCount = Items.Count(r => r.Registration.Accepted == false);
-        UnconfirmedCount = Items.Count(r => r.Registration.Accepted is null);
-        AcceptedWithoutArticleCount = Items.Count(r => r.Registration.Accepted == true && r.ArticleCount == 0);
+        AcceptedCount = Items.Count(r => r.Registration.IsAccepted == true);
+        CancelledCount = Items.Count(r => r.Registration.IsAccepted == false);
+        UnconfirmedCount = Items.Count(r => r.Registration.IsAccepted is null);
+        AcceptedWithoutArticleCount = Items.Count(r => r.Registration.IsAccepted == true && r.ArticleCount == 0);
         ArticleCount = Items.Sum(r => r.ArticleCount);
     }
 

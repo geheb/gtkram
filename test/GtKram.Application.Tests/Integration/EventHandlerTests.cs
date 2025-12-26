@@ -1,5 +1,5 @@
+using FluentMigrator.Runner;
 using GtKram.Application.UseCases.Bazaar.Commands;
-using GtKram.Application.UseCases.Bazaar.Handlers;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Repositories;
@@ -24,28 +24,32 @@ public sealed class EventHandlerTests
     }
 
     [TestInitialize]
-    public void Init()
+    public async Task Init()
     {
         _mockTimeProvider = Substitute.For<TimeProvider>();
         _mockTimeProvider.GetUtcNow().Returns(_ => DateTimeOffset.UtcNow);
 
         _fixture.Services.AddSingleton(_mockTimeProvider);
-        _fixture.Services.AddScoped<IEventRepository, EventRepository>();
-        _fixture.Services.AddScoped<ISellerRegistrationRepository, SellerRegistrationRepository>();
+        _fixture.Services.AddScoped<IEvents, Events>();
+        _fixture.Services.AddScoped<ISellerRegistrations, SellerRegistrations>();
 
         _serviceProvider = _fixture.Build();
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+        runner.MigrateUp();
     }
 
     [TestCleanup]
-    public void Cleanup()
+    public async Task Cleanup()
     {
-        _fixture.Dispose();
+        await _fixture.DisposeAsync();
     }
 
     [TestMethod]
     public async Task CreateEventCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var result = await sut.Send(new CreateEventCommand(TestData.CreateEvent(_mockTimeProvider.GetUtcNow())), _cancellationToken);
@@ -56,9 +60,9 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task DeleteEventCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var repo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var repo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
         var result = await sut.Send(new DeleteEventCommand(id), _cancellationToken);
@@ -69,9 +73,9 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task UpdateEventCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var repo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var repo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
         var model = await repo.Find(id, _cancellationToken);
         model.Value.Description = "foo";
@@ -86,9 +90,9 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task FindEventQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var repo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var repo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
         var result = await sut.Send(new FindEventQuery(id), _cancellationToken);
@@ -100,9 +104,9 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task FindEventForRegisterQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var repo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var repo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id = (await repo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
         var result = await sut.Send(new FindEventForRegistrationQuery(id), _cancellationToken);
@@ -115,10 +119,10 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task Registrations_FindEventForRegisterQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var regRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var regRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
+        var eventRepo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
         await regRepo.Create(new() { EventId = id, Email = "user@foo", Name = "foo", Phone = "12345" }, _cancellationToken);
         await regRepo.Create(new() { EventId = id, Email = "user@bar", Name = "bar", Phone = "12345" }, _cancellationToken);
@@ -133,10 +137,10 @@ public sealed class EventHandlerTests
     [TestMethod]
     public async Task GetEventsWithRegistrationCountQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var regRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var regRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
+        var eventRepo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var id1 = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
         await regRepo.Create(new() { EventId = id1, Email = "user@foo", Name = "foo", Phone = "12345" }, _cancellationToken);
         await regRepo.Create(new() { EventId = id1, Email = "user@bar", Name = "bar", Phone = "12345" }, _cancellationToken);

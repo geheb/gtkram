@@ -4,11 +4,11 @@ public sealed class Seller
 {
     public Guid Id { get; set; }
 
-    public Guid UserId { get; set; }
-
     public DateTimeOffset Created { get; set; }
 
     public Guid EventId { get; set; }
+
+    public Guid IdentityId { get; set; }
 
     public int SellerNumber { get; set; }
 

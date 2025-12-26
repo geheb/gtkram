@@ -1,11 +1,12 @@
+using FluentMigrator.Runner;
+using FluentMigrator.Runner.VersionTableInfo;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Database;
-using GtKram.Infrastructure.Database.Entities;
+using GtKram.Infrastructure.Database.Repositories;
+using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Repositories;
-using GtKram.Infrastructure.User;
 using GtKram.Infrastructure.Worker;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -14,12 +15,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Data.SQLite;
 
 namespace GtKram.Infrastructure;
 
 public static class ServiceExtensions
 {
-    public static void AddInfrastructure(this IServiceCollection services, IConfiguration config)
+    public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
@@ -27,36 +29,41 @@ public static class ServiceExtensions
 
         services.AddHostedService<HostedWorker>();
 
-        services.Configure<SmtpConnectionOptions>(config.GetSection("Smtp"));
+        services.Configure<SmtpConnectionOptions>(configuration.GetSection("Smtp"));
         services.AddSingleton<IEmailValidatorService, EmailValidatorService>();
-        services.AddScoped<EmailQueueRepository>();
         services.AddScoped<SmtpDispatcher>();
         services.AddScoped<IUserAuthenticator, UserAuthenticator>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IEventRepository, EventRepository>();
-        services.AddScoped<ISellerRegistrationRepository, SellerRegistrationRepository>();
-        services.AddScoped<ICheckoutRepository, CheckoutRepository>();
-        services.AddScoped<IArticleRepository, ArticleRepository>();
-        services.AddScoped<ISellerRepository, SellerRepository>();
-
-        services.AddScoped<Migration>();
     }
 
-    public static void AddPersistence(this IServiceCollection services, IConfiguration config)
+    public static void AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddScoped<MySqlBootstrapper>();
-        services.AddScoped<MySqlDbContext>();
+        configuration.InitSQLiteContext();
 
-        services.AddScoped<IRepository<EmailQueue>, Repository<EmailQueue>>();
-        services.AddScoped<IRepository<Identity>, Repository<Identity>>();
-        services.AddScoped<IRepository<Event>, Repository<Event>>();
-        services.AddScoped<IRepository<SellerRegistration>, Repository<SellerRegistration>>();
-        services.AddScoped<IRepository<Seller>, Repository<Seller>>();
-        services.AddScoped<IRepository<Article>, Repository<Article>>();
-        services.AddScoped<IRepository<Checkout>, Repository<Checkout>>();
+        services.AddFluentMigratorCore()
+            .ConfigureRunner(rb => rb
+                .AddSQLite()
+                .WithGlobalConnectionString(configuration.GetConnectionString("SQLite"))
+                .WithVersionTable(new Migrations())
+                .ScanIn(typeof(Database.Migrations.Initial).Assembly).For.Migrations());
+
+        services.AddHealthChecks()
+            .AddCheck<MigrationHealthCheck>("migration");
+
+        services.AddScoped<SQLiteDbContext>();
+
+        services.AddSingleton<TableLocker>();
+        services.AddScoped(typeof(Database.Repositories.ISqlRepository<>), typeof(Database.Repositories.SqlRepository<>));
+        services.AddScoped<EmailQueues>();
+        services.AddScoped<IUsers, Users>();
+        services.AddScoped<IEvents, Events>();
+        services.AddScoped<ISellerRegistrations, SellerRegistrations>();
+        services.AddScoped<ISellers, Sellers>();
+        services.AddScoped<IArticles, Articles>();
+        services.AddScoped<ICheckouts, Checkouts>();
 
         services.AddScoped<DbContextInitializer>();
+        services.AddScoped<MysqlMigration>();
     }
 
     public static void AddAuth(this IServiceCollection services, IConfiguration config, string policyName)
@@ -65,17 +72,17 @@ public static class ServiceExtensions
         services.AddScoped<IdentityErrorDescriber, GermanyIdentityErrorDescriber>();
 
         var builder = services
-            .AddIdentityCore<Identity>(o =>
+            .AddIdentityCore<Database.Models.Identity>(o =>
             {
                 o.SignIn.RequireConfirmedEmail = true;
                 o.Tokens.EmailConfirmationTokenProvider = ConfirmEmailDataProtectionTokenProviderOptions.ProviderName;
             })
             .AddDefaultTokenProviders()
-            .AddTokenProvider<ConfirmEmailDataProtectorTokenProvider<Identity>>(ConfirmEmailDataProtectionTokenProviderOptions.ProviderName);
+            .AddTokenProvider<ConfirmEmailDataProtectorTokenProvider<Database.Models.Identity>>(ConfirmEmailDataProtectionTokenProviderOptions.ProviderName);
 
-        builder.AddUserStore<IdentityUserStore>();
-        builder.AddSignInManager<SignInManager<Identity>>();
-        builder.Services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<Identity>>();
+        builder.AddUserStore<Database.Repositories.IdentityUserStore>();
+        builder.AddSignInManager<SignInManager<Database.Models.Identity>>();
+        builder.Services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<Database.Models.Identity>>();
 
         services.AddDataProtection()
             .AddCertificate(config);
@@ -166,5 +173,27 @@ public static class ServiceExtensions
     {
         services.Configure<SmtpConnectionOptions>(config.GetSection("Smtp"));
         services.AddScoped<SmtpDispatcher>();
+    }
+
+    private static void InitSQLiteContext(this IConfiguration configuration)
+    {
+        var connectionStringBuilder = new SQLiteConnectionStringBuilder(configuration.GetConnectionString("SQLite"));
+        var file = new FileInfo(connectionStringBuilder.DataSource);
+        if (file.Directory?.Exists == false)
+        {
+            file.Directory.Create();
+        }
+    }
+
+    private sealed class Migrations : IVersionTableMetaData
+    {
+        public string SchemaName => string.Empty;
+        public string TableName => "migrations";
+        public string ColumnName => "Version";
+        public string UniqueIndexName => "IX_migrations_Version";
+        public string AppliedOnColumnName => "AppliedOn";
+        public string DescriptionColumnName => "Description";
+        public bool OwnsSchema => true;
+        public bool CreateWithPrimaryKey => false;
     }
 }

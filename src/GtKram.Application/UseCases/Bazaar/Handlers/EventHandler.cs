@@ -15,29 +15,29 @@ internal sealed class EventHandler :
     ICommandHandler<UpdateEventCommand, Result>,
     ICommandHandler<DeleteEventCommand, Result>
 {
-    private readonly IEventRepository _eventRepository;
-    private readonly ISellerRegistrationRepository _sellerRegistrationRepository;
+    private readonly IEvents _events;
+    private readonly ISellerRegistrations _sellerRegistrations;
 
     public EventHandler(
-        IEventRepository eventRepository,
-        ISellerRegistrationRepository sellerRegistrationRepository)
+        IEvents events,
+        ISellerRegistrations sellerRegistrations)
     {
-        _eventRepository = eventRepository;
-        _sellerRegistrationRepository = sellerRegistrationRepository;
+        _events = events;
+        _sellerRegistrations = sellerRegistrations;
     }
 
     public async ValueTask<Result<Domain.Models.Event>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
-        await _eventRepository.Find(query.EventId, cancellationToken);
+        await _events.Find(query.EventId, cancellationToken);
 
     public async ValueTask<Result<EventWithRegistrationCount>> Handle(FindEventForRegistrationQuery query, CancellationToken cancellationToken)
     {
-        var @event = await _eventRepository.Find(query.EventId, cancellationToken);
+        var @event = await _events.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return @event.ToResult();
         }
 
-        var count = await _sellerRegistrationRepository.GetCountByEventId(query.EventId, cancellationToken);
+        var count = await _sellerRegistrations.GetCountByEventId(query.EventId, cancellationToken);
         if (count.IsFailed)
         {
             return count.ToResult();
@@ -48,13 +48,13 @@ internal sealed class EventHandler :
 
     public async ValueTask<EventWithRegistrationCount[]> Handle(GetEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)
     {
-        var events = await _eventRepository.GetAll(cancellationToken);
+        var events = await _events.GetAll(cancellationToken);
         if (events.Length == 0)
         {
             return [];
         }
 
-        var registrations = await _sellerRegistrationRepository.GetAll(cancellationToken);
+        var registrations = await _sellerRegistrations.GetAll(cancellationToken);
 
         var countByBazaarEventId = registrations
             .GroupBy(r => r.EventId)
@@ -72,7 +72,7 @@ internal sealed class EventHandler :
         var result = Validate(command.Event);
 
         return result.IsSuccess
-            ? await _eventRepository.Create(command.Event, cancellationToken)
+            ? await _events.Create(command.Event, cancellationToken)
             : result;
     }
 
@@ -81,18 +81,18 @@ internal sealed class EventHandler :
         var result = Validate(command.Event);
 
         return result.IsSuccess
-            ? await _eventRepository.Update(command.Event, cancellationToken)
+            ? await _events.Update(command.Event, cancellationToken)
             : result;
     }
 
     public async ValueTask<Result> Handle(DeleteEventCommand command, CancellationToken cancellationToken)
     {
-        var registrations = await _sellerRegistrationRepository.GetByEventId(command.EventId, cancellationToken);
+        var registrations = await _sellerRegistrations.GetByEventId(command.EventId, cancellationToken);
         if (registrations.Length > 0)
         {
             return Result.Fail(Domain.Errors.Event.ValidationDeleteNotPossibleDueToRegistrations);
         }
-        return await _eventRepository.Delete(command.EventId, cancellationToken);
+        return await _events.Delete(command.EventId, cancellationToken);
     }
 
     private static Result Validate(Domain.Models.Event model)

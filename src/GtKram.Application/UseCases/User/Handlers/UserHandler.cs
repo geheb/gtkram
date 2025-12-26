@@ -16,26 +16,26 @@ internal sealed class UserHandler :
 {
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
-    private readonly IUserRepository _repository;
+    private readonly IUsers _users;
     private readonly IEmailValidatorService _emailValidatorService;
 
     public UserHandler(
         IdentityErrorDescriber errorDescriber,
         IMediator mediator,
-        IUserRepository repository, 
+        IUsers users, 
         IEmailValidatorService emailValidatorService)
     {
         _errorDescriber = errorDescriber;
         _mediator = mediator;
-        _repository = repository;
+        _users = users;
         _emailValidatorService = emailValidatorService;
     }
 
     public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken) =>
-        await _repository.GetAll(cancellationToken);
+        await _users.GetAll(cancellationToken);
 
     public async ValueTask<Result<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken) =>
-        await _repository.FindById(query.Id, cancellationToken);
+        await _users.FindById(query.Id, cancellationToken);
 
     public async ValueTask<Result<Guid>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ internal sealed class UserHandler :
             return Result.Fail(error.Code, error.Description);
         }
         
-        var idResult = await _repository.Create(command.Name, command.Email, command.Roles, cancellationToken);
+        var idResult = await _users.Create(command.Name, command.Email, command.Roles, cancellationToken);
         if (idResult.IsFailed)
         {
             return idResult;
@@ -61,5 +61,5 @@ internal sealed class UserHandler :
     }
 
     public async ValueTask<Result> Handle(UpdateUserCommand command, CancellationToken cancellationToken) =>
-        await _repository.Update(command.Id, command.Name, command.Roles, cancellationToken);
+        await _users.Update(command.Id, command.Name, command.Roles, cancellationToken);
 }

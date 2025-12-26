@@ -9,6 +9,9 @@ public static class Internal
     public static Error InvalidRequest { get; } =
         new($"{_prefix}.invalid.request", "Ungültige Anfrage.");
 
+    public static Error ConflictData { get; } =
+        new($"{_prefix}.conflict.data", "Es gibt einen Datenkonflikt. Die Daten haben sich zwischenzeitlich geändert.");
+
     public static Error InvalidData { get; } =
         new($"{_prefix}.invalid.data", "Ungültige Datenkonsistenz festgestellt.");
 

@@ -14,25 +14,25 @@ internal sealed class EmailHandler :
     ICommandHandler<SendResetPasswordCommand, Result>
 {
     private readonly IdentityErrorDescriber _errorDescriber;
-    private readonly IUserRepository _userRepository;
+    private readonly IUsers _users;
     private readonly IUserAuthenticator _userAuthenticator;
     private readonly IEmailService _emailService;
 
     public EmailHandler(
         IdentityErrorDescriber errorDescriber,
-        IUserRepository userRepository,
+        IUsers users,
         IUserAuthenticator userAuthenticator,
         IEmailService emailService)
     {
         _errorDescriber = errorDescriber;
-        _userRepository = userRepository;
+        _users = users;
         _userAuthenticator = userAuthenticator;
         _emailService = emailService;
     }
 
     public async ValueTask<Result> Handle(SendConfirmRegistrationCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.FindById(command.Id, cancellationToken);
+        var resultUser = await _users.FindById(command.Id, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();
@@ -62,13 +62,13 @@ internal sealed class EmailHandler :
 
     public async ValueTask<Result> Handle(SendChangeEmailCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.FindById(command.Id, cancellationToken);
+        var resultUser = await _users.FindById(command.Id, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();
         }
 
-        if ((await _userRepository.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
+        if ((await _users.FindByEmail(command.NewEmail, cancellationToken)).IsSuccess)
         {
             var error = _errorDescriber.DuplicateEmail(command.NewEmail);
             return Result.Fail(error.Code, error.Description);
@@ -106,7 +106,7 @@ internal sealed class EmailHandler :
 
     public async ValueTask<Result> Handle(SendResetPasswordCommand command, CancellationToken cancellationToken)
     {
-        var resultUser = await _userRepository.FindByEmail(command.Email, cancellationToken);
+        var resultUser = await _users.FindByEmail(command.Email, cancellationToken);
         if (resultUser.IsFailed)
         {
             return resultUser.ToResult();

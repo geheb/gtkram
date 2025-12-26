@@ -1,43 +1,63 @@
+using FluentMigrator.Runner;
+using GtKram.Infrastructure.Database;
+using GtKram.Infrastructure.Database.Repositories;
 using GtKram.Infrastructure.Email;
-using GtKram.Infrastructure.Database.Entities;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Data.SQLite;
 
 namespace GtKram.Application.Tests;
 
-public sealed class ServiceFixture : IDisposable
+public sealed class ServiceFixture : IAsyncDisposable
 {
     private readonly ServiceCollection _services = new();
     private ServiceProvider? _serviceProvider;
+    private readonly string _databaseFile;
 
     public IServiceCollection Services => _services;
 
     public ServiceFixture()
     {
-        var prefix = Guid.NewGuid().ToString();
+        var connectionStringBuilder = new SQLiteConnectionStringBuilder();
+        _databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".sqlite");
+        connectionStringBuilder.DataSource = _databaseFile;
+        connectionStringBuilder.ForeignKeys = true;
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "ConnectionStrings:SQLite", connectionStringBuilder.ToString() }
+            })
+            .Build();
+
+        _services.AddSingleton<IConfiguration>(configuration);
+        _services.AddScoped<SQLiteDbContext>();
+        _services.AddSingleton<TableLocker>();
+
+        _services.AddFluentMigratorCore()
+            .ConfigureRunner(rb => rb
+                .AddSQLite()
+                .WithGlobalConnectionString(connectionStringBuilder.ToString())
+                .ScanIn(typeof(Infrastructure.Database.Migrations.Initial).Assembly).For.Migrations());
+
         _services.AddSingleton(TimeProvider.System);
-        _services.AddScoped<IRepository<Identity>>(s => new RepositoryMock<Identity>(prefix));
-        _services.AddScoped<IRepository<EmailQueue>>(s => new RepositoryMock<EmailQueue>(prefix));
-        _services.AddScoped<IRepository<Event>>(s => new RepositoryMock<Event>(prefix));
-        _services.AddScoped<IRepository<SellerRegistration>>(s => new RepositoryMock<SellerRegistration>(prefix));
-        _services.AddScoped<IRepository<Seller>>(s => new RepositoryMock<Seller>(prefix));
-        _services.AddScoped<IRepository<Article>>(s => new RepositoryMock<Article>(prefix));
-        _services.AddScoped<IRepository<Checkout>>(s => new RepositoryMock<Checkout>(prefix));
+        _services.AddScoped(typeof(ISqlRepository<>), typeof(SqlRepository<>));
 
         _services.AddDataProtection();
 
         _services.AddScoped<ILookupNormalizer, NoneLookupNormalizer>();
 
         var builder = _services
-            .AddIdentityCore<Identity>()
+            .AddIdentityCore<Infrastructure.Database.Models.Identity>()
             .AddDefaultTokenProviders()
-            .AddTokenProvider<ConfirmEmailDataProtectorTokenProvider<Identity>>(ConfirmEmailDataProtectionTokenProviderOptions.ProviderName);
+            .AddTokenProvider<ConfirmEmailDataProtectorTokenProvider<Infrastructure.Database.Models.Identity>>(ConfirmEmailDataProtectionTokenProviderOptions.ProviderName);
 
         builder.AddUserStore<IdentityUserStore>();
-        builder.AddSignInManager<SignInManager<Identity>>();
-        builder.Services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<Identity>>();
+        builder.AddSignInManager<SignInManager<Infrastructure.Database.Models.Identity>>();
+        builder.Services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<Infrastructure.Database.Models.Identity>>();
 
         _services.AddMediatorHandler();
     }
@@ -48,5 +68,11 @@ public sealed class ServiceFixture : IDisposable
         return _serviceProvider;
     }
 
-    public void Dispose() => _serviceProvider?.Dispose();
+    public async ValueTask DisposeAsync()
+    {
+        if (_serviceProvider is not null)
+        {
+            await _serviceProvider.DisposeAsync();
+        }
+    }
 }

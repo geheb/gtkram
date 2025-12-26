@@ -1,3 +1,4 @@
+using FluentMigrator.Runner;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Repositories;
@@ -19,25 +20,29 @@ public class UserTests
     }
 
     [TestInitialize]
-    public void Init()
+    public async Task Init()
     {
-        _fixture.Services.AddScoped<IUserRepository, UserRepository>();
+        _fixture.Services.AddScoped<IUsers, Users>();
         _serviceProvider = _fixture.Build();
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+        runner.MigrateUp();
     }
 
     [TestCleanup]
-    public void Cleanup()
+    public async Task Cleanup()
     {
-        _fixture.Dispose();
+        await _fixture.DisposeAsync();
     }
 
     [TestMethod]
     public async Task Create_User_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
-        var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<IUsers>();
 
-        var result = await userRepo.Create("foo", "foo@bar", [UserRoleType.Manager], _cancellationToken);
+        var result = await users.Create("foo", "foo@bar", [UserRoleType.Manager], _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
     }
 }

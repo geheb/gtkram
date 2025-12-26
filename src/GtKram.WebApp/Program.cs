@@ -18,7 +18,6 @@ void ConfigureApp(WebApplicationBuilder builder)
     var services = builder.Services;
     var configuration = builder.Configuration;
 
-    services.AddHealthChecks();
     services.AddSerilog();
     services.AddPersistence(configuration);
     services.AddAuth(configuration, Policies.TwoFactorAuth);

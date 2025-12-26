@@ -1,3 +1,4 @@
+using FluentMigrator.Runner;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.Bazaar.Commands;
@@ -45,41 +46,43 @@ public sealed class SellerHandlerTests
         var mockEmailValidatorService = Substitute.For<IEmailValidatorService>();
         mockEmailValidatorService.Validate(Arg.Any<string>(), _cancellationToken).Returns(true);
         _fixture.Services.AddScoped(_ => mockEmailValidatorService);
-        _fixture.Services.AddScoped<EmailQueueRepository>();
-
-        _fixture.Services.AddScoped<IUserRepository, UserRepository>();
-
-        _fixture.Services.AddScoped<IEventRepository, EventRepository>();
-        _fixture.Services.AddScoped<ISellerRegistrationRepository, SellerRegistrationRepository>();
         _fixture.Services.AddScoped<IEmailService, EmailService>();
-        _fixture.Services.AddScoped<ISellerRepository, SellerRepository>();
-        _fixture.Services.AddScoped<IArticleRepository, ArticleRepository>();
-        _fixture.Services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+
+        _fixture.Services.AddScoped<EmailQueues>();
+        _fixture.Services.AddScoped<IUsers, Users>();
+        _fixture.Services.AddScoped<IEvents, Events>();
+        _fixture.Services.AddScoped<ISellerRegistrations, SellerRegistrations>();
+        _fixture.Services.AddScoped<ISellers, Sellers>();
+        _fixture.Services.AddScoped<IArticles, Articles>();
+        _fixture.Services.AddScoped<ICheckouts, Checkouts>();
 
         _serviceProvider = _fixture.Build();
 
         await using var scope = _serviceProvider.CreateAsyncScope();
-        var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Database.Entities.Identity>>();
-        var result = await userRepo.Create("foo", _mockUserEmail, [UserRoleType.Manager], _cancellationToken);
+        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+        runner.MigrateUp();
+
+        var users = scope.ServiceProvider.GetRequiredService<IUsers>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Database.Models.Identity>>();
+        var result = await users.Create("foo", _mockUserEmail, [UserRoleType.Manager], _cancellationToken);
         var identity = await userManager.FindByEmailAsync(_mockUserEmail);
-        identity!.IsEmailConfirmed = true;
+        identity!.Json.IsEmailConfirmed = true;
         await userManager.UpdateAsync(identity);
     }
 
     [TestCleanup]
-    public void Cleanup()
+    public async Task Cleanup()
     {
-        _fixture.Dispose();
+        await _fixture.DisposeAsync();
     }
 
     [TestMethod]
     public async Task CreateSellerRegistrationCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(context.EventId, _mockUserEmail, _cancellationToken);
 
         sellerReg.IsSuccess.ShouldBeTrue();
@@ -90,7 +93,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task SameUserTwoTimes_CreateSellerRegistrationCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -101,7 +104,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task LimitExceeded_CreateSellerRegistrationCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -121,7 +124,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EventExpired_CreateSellerRegistrationCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
@@ -136,7 +139,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task AcceptSellerRegistrationCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -149,7 +152,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task DeleteSellerRegistrationCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -162,7 +165,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task DeleteSellerRegistrationCommand_AfterAccept_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -178,7 +181,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task DenySellerRegistrationCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndRegistration(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -191,11 +194,11 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task FindSellerEventByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var query = new FindSellerEventByUserQuery { UserId = context.Seller.UserId, SellerId = context.Seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -204,12 +207,12 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EventExpired_FindSellerEventByUserQuery_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(3));
-        var query = new FindSellerEventByUserQuery { UserId = context.Seller.UserId, SellerId = context.Seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -219,12 +222,12 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EditExpired_FindSellerEventByUserQuery_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddHours(2));
-        var query = new FindSellerEventByUserQuery { UserId = context.Seller.UserId, SellerId = context.Seller.Id };
+        var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -234,7 +237,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task OtherUser_FindSellerEventByUserQuery_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
@@ -248,11 +251,11 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task CreateSellerArticleByUserCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new CreateArticleByUserCommand(context.Seller.UserId, context.Seller.Id, "foo", "bar", 1);
+        var command = new CreateArticleByUserCommand(context.Seller.IdentityId, context.Seller.Id, "foo", "bar", 1);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -261,12 +264,12 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task MaxExceeded_CreateSellerArticleByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller); 
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new CreateArticleByUserCommand(context.Seller.UserId, context.Seller.Id, "foo", "bar", 1);
+        var command = new CreateArticleByUserCommand(context.Seller.IdentityId, context.Seller.Id, "foo", "bar", 1);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -276,11 +279,11 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task CreateSellerArticleByUserCommand_ValidateArticles_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
 
         articles.Select(a => a.LabelNumber).Distinct().Count().ShouldBe(3);
@@ -290,13 +293,13 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task DeleteSellerArticleByUserCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var command = new DeleteArticleByUserCommand(context.Seller.UserId, articles[0].Id);
+        var command = new DeleteArticleByUserCommand(context.Seller.IdentityId, articles[0].Id);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
 
@@ -306,15 +309,15 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EditExpired_DeleteSellerArticleByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(1));
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var command = new DeleteArticleByUserCommand(context.Seller.UserId, articles[0].Id);
+        var command = new DeleteArticleByUserCommand(context.Seller.IdentityId, articles[0].Id);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -324,13 +327,13 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task UpdateSellerArticleByUserCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var command = new UpdateArticleByUserCommand(context.Seller.UserId, articles[0].Id, "bar", "baz", 10);
+        var command = new UpdateArticleByUserCommand(context.Seller.IdentityId, articles[0].Id, "bar", "baz", 10);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
 
@@ -343,15 +346,15 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EditExpired_UpdateSellerArticleByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddDays(1));
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var command = new UpdateArticleByUserCommand(context.Seller.UserId, articles[0].Id, "bar", "baz", 10);
+        var command = new UpdateArticleByUserCommand(context.Seller.IdentityId, articles[0].Id, "bar", "baz", 10);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -361,14 +364,14 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task FindSellerArticleByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var query = new FindArticleByUserQuery(context.Seller.UserId, articles[0].Id);
+        var query = new FindArticleByUserQuery(context.Seller.IdentityId, articles[0].Id);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -379,13 +382,13 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EmptyArticles_FindSellerWithEventAndArticlesByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.UserId, context.Seller.Id);
+        var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -397,14 +400,14 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task FindSellerWithEventAndArticlesByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
-        var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.UserId, context.Seller.Id);
+        var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -416,11 +419,11 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EmptyArticles_GetEventsWithSellerAndArticleCountByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var query = new GetEventsWithSellerAndArticleCountByUserQuery(context.Seller.UserId);
+        var query = new GetEventsWithSellerAndArticleCountByUserQuery(context.Seller.IdentityId);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.Length.ShouldBe(1);
@@ -432,12 +435,12 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task GetEventsWithSellerAndArticleCountByUserQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var query = new GetEventsWithSellerAndArticleCountByUserQuery(context.Seller.UserId);
+        var query = new GetEventsWithSellerAndArticleCountByUserQuery(context.Seller.IdentityId);
         var result = await sut.Handle(query, _cancellationToken);
 
         result.Length.ShouldBe(1);
@@ -449,7 +452,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task FindSellerWithRegistrationAndArticlesQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
@@ -466,7 +469,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task GetSellerRegistrationWithArticleCountQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
@@ -482,10 +485,10 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task FindRegistrationWithSellerQuery_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindBySellerId(context.Seller.Id, _cancellationToken);
         sellerReg.IsSuccess.ShouldBeTrue();
 
@@ -500,14 +503,14 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task TakeOverSellerArticlesByUserCommand_IsSuccess()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
         context = await CreateEventAndSeller(scope);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.UserId, context.Seller.Id);
+        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -516,14 +519,14 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task MaxExceeded_TakeOverSellerArticlesByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
         context = await CreateEventAndSeller(scope);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.UserId, context.Seller.Id);
+        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
         result.IsSuccess.ShouldBeTrue();
 
@@ -535,13 +538,13 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task EmptyArticles_TakeOverSellerArticlesByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
 
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
         context = await CreateEventAndSeller(scope);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.UserId, context.Seller.Id);
+        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -551,7 +554,7 @@ public sealed class SellerHandlerTests
     [TestMethod]
     public async Task SoldArticles_TakeOverSellerArticlesByUserCommand_IsFailed()
     {
-        using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
         await CanCreateCheckout(scope, context);
@@ -560,7 +563,7 @@ public sealed class SellerHandlerTests
         _mockTimeProvider.GetUtcNow().Returns(DateTimeOffset.UtcNow.AddYears(1));
         context = await CreateEventAndSeller(scope);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.UserId, context.Seller.Id);
+        var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
         result.IsFailed.ShouldBeTrue();
@@ -580,21 +583,21 @@ public sealed class SellerHandlerTests
     private async Task<Guid> CreateCompletedCheckout(IServiceScope scope, Domain.Models.Seller seller)
     {
         var sut = scope.ServiceProvider.GetRequiredService<CheckoutHandler>();
-        var checkoutCommand = new CreateCheckoutByUserCommand(seller.UserId, seller.EventId);
+        var checkoutCommand = new CreateCheckoutByUserCommand(seller.IdentityId, seller.EventId);
         var checkoutResult = await sut.Handle(checkoutCommand, _cancellationToken);
         checkoutResult.IsSuccess.ShouldBeTrue();
 
-        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticleRepository>();
+        var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(seller.Id, _cancellationToken);
 
         foreach (var article in articles)
         {
-            var command = new CreateCheckoutArticleByUserCommand(seller.UserId, checkoutResult.Value, article.Id);
+            var command = new CreateCheckoutArticleByUserCommand(seller.IdentityId, checkoutResult.Value, article.Id);
             var result = await sut.Handle(command, _cancellationToken);
             result.IsSuccess.ShouldBeTrue();
         }
 
-        var completeCommand = new CompleteCheckoutByUserCommand(seller.UserId, checkoutResult.Value);
+        var completeCommand = new CompleteCheckoutByUserCommand(seller.IdentityId, checkoutResult.Value);
         var completeResult = await sut.Handle(completeCommand, _cancellationToken);
         completeResult.IsSuccess.ShouldBeTrue();
 
@@ -603,14 +606,14 @@ public sealed class SellerHandlerTests
 
     private async Task<Domain.Models.SellerRegistration> CreateEventAndRegistration(IServiceScope scope)
     {
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var eventRepo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var reg = new Domain.Models.SellerRegistration { EventId = eventId, Name = "foo", Phone = "12345", Email = _mockUserEmail, ClothingType = [0,1], PreferredType = SellerRegistrationPreferredType.Kita };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
         sellerReg.IsSuccess.ShouldBeTrue();
 
@@ -619,14 +622,14 @@ public sealed class SellerHandlerTests
 
     private async Task<(Domain.Models.Seller Seller, Domain.Models.SellerRegistration Registration)> CreateEventAndSeller(IServiceScope scope)
     {
-        var eventRepo = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var eventRepo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var reg = new Domain.Models.SellerRegistration { EventId = eventId, Name = "foo", Phone = "12345", Email = _mockUserEmail };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
-        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrationRepository>();
+        var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
         sellerReg.IsSuccess.ShouldBeTrue();
 
@@ -637,7 +640,7 @@ public sealed class SellerHandlerTests
         sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
         sellerReg.IsSuccess.ShouldBeTrue();
 
-        var sellerRepo = scope.ServiceProvider.GetRequiredService<ISellerRepository>();
+        var sellerRepo = scope.ServiceProvider.GetRequiredService<ISellers>();
         var seller = await sellerRepo.Find(sellerReg.Value.SellerId!.Value, _cancellationToken);
         seller.IsSuccess.ShouldBeTrue();
 ;
@@ -654,7 +657,7 @@ public sealed class SellerHandlerTests
 
         foreach (var i in Enumerable.Range(1, 3))
         {
-            var c = new CreateArticleByUserCommand(seller.UserId, seller.Id, "foo", "bar", i);
+            var c = new CreateArticleByUserCommand(seller.IdentityId, seller.Id, "foo", "bar", i);
             var r = await sut.Handle(c, _cancellationToken);
             r.IsSuccess.ShouldBeTrue();
         }

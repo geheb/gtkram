@@ -1,9 +1,11 @@
-using GtKram.Infrastructure.Email;
+using FluentMigrator.Runner;
 using GtKram.Infrastructure.Database;
+using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Net.Mail;
 
 namespace GtKram.Infrastructure.Worker;
@@ -23,7 +25,7 @@ internal sealed class HostedWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await HandleRequiredTables(stoppingToken);
+        await HandleMigration(stoppingToken);
         await HandleSuperUser();
 
         while (!stoppingToken.IsCancellationRequested)
@@ -34,13 +36,13 @@ internal sealed class HostedWorker : BackgroundService
         }
     }
 
-    public async Task HandleRequiredTables(CancellationToken cancellationToken)
+    private async Task HandleMigration(CancellationToken cancellationToken)
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
-        var bootstrapper = scope.ServiceProvider.GetRequiredService<MySqlBootstrapper>();
-        await bootstrapper.Bootstrap(cancellationToken);
+        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+        runner.MigrateUp();
 
-        var migration = scope.ServiceProvider.GetRequiredService<Migration>();
+        var migration = scope.ServiceProvider.GetRequiredService<MysqlMigration>();
         await migration.Migrate(cancellationToken);
     }
 
@@ -55,24 +57,24 @@ internal sealed class HostedWorker : BackgroundService
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
-        var emailQueueRepository = scope.ServiceProvider.GetRequiredService<EmailQueueRepository>();
+        var emailQueueRepository = scope.ServiceProvider.GetRequiredService<EmailQueues>();
         var smtpDispatcher = scope.ServiceProvider.GetRequiredService<SmtpDispatcher>();
 
-        var emailEntities = await emailQueueRepository.GetBySentIsNull(cancellationToken);
+        var models = await emailQueueRepository.GetNotSent(30, cancellationToken);
 
-        foreach (var entity in emailEntities)
+        foreach (var model in models)
         {
             try
             {
                 Attachment? attachment = null;
-                if (entity.AttachmentBlob?.Length > 0)
+                if (model.AttachmentBlob?.Length > 0)
                 {
-                    attachment = new(new MemoryStream(entity.AttachmentBlob), entity.AttachmentName, entity.AttachmentMimeType);
+                    attachment = new(new MemoryStream(model.AttachmentBlob), model.AttachmentName, model.AttachmentMimeType);
                 }
 
-                await smtpDispatcher.Send(entity.Recipient!, entity.Subject!, entity.Body!, attachment);
+                await smtpDispatcher.Send(model.Recipient, model.Subject, model.Body, attachment);
 
-                var result = await emailQueueRepository.UpdateSent(entity.Id, cancellationToken);
+                var result = await emailQueueRepository.UpdateSent(model.Id, cancellationToken);
                 if (result.IsFailed)
                 {
                     _logger.LogError(string.Join(", ", result.Errors.Select(e => e.Message)));
@@ -80,7 +82,7 @@ internal sealed class HostedWorker : BackgroundService
             }
             catch (SmtpException ex)
             {
-                _logger.LogError(ex, "Sending email {Id} failed.", entity.Id);
+                _logger.LogError(ex, "Sending email {Id} failed.", model.Id);
             }
         }
     }

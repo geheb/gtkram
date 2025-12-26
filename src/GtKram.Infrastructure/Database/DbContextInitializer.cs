@@ -1,13 +1,12 @@
 namespace GtKram.Infrastructure.Database;
 
 using GtKram.Application.UseCases.User.Models;
-using GtKram.Infrastructure.Database.Entities;
+using GtKram.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 
 internal sealed class DbContextInitializer
 {
-    private readonly PkGenerator _pkGenerator = new();
     private readonly IConfiguration _configuration;
     private readonly UserManager<Identity> _userManager;
 
@@ -37,14 +36,15 @@ internal sealed class DbContextInitializer
 
         var superUserName = _configuration["Bootstrap:SuperUser:Name"];
 
-        var id = _pkGenerator.Generate();
         superUser = new Identity
         {
-            Id = id,
-            Email = superUserEmail,
-            UserName = id.ToString().Replace("-", string.Empty),
-            Name = superUserName!,
-            IsEmailConfirmed = true,
+            Json = new()
+            {
+                Email = superUserEmail,
+                UserName = Guid.NewGuid().ToString("N"),
+                Name = superUserName!,
+                IsEmailConfirmed = true
+            }
         };
 
         const string passKey = "Bootstrap:SuperUser:Password";

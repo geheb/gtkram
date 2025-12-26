@@ -29,40 +29,40 @@ internal sealed class CheckoutHandler :
     ICommandHandler<CreateCheckoutArticleManuallyByUserCommand, Result>
 {
     private readonly TimeProvider _timeProvider;
-    private readonly IUserRepository _userRepository;
-    private readonly IEventRepository _eventRepository;
-    private readonly ISellerRepository _sellerRepository;
-    private readonly ICheckoutRepository _checkoutRepository;
-    private readonly ISellerRegistrationRepository _sellerRegistrationRepository;
-    private readonly IArticleRepository _sellerArticleRepository;
+    private readonly IUsers _users;
+    private readonly IEvents _events;
+    private readonly ISellers _sellers;
+    private readonly ICheckouts _checkouts;
+    private readonly ISellerRegistrations _sellerRegistrations;
+    private readonly IArticles _articles;
 
     public CheckoutHandler(
         TimeProvider timeProvider,
-        IUserRepository userRepository,
-        IEventRepository eventRepository,
-        ISellerRepository sellerRepository,
-        ICheckoutRepository checkoutRepository,
-        ISellerRegistrationRepository sellerRegistrationRepository,
-        IArticleRepository sellerArticleRepository)
+        IUsers users,
+        IEvents events,
+        ISellers sellers,
+        ICheckouts checkouts,
+        ISellerRegistrations sellerRegistrations,
+        IArticles articles)
     {
         _timeProvider = timeProvider;
-        _userRepository = userRepository;
-        _eventRepository = eventRepository;
-        _sellerRepository = sellerRepository;
-        _checkoutRepository = checkoutRepository;
-        _sellerRegistrationRepository = sellerRegistrationRepository;
-        _sellerArticleRepository = sellerArticleRepository;
+        _users = users;
+        _events = events;
+        _sellers = sellers;
+        _checkouts = checkouts;
+        _sellerRegistrations = sellerRegistrations;
+        _articles = articles;
     }
 
     public async ValueTask<Result<CheckoutWithTotalsAndEvent>> Handle(GetCheckoutWithTotalsAndEventQuery query, CancellationToken cancellationToken)
     {
-        var @event = await _eventRepository.Find(query.EventId, cancellationToken);
+        var @event = await _events.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return @event.ToResult();
         }
 
-        var checkouts = await _checkoutRepository.GetByEventId(query.EventId, cancellationToken);
+        var checkouts = await _checkouts.GetByEventId(query.EventId, cancellationToken);
         if (checkouts.Length == 0)
         {
             return Result.Ok(new CheckoutWithTotalsAndEvent([], @event.Value));
@@ -73,14 +73,14 @@ internal sealed class CheckoutHandler :
             var ids = checkouts.SelectMany(c => c.ArticleIds).ToArray();
             if (ids.Length > 0)
             {
-                var articles = await _sellerArticleRepository.GetById(ids, cancellationToken);
+                var articles = await _articles.GetById(ids, cancellationToken);
                 articlesById = articles.ToDictionary(a => a.Id);
             }
         }
 
         Dictionary<Guid, string> usersNameById;
         {
-            var users = await _userRepository.GetAll(cancellationToken);
+            var users = await _users.GetAll(cancellationToken);
             usersNameById = users.ToDictionary(u => u.Id, u => u.Name);
         }
 
@@ -91,7 +91,7 @@ internal sealed class CheckoutHandler :
             var total = checkout.ArticleIds.Sum(id => articlesById[id].Price);
             var articleCount = checkout.ArticleIds.Count;
 
-            result.Add(new(checkout, usersNameById[checkout.UserId], articleCount, total));
+            result.Add(new(checkout, usersNameById[checkout.IdentityId], articleCount, total));
         }
 
         return Result.Ok(new CheckoutWithTotalsAndEvent([.. result.OrderByDescending(r => r.Checkout.Created)], @event.Value));
@@ -99,7 +99,7 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<EventWithCheckoutTotals[]> Handle(GetEventWithCheckoutTotalsQuery query, CancellationToken cancellationToken)
     {
-        var events = await _eventRepository.GetAll(cancellationToken);
+        var events = await _events.GetAll(cancellationToken);
         if (events.Length == 0)
         {
             return [];
@@ -107,8 +107,8 @@ internal sealed class CheckoutHandler :
 
         Dictionary<Guid, Domain.Models.Seller[]> sellersByEventId;
         {
-            var sellers = await _sellerRepository.GetAll(cancellationToken);
-            var registrations = await _sellerRegistrationRepository.GetAllByAccepted(cancellationToken);
+            var sellers = await _sellers.GetAll(cancellationToken);
+            var registrations = await _sellerRegistrations.GetAllByAccepted(cancellationToken);
             var registrationsAcceptedBySellerId = new HashSet<Guid>(registrations.Select(r => r.SellerId!.Value));
             sellersByEventId = sellers
                 .Where(s => registrationsAcceptedBySellerId.Contains(s.Id))
@@ -118,13 +118,13 @@ internal sealed class CheckoutHandler :
 
         Dictionary<Guid, Domain.Models.Checkout[]> checkoutsByEventId;
         {
-            var checkouts = await _checkoutRepository.GetAll(cancellationToken);
+            var checkouts = await _checkouts.GetAll(cancellationToken);
             checkoutsByEventId = checkouts.GroupBy(b => b.EventId).ToDictionary(b => b.Key, b => b.ToArray());
         }
 
         Dictionary<Guid, Article> articlesById;
         {
-            var articles = await _sellerArticleRepository.GetAll(cancellationToken);
+            var articles = await _articles.GetAll(cancellationToken);
             articlesById = articles.ToDictionary(a => a.Id);
         }
 
@@ -152,13 +152,13 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<Result<ArticlesWithCheckoutAndEvent>> Handle(GetArticlesWithCheckoutAndEventQuery query, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(query.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(query.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout.ToResult();
         }
 
-        var @event = await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        var @event = await _events.Find(checkout.Value.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -169,7 +169,7 @@ internal sealed class CheckoutHandler :
             return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, []));
         }
 
-        var articles = await _sellerArticleRepository.GetById([.. checkout.Value.ArticleIds], cancellationToken);
+        var articles = await _articles.GetById([.. checkout.Value.ArticleIds], cancellationToken);
         if (articles.Length == 0)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -178,7 +178,7 @@ internal sealed class CheckoutHandler :
         Dictionary<Guid, Domain.Models.Seller> sellersById;
         {
             var ids = articles.Select(s => s.SellerId).Distinct().ToArray();
-            var sellers = await _sellerRepository.GetById(ids, cancellationToken);
+            var sellers = await _sellers.GetById(ids, cancellationToken);
             sellersById = sellers.ToDictionary(s => s.Id);
         }
 
@@ -196,7 +196,7 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<Result> Handle(DeleteCheckoutArticleCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
@@ -208,12 +208,12 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Internal.InvalidData);
         }
 
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken);
+        return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(DeleteCheckoutArticleByUserCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
@@ -223,11 +223,11 @@ internal sealed class CheckoutHandler :
         {
             return Result.Fail(Domain.Errors.Checkout.StatusCompleted);
         }
-        if (checkout.Value.UserId != command.UserId)
+        if (checkout.Value.IdentityId != command.UserId)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidRequest);
         }
-        var @event = await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        var @event = await _events.Find(checkout.Value.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -244,17 +244,17 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Internal.InvalidData);
         }
 
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken);
+        return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(CancelCheckoutCommand command, CancellationToken cancellationToken)
     {
-        return await _checkoutRepository.Delete(command.CheckoutId, cancellationToken);
+        return await _checkouts.Delete(command.CheckoutId, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(CancelCheckoutByUserCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
@@ -265,12 +265,12 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.StatusCompleted);
         }
 
-        if (checkout.Value.UserId != command.UserId)
+        if (checkout.Value.IdentityId != command.UserId)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidRequest);
         }
 
-        var @event = await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        var @event = await _events.Find(checkout.Value.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -281,12 +281,12 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Event.Expired);
         }
 
-        return await _checkoutRepository.Delete(command.CheckoutId, cancellationToken);
+        return await _checkouts.Delete(command.CheckoutId, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(CompleteCheckoutCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
@@ -303,12 +303,12 @@ internal sealed class CheckoutHandler :
         }
 
         checkout.Value.Status = CheckoutStatus.Completed;
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken); 
+        return await _checkouts.Update(checkout.Value, cancellationToken); 
     }
 
     public async ValueTask<Result> Handle(CompleteCheckoutByUserCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
@@ -319,7 +319,7 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.StatusCompleted);
         }
 
-        if (checkout.Value.UserId != command.UserId)
+        if (checkout.Value.IdentityId != command.UserId)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidRequest);
         }
@@ -330,12 +330,12 @@ internal sealed class CheckoutHandler :
         }
 
         checkout.Value.Status = CheckoutStatus.Completed;
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken);
+        return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
     public async ValueTask<Result<CheckoutTotal>> Handle(FindCheckoutTotalQuery query, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(query.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(query.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout.ToResult();
@@ -346,7 +346,7 @@ internal sealed class CheckoutHandler :
             return Result.Ok(new CheckoutTotal(0, 0));
         }
 
-        var articles = await _sellerArticleRepository.GetById([.. checkout.Value.ArticleIds], cancellationToken);
+        var articles = await _articles.GetById([.. checkout.Value.ArticleIds], cancellationToken);
         if (articles.Length == 0)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -357,7 +357,7 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<EventWithCheckoutCount[]> Handle(GetEventWithCheckoutCountByUserQuery query, CancellationToken cancellationToken)
     {
-        var sellers = await _sellerRepository.GetByUserId(query.UserId, cancellationToken);
+        var sellers = await _sellers.GetByIdentityId(query.UserId, cancellationToken);
         sellers = sellers.Where(s => s.CanCheckout).ToArray();
         if (sellers.Length == 0)
         {
@@ -366,8 +366,8 @@ internal sealed class CheckoutHandler :
 
         var ids = sellers.Select(s => s.Id).ToArray();
         {
-            var registrations = await _sellerRegistrationRepository.GetBySellerId(ids, cancellationToken);
-            var registrationsBySellerId = new HashSet<Guid>(registrations.Where(r => r.Accepted == true).Select(r => r.SellerId!.Value));
+            var registrations = await _sellerRegistrations.GetBySellerId(ids, cancellationToken);
+            var registrationsBySellerId = new HashSet<Guid>(registrations.Where(r => r.IsAccepted == true).Select(r => r.SellerId!.Value));
             sellers = sellers.Where(s => registrationsBySellerId.Contains(s.Id)).ToArray();
         }
 
@@ -377,11 +377,11 @@ internal sealed class CheckoutHandler :
         }
 
         ids = sellers.Select(s => s.EventId).ToArray();
-        var events = await _eventRepository.GetById(ids, cancellationToken);
+        var events = await _events.GetById(ids, cancellationToken);
 
         Dictionary<Guid, int> checkoutsByEventId;
         {
-            var userCheckouts = await _checkoutRepository.GetByUserId(query.UserId, cancellationToken);
+            var userCheckouts = await _checkouts.GetByIdentityId(query.UserId, cancellationToken);
             checkoutsByEventId = userCheckouts.GroupBy(a => a.EventId).ToDictionary(a => a.Key, a => a.Count());
         }
 
@@ -400,19 +400,19 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<Result<CheckoutWithTotalsAndEvent>> Handle(GetCheckoutWithTotalsAndEventByUserQuery query, CancellationToken cancellationToken)
     {
-        var @event = await _eventRepository.Find(query.EventId, cancellationToken);
+        var @event = await _events.Find(query.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return @event.ToResult();
         }
 
-        var checkouts = await _checkoutRepository.GetByEventIdAndUserId(query.EventId, query.UserId, cancellationToken);
+        var checkouts = await _checkouts.GetByEventIdAndUserId(query.EventId, query.UserId, cancellationToken);
         if (checkouts.Length == 0)
         {
             return Result.Ok(new CheckoutWithTotalsAndEvent([], @event.Value));
         }
 
-        var user = await _userRepository.FindById(query.UserId, cancellationToken);
+        var user = await _users.FindById(query.UserId, cancellationToken);
         if (user.IsFailed)
         {
             return user.ToResult();
@@ -422,7 +422,7 @@ internal sealed class CheckoutHandler :
         if (checkouts.Any(c => c.ArticleIds.Count > 0))
         {
             var ids = checkouts.SelectMany(c => c.ArticleIds).ToArray();
-            var articles = await _sellerArticleRepository.GetById(ids, cancellationToken);
+            var articles = await _articles.GetById(ids, cancellationToken);
             articlesById = articles.ToDictionary(a => a.Id);
         }
 
@@ -445,13 +445,13 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<Result<Guid>> Handle(CreateCheckoutByUserCommand command, CancellationToken cancellationToken)
     {
-        var seller = await _sellerRepository.GetByUserIdAndEventId(command.UserId, command.EventId, cancellationToken);
+        var seller = await _sellers.FindByIdentityIdAndEventId(command.UserId, command.EventId, cancellationToken);
         if (seller.IsFailed)
         {
             return seller.ToResult();
         }
 
-        var user = await _userRepository.FindById(command.UserId, cancellationToken);
+        var user = await _users.FindById(command.UserId, cancellationToken);
         if (user.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -465,7 +465,7 @@ internal sealed class CheckoutHandler :
                 return Result.Fail(Domain.Errors.Seller.CheckoutNotAllowed);
             }
 
-            var @event = await _eventRepository.Find(command.EventId, cancellationToken);
+            var @event = await _events.Find(command.EventId, cancellationToken);
             if (@event.IsFailed)
             {
                 return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -478,23 +478,23 @@ internal sealed class CheckoutHandler :
             }
         }
 
-        return await _checkoutRepository.Create(command.EventId, command.UserId, cancellationToken);
+        return await _checkouts.Create(command.EventId, command.UserId, cancellationToken);
     }
 
     public async ValueTask<Result<ArticlesWithCheckoutAndEvent>> Handle(GetArticlesWithCheckoutAndEventByUserQuery query, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(query.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(query.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout.ToResult();
         }
 
-        if (checkout.Value.UserId != query.UserId)
+        if (checkout.Value.IdentityId != query.UserId)
         {
             return Result.Fail(Domain.Errors.Checkout.NotFound);
         }
 
-        var @event = await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        var @event = await _events.Find(checkout.Value.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -505,7 +505,7 @@ internal sealed class CheckoutHandler :
             return Result.Ok(new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, []));
         }
 
-        var articles = await _sellerArticleRepository.GetById([.. checkout.Value.ArticleIds], cancellationToken);
+        var articles = await _articles.GetById([.. checkout.Value.ArticleIds], cancellationToken);
         if (articles.Length == 0)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -514,7 +514,7 @@ internal sealed class CheckoutHandler :
         Dictionary<Guid, Domain.Models.Seller> sellersById;
         {
             var ids = articles.Select(s => s.SellerId).Distinct().ToArray();
-            var sellers = await _sellerRepository.GetById(ids, cancellationToken);
+            var sellers = await _sellers.GetById(ids, cancellationToken);
             sellersById = sellers.ToDictionary(s => s.Id);
         }
 
@@ -533,13 +533,13 @@ internal sealed class CheckoutHandler :
 
     public async ValueTask<Result> Handle(CreateCheckoutArticleByUserCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout.ToResult();
         }
 
-        if (checkout.Value.UserId != command.UserId)
+        if (checkout.Value.IdentityId != command.UserId)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidRequest);
         }
@@ -549,13 +549,13 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.StatusCompleted);
         }
 
-        var article = await _sellerArticleRepository.Find(command.SellerArticleId, cancellationToken);
+        var article = await _articles.Find(command.SellerArticleId, cancellationToken);
         if (article.IsFailed)
         {
             return article.ToResult();
         }
 
-        var seller = await _sellerRepository.Find(article.Value.SellerId, cancellationToken);
+        var seller = await _sellers.Find(article.Value.SellerId, cancellationToken);
         if (seller.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -566,7 +566,7 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.NotFound);
         }
 
-        var checkouts = await _checkoutRepository.GetByEventId(@checkout.Value.EventId, cancellationToken);
+        var checkouts = await _checkouts.GetByEventId(@checkout.Value.EventId, cancellationToken);
         var articleIds = checkouts.SelectMany(c => c.ArticleIds).ToHashSet();
         if (articleIds.Contains(article.Value.Id))
         {
@@ -575,29 +575,29 @@ internal sealed class CheckoutHandler :
 
         checkout.Value.ArticleIds.Add(command.SellerArticleId);
 
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken);
+        return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
     public async ValueTask<Result<Domain.Models.Event>> Handle(FindEventByCheckoutQuery query, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(query.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(query.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout.ToResult();
         }
 
-        return await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        return await _events.Find(checkout.Value.EventId, cancellationToken);
     }
 
     public async ValueTask<Result> Handle(CreateCheckoutArticleManuallyByUserCommand command, CancellationToken cancellationToken)
     {
-        var checkout = await _checkoutRepository.Find(command.CheckoutId, cancellationToken);
+        var checkout = await _checkouts.Find(command.CheckoutId, cancellationToken);
         if (checkout.IsFailed)
         {
             return checkout;
         }
 
-        if (checkout.Value.UserId != command.UserId)
+        if (checkout.Value.IdentityId != command.UserId)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidRequest);
         }
@@ -607,7 +607,7 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Checkout.StatusCompleted);
         }
 
-        var @event = await _eventRepository.Find(checkout.Value.EventId, cancellationToken);
+        var @event = await _events.Find(checkout.Value.EventId, cancellationToken);
         if (@event.IsFailed)
         {
             return Result.Fail(Domain.Errors.Internal.InvalidData);
@@ -619,19 +619,19 @@ internal sealed class CheckoutHandler :
             return Result.Fail(Domain.Errors.Event.Expired);
         }
 
-        var seller = await _sellerRepository.FindByEventIdAndSellerNumber(checkout.Value.EventId, command.SellerNumber, cancellationToken);
+        var seller = await _sellers.FindByEventIdAndSellerNumber(checkout.Value.EventId, command.SellerNumber, cancellationToken);
         if (seller.IsFailed)
         {
             return seller;
         }
 
-        var article = await _sellerArticleRepository.FindBySellerIdAndLabelNumber(seller.Value.Id, command.LabelNumber, cancellationToken);
+        var article = await _articles.FindBySellerIdAndLabelNumber(seller.Value.Id, command.LabelNumber, cancellationToken);
         if (article.IsFailed)
         {
             return article;
         }
     
-        var checkouts = await _checkoutRepository.GetByEventId(@event.Value.Id, cancellationToken);
+        var checkouts = await _checkouts.GetByEventId(@event.Value.Id, cancellationToken);
         var articleIds = checkouts.SelectMany(c => c.ArticleIds).ToHashSet();
         if (articleIds.Contains(article.Value.Id))
         {
@@ -640,6 +640,6 @@ internal sealed class CheckoutHandler :
 
         checkout.Value.ArticleIds.Add(article.Value.Id);
 
-        return await _checkoutRepository.Update(checkout.Value, cancellationToken);
+        return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 }

@@ -14,7 +14,7 @@ public sealed class SellerRegistration
 
     public int[]? ClothingType { get; set; }
 
-    public bool? Accepted { get; set; }
+    public bool? IsAccepted { get; set; }
 
     public SellerRegistrationPreferredType PreferredType { get; set; }
 

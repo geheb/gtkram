@@ -10,7 +10,7 @@ public sealed class Checkout
 
     public Guid EventId { get; set; }
 
-    public Guid UserId { get; set; }
+    public Guid IdentityId { get; set; }
 
     public bool IsCompleted => Status == CheckoutStatus.Completed;
 
