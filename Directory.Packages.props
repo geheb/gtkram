@@ -1,5 +1,8 @@
 <Project>
   <ItemGroup>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.MailPit" Version="13.0.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Sqlite" Version="13.0.0" />
     <PackageVersion Include="Dapper" Version="2.1.66" />
     <PackageVersion Include="DnsClient" Version="1.8.0" />
     <PackageVersion Include="ErrorOr" Version="2.0.1" />
@@ -13,7 +16,6 @@
     <PackageVersion Include="MSTest" Version="4.0.2" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.0.2" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.0.2" />
-    <PackageVersion Include="MySqlConnector" Version="2.5.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="Scriban" Version="6.5.2" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />

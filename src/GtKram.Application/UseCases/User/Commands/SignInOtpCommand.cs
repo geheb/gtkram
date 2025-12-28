@@ -1,6 +1,6 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public record struct SignInOtpCommand(string Code, bool IsRememberClient) : ICommand<Result>;
+public record struct SignInOtpCommand(string Code, bool IsRememberClient) : ICommand<ErrorOr<Success>>;

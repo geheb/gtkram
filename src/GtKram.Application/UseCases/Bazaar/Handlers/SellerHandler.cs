@@ -1,3 +1,4 @@
+using ErrorOr;
 using GtKram.Application.Converter;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.Bazaar.Commands;
@@ -5,7 +6,7 @@ using GtKram.Application.UseCases.Bazaar.Extensions;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Commands;
-using GtKram.Domain.Base;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
 using Mediator;
@@ -14,22 +15,22 @@ using Microsoft.AspNetCore.Identity;
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class SellerHandler :
-    IQueryHandler<FindRegistrationWithSellerQuery, Result<SellerRegistrationWithSeller>>,
+    IQueryHandler<FindRegistrationWithSellerQuery, ErrorOr<SellerRegistrationWithSeller>>,
     IQueryHandler<GetSellerRegistrationWithArticleCountQuery, SellerRegistrationWithArticleCount[]>,
-    IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, Result<SellerWithRegistrationAndArticles>>,
+    IQueryHandler<FindSellerWithRegistrationAndArticlesQuery, ErrorOr<SellerWithRegistrationAndArticles>>,
     IQueryHandler<GetEventsWithSellerAndArticleCountByUserQuery, EventWithSellerAndArticleCount[]>,
-    IQueryHandler<FindSellerWithEventAndArticlesByUserQuery, Result<SellerWithEventAndArticles>>,
-    IQueryHandler<FindArticleByUserQuery, Result<ArticleWithEvent>>,
-    IQueryHandler<FindSellerEventByUserQuery, Result<Domain.Models.Event>>,
-    ICommandHandler<CreateSellerRegistrationCommand, Result>,
-    ICommandHandler<UpdateSellerCommand, Result>,
-    ICommandHandler<DeleteSellerRegistrationCommand, Result>,
-    ICommandHandler<AcceptSellerRegistrationCommand, Result>,
-    ICommandHandler<DenySellerRegistrationCommand, Result>,
-    ICommandHandler<TakeOverSellerArticlesByUserCommand, Result>,
-    ICommandHandler<UpdateArticleByUserCommand, Result>,
-    ICommandHandler<DeleteArticleByUserCommand, Result>,
-    ICommandHandler<CreateArticleByUserCommand, Result>
+    IQueryHandler<FindSellerWithEventAndArticlesByUserQuery, ErrorOr<SellerWithEventAndArticles>>,
+    IQueryHandler<FindArticleByUserQuery, ErrorOr<ArticleWithEvent>>,
+    IQueryHandler<FindSellerEventByUserQuery, ErrorOr<Domain.Models.Event>>,
+    ICommandHandler<CreateSellerRegistrationCommand, ErrorOr<Success>>,
+    ICommandHandler<UpdateSellerCommand, ErrorOr<Success>>,
+    ICommandHandler<DeleteSellerRegistrationCommand, ErrorOr<Success>>,
+    ICommandHandler<AcceptSellerRegistrationCommand, ErrorOr<Success>>,
+    ICommandHandler<DenySellerRegistrationCommand, ErrorOr<Success>>,
+    ICommandHandler<TakeOverSellerArticlesByUserCommand, ErrorOr<Success>>,
+    ICommandHandler<UpdateArticleByUserCommand, ErrorOr<Success>>,
+    ICommandHandler<DeleteArticleByUserCommand, ErrorOr<Success>>,
+    ICommandHandler<CreateArticleByUserCommand, ErrorOr<Success>>
 {
     private readonly TimeProvider _timeProvider;
     private readonly IdentityErrorDescriber _errorDescriber;
@@ -69,26 +70,26 @@ internal sealed class SellerHandler :
         _events = events;
     }
 
-    public async ValueTask<Result<SellerRegistrationWithSeller>> Handle(FindRegistrationWithSellerQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<SellerRegistrationWithSeller>> Handle(FindRegistrationWithSellerQuery query, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(query.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         Domain.Models.Seller? seller = null;
         if (registration.Value.SellerId is not null)
         {
             var result = await _sellers.Find(registration.Value.SellerId.Value, cancellationToken);
-            if (result.IsFailed)
+            if (result.IsError)
             {
-                return result.ToResult();
+                return result.Errors;
             }
             seller = result.Value;
         }
 
-        return Result.Ok(new SellerRegistrationWithSeller(registration.Value, seller));
+        return new SellerRegistrationWithSeller(registration.Value, seller);
     }
 
     public async ValueTask<SellerRegistrationWithArticleCount[]> Handle(GetSellerRegistrationWithArticleCountQuery query, CancellationToken cancellationToken)
@@ -120,12 +121,12 @@ internal sealed class SellerHandler :
             .ToArray();
     }
 
-    public async ValueTask<Result> Handle(CreateSellerRegistrationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(CreateSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
         var @event = await _events.Find(command.Registration.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return @event.ToResult();
+            return @event.Errors;
         }
 
         if (command.ShouldValidateEvent)
@@ -133,28 +134,28 @@ internal sealed class SellerHandler :
             var converter = new EventConverter();
             if (converter.IsExpired(@event.Value, _timeProvider))
             {
-                return Result.Fail(Domain.Errors.Event.Expired);
+                return Domain.Errors.Event.Expired;
             }
 
             if (!converter.IsRegisterExpired(@event.Value, _timeProvider))
             {
-                return Result.Fail(Domain.Errors.SellerRegistration.IsExpired);
+                return Domain.Errors.SellerRegistration.IsExpired;
             }
 
             if (@event.Value.HasRegistrationsLocked)
             {
-                return Result.Fail(Domain.Errors.SellerRegistration.IsLocked);
+                return Domain.Errors.SellerRegistration.IsLocked;
             }
 
             var count = await _sellerRegistrations.GetCountByEventId(@event.Value.Id, cancellationToken);
-            if (count.IsFailed)
+            if (count.IsError)
             {
-                return count.ToResult();
+                return count.Errors;
             }
 
             if (count.Value >= @event.Value.MaxSellers)
             {
-                return Result.Fail(Domain.Errors.SellerRegistration.LimitExceeded);
+                return Domain.Errors.SellerRegistration.LimitExceeded;
             }
         }
 
@@ -163,13 +164,12 @@ internal sealed class SellerHandler :
             command.Registration.Email,
             cancellationToken);
 
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
             var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
             if (!isValid)
             {
-                var error = _errorDescriber.InvalidEmail(command.Registration.Email);
-                return Result.Fail(error.Code, error.Description);
+                return _errorDescriber.InvalidEmail(command.Registration.Email).ToError();
             }
 
             return await _sellerRegistrations.Create(command.Registration, cancellationToken);
@@ -185,23 +185,23 @@ internal sealed class SellerHandler :
         }
     }
 
-    public async ValueTask<Result> Handle(UpdateSellerCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(UpdateSellerCommand command, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(command.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         if (registration.Value.SellerId is null)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
         var seller = await _sellers.Find(registration.Value.SellerId!.Value, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
         seller.Value.SellerNumber = command.SellerNumber;
         seller.Value.Role = command.Role;
@@ -209,25 +209,25 @@ internal sealed class SellerHandler :
         seller.Value.CanCheckout = command.CanCheckout;
 
         var result = await _sellers.Update(seller.Value, cancellationToken);
-        if (result.IsFailed || !command.CanCheckout)
+        if (result.IsError || !command.CanCheckout)
         {
             return result;
         }
 
         var resultRole = await _users.AddRole(seller.Value.IdentityId, UserRoleType.Checkout, cancellationToken);
-        return resultRole.IsError ? Result.Fail(resultRole.FirstError.Code, "error") : Result.Ok();
+        return resultRole;
     }
 
-    public async ValueTask<Result> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(command.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         var result = await _sellerRegistrations.Delete(command.SellerRegistrationId, cancellationToken);
-        if (result.IsFailed || registration.Value.SellerId is null)
+        if (result.IsError || registration.Value.SellerId is null)
         {
             return result;
         }
@@ -235,24 +235,24 @@ internal sealed class SellerHandler :
         return await _sellers.Delete(registration.Value.SellerId.Value, cancellationToken);
     }
 
-    public async ValueTask<Result> Handle(AcceptSellerRegistrationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(AcceptSellerRegistrationCommand command, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(command.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         var @event = await _events.Find(registration.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return @event.ToResult();
+            return @event.Errors;
         }
 
         var eventConverter = new EventConverter();
         if (eventConverter.IsExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.Event.Expired);
+            return Domain.Errors.Event.Expired;
         }
 
         if (registration.Value.SellerId is null)
@@ -264,7 +264,7 @@ internal sealed class SellerHandler :
                 var resultUser = await _users.AddRole(user.Value.Id, UserRoleType.Seller, cancellationToken);
                 if (resultUser.IsError)
                 {
-                    return Result.Fail(resultUser.FirstError.Code, "error");
+                    return resultUser.Errors;
                 }
                 userId = user.Value.Id;
             }
@@ -274,9 +274,9 @@ internal sealed class SellerHandler :
                     registration.Value.Name, registration.Value.Email, [UserRoleType.Seller], command.ConfirmUserCallbackUrl),
                     cancellationToken);
 
-                if (userResult.IsFailed)
+                if (userResult.IsError)
                 {
-                    return userResult.ToResult();
+                    return userResult.Errors;
                 }
 
                 userId = userResult.Value;
@@ -291,9 +291,9 @@ internal sealed class SellerHandler :
             };
 
             var sellerResult = await _sellers.Create(seller, cancellationToken);
-            if (sellerResult.IsFailed)
+            if (sellerResult.IsError)
             {
-                return sellerResult.ToResult();
+                return sellerResult.Errors;
             }
 
             registration.Value.SellerId = sellerResult.Value;
@@ -302,7 +302,7 @@ internal sealed class SellerHandler :
         registration.Value.IsAccepted = true;
             
         var regResult = await _sellerRegistrations.Update(registration.Value, cancellationToken);
-        if (regResult.IsFailed)
+        if (regResult.IsError)
         {
             return regResult;
         }
@@ -316,30 +316,30 @@ internal sealed class SellerHandler :
         return result;
     }
 
-    public async ValueTask<Result> Handle(DenySellerRegistrationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(DenySellerRegistrationCommand command, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(command.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         var @event = await _events.Find(registration.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return @event.ToResult();
+            return @event.Errors;
         }
 
         var eventConverter = new EventConverter();
         if (eventConverter.IsExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.Event.Expired);
+            return Domain.Errors.Event.Expired;
         }
 
         registration.Value.IsAccepted = false;
 
         var regResult = await _sellerRegistrations.Update(registration.Value, cancellationToken);
-        if (regResult.IsFailed)
+        if (regResult.IsError)
         {
             return regResult;
         }
@@ -353,29 +353,29 @@ internal sealed class SellerHandler :
         return result;
     }
 
-    public async ValueTask<Result<SellerWithRegistrationAndArticles>> Handle(FindSellerWithRegistrationAndArticlesQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<SellerWithRegistrationAndArticles>> Handle(FindSellerWithRegistrationAndArticlesQuery query, CancellationToken cancellationToken)
     {
         var registration = await _sellerRegistrations.Find(query.SellerRegistrationId, cancellationToken);
-        if (registration.IsFailed)
+        if (registration.IsError)
         {
-            return registration.ToResult();
+            return registration.Errors;
         }
 
         if (registration.Value.SellerId is null)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
         var seller = await _sellers.Find(registration.Value.SellerId.Value, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var articles = await _articles.GetBySellerId(seller.Value.Id, cancellationToken);
         if (articles.Length == 0)
         {
-            return Result.Ok(new SellerWithRegistrationAndArticles(seller.Value, registration.Value, []));
+            return new SellerWithRegistrationAndArticles(seller.Value, registration.Value, []);
         }
 
         Dictionary<Guid, Checkout> checkoutByArticleId = [];
@@ -397,7 +397,7 @@ internal sealed class SellerHandler :
             result.Add(new(article, checkout, seller.Value.SellerNumber));
         }
 
-        return Result.Ok(new SellerWithRegistrationAndArticles(seller.Value, registration.Value, [.. result]));
+        return new SellerWithRegistrationAndArticles(seller.Value, registration.Value, [.. result]);
     }
 
     public async ValueTask<EventWithSellerAndArticleCount[]> Handle(GetEventsWithSellerAndArticleCountByUserQuery query, CancellationToken cancellationToken)
@@ -450,36 +450,36 @@ internal sealed class SellerHandler :
         return result.OrderByDescending(r => r.Event.Start).ToArray();
     }
 
-    public async ValueTask<Result<SellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<SellerWithEventAndArticles>> Handle(FindSellerWithEventAndArticlesByUserQuery query, CancellationToken cancellationToken)
     {
         var seller = await _sellers.Find(query.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != query.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(query.SellerId, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var articles = await _articles.GetBySellerId(query.SellerId, cancellationToken);
         if (articles.Length == 0)
         {
-            return Result.Ok(new SellerWithEventAndArticles(seller.Value, @event.Value, []));
+            return new SellerWithEventAndArticles(seller.Value, @event.Value, []);
         }
 
         Dictionary<Guid, Checkout> checkoutByArticleId = [];
@@ -501,22 +501,22 @@ internal sealed class SellerHandler :
             result.Add(new(article, checkout, seller.Value.SellerNumber));
         }
 
-        return Result.Ok(new SellerWithEventAndArticles(seller.Value, @event.Value, [.. result]));
+        return new SellerWithEventAndArticles(seller.Value, @event.Value, [.. result]);
     }
 
-    public async ValueTask<Result> Handle(TakeOverSellerArticlesByUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(TakeOverSellerArticlesByUserCommand command, CancellationToken cancellationToken)
     {
         var sellers = await _sellers.GetByIdentityId(command.UserId, cancellationToken);
         if (!sellers.Any(s => s.Id == command.SellerId))
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(command.SellerId, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         Article[] articles = [];
@@ -541,7 +541,7 @@ internal sealed class SellerHandler :
 
         if (articles.Length == 0)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.Empty);
+            return Domain.Errors.SellerArticle.Empty;
         }
 
         var currentSeller = sellers.First(s => s.Id == command.SellerId);
@@ -551,7 +551,7 @@ internal sealed class SellerHandler :
         var currentCount = currentArticles.Length;
         if (currentCount >= currentSeller.MaxArticleCount)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.MaxExceeded);
+            return Domain.Errors.SellerArticle.MaxExceeded;
         }
 
         var takeOverArticles = new List<Article>();
@@ -569,91 +569,91 @@ internal sealed class SellerHandler :
 
         if (takeOverArticles.Count == 0)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.Empty);
+            return Domain.Errors.SellerArticle.Empty;
         }
 
         return await _articles.Create(takeOverArticles.ToArray(), command.SellerId, cancellationToken);
     }
 
-    public async ValueTask<Result<ArticleWithEvent>> Handle(FindArticleByUserQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<ArticleWithEvent>> Handle(FindArticleByUserQuery query, CancellationToken cancellationToken)
     {
         var article = await _articles.Find(query.ArticleId, cancellationToken);
-        if (article.IsFailed)
+        if (article.IsError)
         {
-            return article.ToResult();
+            return article.Errors;
         }
 
         var seller = await _sellers.Find(article.Value.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != query.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(article.Value.SellerId, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var hasBooked = await _checkouts.HasArticle(@event.Value.Id, article.Value.Id, cancellationToken);
 
-        return Result.Ok(new ArticleWithEvent(article.Value, @event.Value, hasBooked));
+        return new ArticleWithEvent(article.Value, @event.Value, hasBooked);
     }
 
-    public async ValueTask<Result> Handle(UpdateArticleByUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(UpdateArticleByUserCommand command, CancellationToken cancellationToken)
     {
         var article = await _articles.Find(command.ArticleId, cancellationToken);
-        if (article.IsFailed)
+        if (article.IsError)
         {
-            return article.ToResult();
+            return article.Errors;
         }
 
         var seller = await _sellers.Find(article.Value.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != command.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(article.Value.SellerId, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var converter = new EventConverter();
         if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditExpired);
+            return Domain.Errors.SellerArticle.EditExpired;
         }
 
         var hasBooked = await _checkouts.HasArticle(@event.Value.Id, article.Value.Id, cancellationToken);
         if (hasBooked)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditFailedDueToBooked);
+            return Domain.Errors.SellerArticle.EditFailedDueToBooked;
         }
 
         article.Value.Name = command.Name;
@@ -663,150 +663,150 @@ internal sealed class SellerHandler :
         return await _articles.Update(article.Value, cancellationToken);
     }
 
-    public async ValueTask<Result> Handle(DeleteArticleByUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(DeleteArticleByUserCommand command, CancellationToken cancellationToken)
     {
         var article = await _articles.Find(command.ArticleId, cancellationToken);
-        if (article.IsFailed)
+        if (article.IsError)
         {
-            return article.ToResult();
+            return article.Errors;
         }
 
         var seller = await _sellers.Find(article.Value.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != command.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(article.Value.SellerId, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var converter = new EventConverter();
         if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditExpired);
+            return Domain.Errors.SellerArticle.EditExpired;
         }
 
         var hasBooked = await _checkouts.HasArticle(@event.Value.Id, article.Value.Id, cancellationToken);
         if (hasBooked)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditFailedDueToBooked);
+            return Domain.Errors.SellerArticle.EditFailedDueToBooked;
         }
 
         return await _articles.Delete(command.ArticleId, cancellationToken);
     }
 
-    public async ValueTask<Result<Domain.Models.Event>> Handle(FindSellerEventByUserQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Domain.Models.Event>> Handle(FindSellerEventByUserQuery query, CancellationToken cancellationToken)
     {
         var seller = await _sellers.Find(query.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != query.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(seller.Value.Id, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var converter = new EventConverter();
         if (converter.IsExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.Event.Expired);
+            return Domain.Errors.Event.Expired;
         }
 
         if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditExpired);
+            return Domain.Errors.SellerArticle.EditExpired;
         }
 
         var count = await _articles.GetCountBySellerId(seller.Value.Id, cancellationToken);
-        if (count.IsFailed)
+        if (count.IsError)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.Timeout);
+            return Domain.Errors.SellerArticle.Timeout;
         }
 
         if (count.Value >= seller.Value.MaxArticleCount)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.MaxExceeded);
+            return Domain.Errors.SellerArticle.MaxExceeded;
         }
 
         return @event;
     }
 
-    public async ValueTask<Result> Handle(CreateArticleByUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(CreateArticleByUserCommand command, CancellationToken cancellationToken)
     {
         var seller = await _sellers.Find(command.SellerId, cancellationToken);
-        if (seller.IsFailed)
+        if (seller.IsError)
         {
-            return seller.ToResult();
+            return seller.Errors;
         }
 
         if (seller.Value.IdentityId != command.UserId)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidRequest);
+            return Domain.Errors.Internal.InvalidRequest;
         }
 
         var registration = await _sellerRegistrations.FindBySellerId(seller.Value.Id, cancellationToken);
-        if (registration.IsFailed ||
+        if (registration.IsError ||
             !registration.Value.IsAccepted.GetValueOrDefault())
         {
-            return Result.Fail(Domain.Errors.Seller.Locked);
+            return Domain.Errors.Seller.Locked;
         }
 
         var @event = await _events.Find(seller.Value.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return Result.Fail(Domain.Errors.Internal.InvalidData);
+            return Domain.Errors.Internal.InvalidData;
         }
 
         var converter = new EventConverter();
         if (converter.IsExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.Event.Expired);
+            return Domain.Errors.Event.Expired;
         }
 
         if (converter.IsEditArticlesExpired(@event.Value, _timeProvider))
         {
-            return Result.Fail(Domain.Errors.SellerArticle.EditExpired);
+            return Domain.Errors.SellerArticle.EditExpired;
         }
 
         var count = await _articles.GetCountBySellerId(seller.Value.Id, cancellationToken);
-        if (count.IsFailed)
+        if (count.IsError)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.Timeout);
+            return Domain.Errors.SellerArticle.Timeout;
         }
 
         if (count.Value >= seller.Value.MaxArticleCount)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.MaxExceeded);
+            return Domain.Errors.SellerArticle.MaxExceeded;
         }
 
         var model = new Article

@@ -15,7 +15,6 @@
 		<PackageReference Include="FluentMigrator.Runner.SQLite" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
-		<PackageReference Include="MySqlConnector" />
 		<PackageReference Include="Scriban" />
 		<PackageReference Include="SourceGear.sqlite3" />
 		<PackageReference Include="System.Data.SQLite" />
@@ -29,6 +28,22 @@
 	<ItemGroup>
 		<InternalsVisibleTo Include="GtKram.Application.Tests" />
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="AspNetCore\LocalizedMessages.Designer.cs">
+	    <DependentUpon>LocalizedMessages.resx</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="AspNetCore\LocalizedMessages.resx">
+	    <SubType>Designer</SubType>
+	    <LastGenOutput>LocalizedMessages.Designer.cs</LastGenOutput>
+	    <Generator>ResXFileCodeGenerator</Generator>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 </Project>

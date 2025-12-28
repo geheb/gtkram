@@ -1,7 +1,7 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +11,8 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class PasswordForgottenModel : PageModel
+public sealed class PasswordForgottenModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly IMediator _mediator;
 
     [BindProperty]
@@ -27,10 +26,8 @@ public class PasswordForgottenModel : PageModel
     public bool IsDisabled { get; set; }
 
     public PasswordForgottenModel(
-        ILogger<PasswordForgottenModel> logger,
         IMediator mediator)
     {
-        _logger = logger;
         _mediator = mediator;
     }
 
@@ -39,7 +36,6 @@ public class PasswordForgottenModel : PageModel
         if (!string.IsNullOrEmpty(UserName)) 
         {
             IsDisabled = true;
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }

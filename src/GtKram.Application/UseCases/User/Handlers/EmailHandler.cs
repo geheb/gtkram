@@ -1,17 +1,18 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Repositories;
 using Mediator;
-using System.Web;
 using Microsoft.AspNetCore.Identity;
+using System.Web;
 
 namespace GtKram.Application.UseCases.User.Handlers;
 
 internal sealed class EmailHandler :
-    ICommandHandler<SendConfirmRegistrationCommand, Result>,
-    ICommandHandler<SendChangeEmailCommand, Result>,
-    ICommandHandler<SendResetPasswordCommand, Result>
+    ICommandHandler<SendConfirmRegistrationCommand, ErrorOr<Success>>,
+    ICommandHandler<SendChangeEmailCommand, ErrorOr<Success>>,
+    ICommandHandler<SendResetPasswordCommand, ErrorOr<Success>>
 {
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IUsers _users;
@@ -30,18 +31,18 @@ internal sealed class EmailHandler :
         _emailService = emailService;
     }
 
-    public async ValueTask<Result> Handle(SendConfirmRegistrationCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(SendConfirmRegistrationCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindById(command.Id, cancellationToken);
         if (resultUser.IsError)
         {
-            return Result.Fail(resultUser.FirstError.Code, "error");
+            return resultUser.Errors;
         }
 
         var resultToken = await _userAuthenticator.CreateConfirmRegistrationToken(command.Id, cancellationToken);
-        if (resultToken.IsFailed)
+        if (resultToken.IsError)
         {
-            return resultToken.ToResult();
+            return resultToken.Errors;
         }
 
         var uriBuilder = new UriBuilder(command.CallbackUrl);
@@ -60,30 +61,29 @@ internal sealed class EmailHandler :
         return result;
     }
 
-    public async ValueTask<Result> Handle(SendChangeEmailCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(SendChangeEmailCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindById(command.Id, cancellationToken);
         if (resultUser.IsError)
         {
-            return Result.Fail(resultUser.FirstError.Code, "error");
+            return resultUser.Errors;
         }
 
         if (!(await _users.FindByEmail(command.NewEmail, cancellationToken)).IsError)
         {
-            var error = _errorDescriber.DuplicateEmail(command.NewEmail);
-            return Result.Fail(error.Code, error.Description);
+            return _errorDescriber.DuplicateEmail(command.NewEmail).ToError();
         }
 
         var resultVerify = await _userAuthenticator.VerifyPassword(command.Id, command.Password, cancellationToken);
-        if (resultVerify.IsFailed)
+        if (resultVerify.IsError)
         {
             return resultVerify;
         }
 
         var resultToken = await _userAuthenticator.CreateChangeEmailToken(command.Id, command.NewEmail, cancellationToken);
-        if (resultToken.IsFailed)
+        if (resultToken.IsError)
         {
-            return resultToken.ToResult();
+            return resultToken.Errors;
         }
 
         var uriBuilder = new UriBuilder(command.CallbackUrl);
@@ -104,18 +104,18 @@ internal sealed class EmailHandler :
         return result;
     }
 
-    public async ValueTask<Result> Handle(SendResetPasswordCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(SendResetPasswordCommand command, CancellationToken cancellationToken)
     {
         var resultUser = await _users.FindByEmail(command.Email, cancellationToken);
         if (resultUser.IsError)
         {
-            return Result.Fail(resultUser.FirstError.Code, "error");
+            return resultUser.Errors;
         }
 
         var resultToken = await _userAuthenticator.CreateResetPasswordToken(resultUser.Value.Id, cancellationToken);
-        if (resultToken.IsFailed)
+        if (resultToken.IsError)
         {
-            return resultToken.ToResult();
+            return resultToken.Errors;
         }
 
         var uriBuilder = new UriBuilder(command.CallbackUrl);

@@ -4,7 +4,8 @@ using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Errors;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ namespace GtKram.WebApp.Pages.MyBazaars;
 
 [Node("Artikel", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "seller")]
-public class ArticlesModel : PageModel
+public sealed class ArticlesModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -43,7 +44,7 @@ public class ArticlesModel : PageModel
     public async Task OnGetAsync(Guid sellerId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindSellerWithEventAndArticlesByUserQuery(User.GetId(), sellerId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;
@@ -79,12 +80,12 @@ public class ArticlesModel : PageModel
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteArticleByUserCommand(User.GetId(), id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostTakeOverArticlesAsync(Guid sellerId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new TakeOverSellerArticlesByUserCommand(User.GetId(), sellerId), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 }

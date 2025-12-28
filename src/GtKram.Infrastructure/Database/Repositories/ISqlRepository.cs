@@ -6,7 +6,8 @@ namespace GtKram.Infrastructure.Database.Repositories;
 
 internal interface ISqlRepository<TEntity> where TEntity : class, IEntity
 {
-    Task<ISqlTransaction> CreateTransaction(CancellationToken cancellationToken);
+    DbTransaction? Transaction { set; }
+    Task<DbTransaction> CreateTransaction(CancellationToken cancellationToken);
     Task Insert(TEntity entity, CancellationToken cancellationToken);
     Task<int> Delete(Guid id, CancellationToken cancellationToken);
     Task<TEntity?> SelectOne(Guid id, CancellationToken cancellationToken);

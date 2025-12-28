@@ -1,6 +1,6 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public record struct SignOutCommand(Guid Id) : ICommand<Result>;
+public record struct SignOutCommand(Guid Id) : ICommand<ErrorOr<Success>>;

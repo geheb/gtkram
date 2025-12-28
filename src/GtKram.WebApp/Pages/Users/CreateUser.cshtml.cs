@@ -1,4 +1,5 @@
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace GtKram.WebApp.Pages.Users;
 
 [Node("Benutzer anlegen", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
-public class CreateUserModel : PageModel
+public sealed class CreateUserModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -27,7 +28,7 @@ public class CreateUserModel : PageModel
         var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id = Guid.Empty, token = string.Empty });
 
         var result = await _mediator.Send(Input.ToCommand(callbackUrl!), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

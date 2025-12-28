@@ -1,7 +1,8 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,7 +11,7 @@ namespace GtKram.WebApp.Pages.Checkouts;
 
 [Node("Kassenvorgänge", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "manager,admin")]
-public class CheckoutModel : PageModel
+public sealed class CheckoutModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -30,7 +31,7 @@ public class CheckoutModel : PageModel
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetCheckoutWithTotalsAndEventQuery(eventId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;

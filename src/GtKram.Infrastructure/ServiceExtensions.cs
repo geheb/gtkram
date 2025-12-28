@@ -38,6 +38,9 @@ public static class ServiceExtensions
 
     public static void AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHealthChecks()
+            .AddCheck<MigrationHealthCheck>("migration");
+
         configuration.InitSQLiteContext();
 
         services.AddFluentMigratorCore()
@@ -46,9 +49,6 @@ public static class ServiceExtensions
                 .WithGlobalConnectionString(configuration.GetConnectionString("SQLite"))
                 .WithVersionTable(new Migrations())
                 .ScanIn(typeof(Database.Migrations.Initial).Assembly).For.Migrations());
-
-        services.AddHealthChecks()
-            .AddCheck<MigrationHealthCheck>("migration");
 
         services.AddScoped<SQLiteDbContext>();
 
@@ -63,7 +63,6 @@ public static class ServiceExtensions
         services.AddScoped<ICheckouts, Checkouts>();
 
         services.AddScoped<DbContextInitializer>();
-        services.AddScoped<MysqlMigration>();
     }
 
     public static void AddAuth(this IServiceCollection services, IConfiguration config, string policyName)

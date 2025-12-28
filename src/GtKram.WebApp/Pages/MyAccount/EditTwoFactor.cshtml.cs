@@ -1,21 +1,22 @@
-using GtKram.Domain.Base;
+using ErrorOr;
+using GtKram.Application.Options;
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
-using GtKram.Application.Options;
 
 namespace GtKram.WebApp.Pages.MyAccount;
 
 [Node("2FA bearbeiten", FromPage = typeof(IndexModel))]
 [Authorize]
-public class EditTwoFactorModel : PageModel
+public sealed class EditTwoFactorModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -37,27 +38,27 @@ public class EditTwoFactorModel : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         var result2fa = await _mediator.Send(new GetOtpQuery(User.GetId()), cancellationToken);
-        if (result2fa.IsFailed)
+        if (result2fa.IsError)
         {
             result2fa = await _mediator.Send(new CreateOtpCommand(User.GetId()), cancellationToken);
         }
 
-        if (result2fa.IsSuccess)
+        if (result2fa.IsError)
+        {
+            ModelState.AddError(result2fa.Errors);
+        }
+        else
         {
             IsTwoFactorEnabled = result2fa.Value.IsEnabled;
             SecretKey = result2fa.Value.SecretKey;
             AuthUri = result2fa.Value.AuthUri;
-        }
-        else
-        {
-            ModelState.AddError(result2fa.Errors);
         }
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         var result2fa = await _mediator.Send(new GetOtpQuery(User.GetId()), cancellationToken);
-        if (result2fa.IsFailed)
+        if (result2fa.IsError)
         {
             ModelState.AddError(result2fa.Errors);
             return Page();
@@ -67,7 +68,7 @@ public class EditTwoFactorModel : PageModel
         SecretKey = result2fa.Value.SecretKey;
         AuthUri = result2fa.Value.AuthUri;
 
-        Result result;
+        ErrorOr<Success> result;
         if (IsTwoFactorEnabled)
         {
             result = await _mediator.Send(new DisableOtpCommand(User.GetId(), Code!), cancellationToken);
@@ -77,7 +78,7 @@ public class EditTwoFactorModel : PageModel
             result = await _mediator.Send(new EnableOtpCommand(User.GetId(), Code!), cancellationToken);
         }
 
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

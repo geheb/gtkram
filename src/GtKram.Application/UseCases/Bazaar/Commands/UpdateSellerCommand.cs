@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Domain.Models;
 using Mediator;
 
@@ -8,4 +8,4 @@ public record struct UpdateSellerCommand(
     Guid SellerRegistrationId,
     int SellerNumber,
     SellerRole Role,
-    bool CanCheckout) : ICommand<Result>;
+    bool CanCheckout) : ICommand<ErrorOr<Success>>;

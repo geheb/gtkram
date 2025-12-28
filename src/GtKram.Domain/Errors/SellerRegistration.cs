@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 
 namespace GtKram.Domain.Errors;
 
@@ -7,20 +7,20 @@ public static class SellerRegistration
     private const string _prefix = "seller.registration";
 
     public static Error NotFound { get; } =
-        new($"{_prefix}.not.found", "Die Registrierung wurde nicht gefunden.");
+        Error.NotFound($"{_prefix}.not.found", "Die Registrierung wurde nicht gefunden.");
 
     public static Error SaveFailed { get; } =
-        new($"{_prefix}.save.failed", "Die Registrierung konnte nicht gespeichert werden.");
+        Error.Failure($"{_prefix}.save.failed", "Die Registrierung konnte nicht gespeichert werden.");
 
     public static Error Timeout { get; } =
-        new($"{_prefix}.timeout", "Zeitüberschreitung beim Beareiten der Registrierung. Bitte erneut versuchen.");
+        Error.Failure($"{_prefix}.timeout", "Zeitüberschreitung beim Beareiten der Registrierung. Bitte erneut versuchen.");
 
     public static Error IsLocked { get; } =
-        new ($"{_prefix}.is.locked", "Die Registrierung ist aktuell gesperrt.");
+        Error.Failure($"{_prefix}.is.locked", "Die Registrierung ist aktuell gesperrt.");
 
     public static Error IsExpired { get; } =
-        new($"{_prefix}.is.expired", "Die Registrierung ist bereits abgelaufen.");
+        Error.Failure($"{_prefix}.is.expired", "Die Registrierung ist bereits abgelaufen.");
 
     public static Error LimitExceeded { get; } =
-        new($"{_prefix}.limit.exceeded", "Die maximale Anzahl von Registrierungen wurde erreicht.");
+        Error.Failure($"{_prefix}.limit.exceeded", "Die maximale Anzahl von Registrierungen wurde erreicht.");
 }

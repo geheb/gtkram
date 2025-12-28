@@ -1,12 +1,12 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Domain.Models;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.Bazaars;
 
-public class BazaarEventInput
+public sealed class BazaarEventInput
 {
     [Display(Name = "Name des Kinderbasars", Prompt = "z.b. Mein Kinderkram")]
     [RequiredField]

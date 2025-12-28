@@ -1,7 +1,6 @@
 using GtKram.Application.UseCases.User.Commands;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
-using GtKram.WebApp.I18n;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +10,8 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class IndexModel : PageModel
+public sealed class IndexModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly IMediator _mediator;
 
     [BindProperty]
@@ -32,10 +30,8 @@ public class IndexModel : PageModel
     public bool IsDisabled { get; set; }
 
     public IndexModel(
-        ILogger<IndexModel> logger, 
         IMediator mediator)
     {
-        _logger = logger;
         _mediator = mediator;
     }
 
@@ -56,7 +52,6 @@ public class IndexModel : PageModel
         if (!string.IsNullOrEmpty(UserName))
         {
             IsDisabled = true;
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
@@ -68,16 +63,16 @@ public class IndexModel : PageModel
 
         var result = await _mediator.Send(new SignInCommand(Email!, Password!), cancellationToken);
 
-        if (result.IsSuccess)
+        if (result.IsError)
         {
-            if (result.Value.Requires2FA)
-            {
-                return RedirectToPage("ConfirmCode", new { returnUrl });
-            }
-            return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
+            ModelState.AddError(Domain.Errors.Identity.LoginFailed);
+            return Page();
         }
 
-        ModelState.AddError(Domain.Errors.Identity.LoginFailed);
-        return Page();
+        if (result.Value.Requires2FA)
+        {
+            return RedirectToPage("ConfirmCode", new { returnUrl });
+        }
+        return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
     }
 }

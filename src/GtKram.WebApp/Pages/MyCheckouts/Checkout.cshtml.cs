@@ -3,7 +3,8 @@ using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace GtKram.WebApp.Pages.MyCheckouts;
 
 [Node("Kassenvorgänge", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "checkout")]
-public class CheckoutModel : PageModel
+public sealed class CheckoutModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -35,7 +36,7 @@ public class CheckoutModel : PageModel
     public async Task<IActionResult> OnGetCreateAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CreateCheckoutByUserCommand(User.GetId(), eventId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             await UpdateView(eventId, cancellationToken);
@@ -48,7 +49,7 @@ public class CheckoutModel : PageModel
     private async Task UpdateView(Guid eventId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetCheckoutWithTotalsAndEventByUserQuery(User.GetId(), eventId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;

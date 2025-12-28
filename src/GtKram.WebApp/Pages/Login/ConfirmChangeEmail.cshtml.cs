@@ -1,7 +1,6 @@
 using GtKram.Application.UseCases.User.Commands;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using GtKram.WebApp.Converter;
-using GtKram.WebApp.Extensions;
-using GtKram.WebApp.I18n;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class ConfirmChangeEmailModel : PageModel
+public sealed class ConfirmChangeEmailModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -31,7 +30,7 @@ public class ConfirmChangeEmailModel : PageModel
         ConfirmedEmail = new EmailConverter().Anonymize(email);
 
         var result = await _mediator.Send(new ConfirmChangeEmailCommand(id, email, token), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return;

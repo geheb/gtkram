@@ -2,7 +2,8 @@ using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace GtKram.WebApp.Pages.Checkouts;
 
 [Node("Arikel", FromPage = typeof(CheckoutModel))]
 [Authorize(Roles = "manager,admin")]
-public class ArticlesModel : PageModel
+public sealed class ArticlesModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -33,7 +34,7 @@ public class ArticlesModel : PageModel
     public async Task OnGetAsync(Guid eventId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetArticlesWithCheckoutAndEventQuery(id), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;
@@ -54,7 +55,7 @@ public class ArticlesModel : PageModel
     public async Task<IActionResult> OnPostSumAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindCheckoutTotalQuery(id), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             return new JsonResult(null);
         }
@@ -64,18 +65,18 @@ public class ArticlesModel : PageModel
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, Guid articleId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteCheckoutArticleCommand(id, articleId), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostCancelAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CancelCheckoutCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostCompleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new CompleteCheckoutCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 }

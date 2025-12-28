@@ -1,6 +1,7 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Domain.Models;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace GtKram.WebApp.Pages.Users;
 
 [Node("Benutzer", FromPage = typeof(Pages.IndexModel))]
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
-public class IndexModel : PageModel
+public sealed class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -36,12 +37,12 @@ public class IndexModel : PageModel
     {
         var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id, token = string.Empty });
         var result = await _mediator.Send(new SendConfirmRegistrationCommand(id, callbackUrl!), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostResetTwoFactorAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new ResetOtpCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 }

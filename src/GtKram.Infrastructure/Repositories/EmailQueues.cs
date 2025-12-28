@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
 
@@ -17,7 +17,7 @@ internal sealed class EmailQueues
         _repository = repository;
     }
 
-    public async Task<Result> Create(Domain.Models.EmailQueue model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Create(Domain.Models.EmailQueue model, CancellationToken cancellationToken)
     {
         var entity = new EmailQueue
         {
@@ -32,7 +32,7 @@ internal sealed class EmailQueues
             },
         };
         await _repository.Insert(entity, cancellationToken);
-        return Result.Ok();
+        return Result.Success;
     }
 
     public async Task<Domain.Models.EmailQueue[]> GetNotSent(int count, CancellationToken cancellationToken)
@@ -42,12 +42,12 @@ internal sealed class EmailQueues
         return [.. entities.Select(e => e.MapToDomain())];
     }
 
-    public async Task<Result> UpdateSent(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> UpdateSent(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Internal.EmailNotFound);
+            return Domain.Errors.Internal.EmailNotFound;
         }
 
         entity.Json.Sent = _timeProvider.GetUtcNow();
@@ -56,9 +56,9 @@ internal sealed class EmailQueues
 
         if (!result)
         {
-            return Result.Fail(Domain.Errors.Internal.EmailSaveFailed);
+            return Domain.Errors.Internal.EmailSaveFailed;
         }
 
-        return Result.Ok();
+        return Result.Success;
     }
 }

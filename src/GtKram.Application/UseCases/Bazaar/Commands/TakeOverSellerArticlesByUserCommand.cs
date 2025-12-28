@@ -1,6 +1,6 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public record struct TakeOverSellerArticlesByUserCommand(Guid UserId, Guid SellerId) : ICommand<Result>;
+public record struct TakeOverSellerArticlesByUserCommand(Guid UserId, Guid SellerId) : ICommand<ErrorOr<Success>>;

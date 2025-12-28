@@ -1,5 +1,5 @@
+using ErrorOr;
 using GtKram.Application.Converter;
-using GtKram.Domain.Base;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
@@ -19,14 +19,15 @@ internal sealed class Sellers : ISellers
         _repository = repository;
     }
 
-    public async Task<Result<Guid>> Create(Domain.Models.Seller model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> Create(Domain.Models.Seller model, CancellationToken cancellationToken)
     {
         var entity = model.MapToEntity(new() { Json = new() });
         entity.Json.IdentityId = model.IdentityId;
 
-        if (!await _tableLocker.SellerNumber.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
+        if (locker is null)
         {
-            return Result.Fail(Domain.Errors.Seller.SaveFailed);
+            return Domain.Errors.Seller.SaveFailed;
         }
 
         try
@@ -65,30 +66,30 @@ internal sealed class Sellers : ISellers
                     var result = await _repository.Update(updates, cancellationToken);
                     if (result != updates.Count)
                     {
-                        return Result.Fail(Domain.Errors.Seller.SaveFailed);
+                        return Domain.Errors.Seller.SaveFailed;
                     }
                 }
             }
 
             await _repository.Insert(entity, cancellationToken);
 
-            await trans.Commit(cancellationToken);
+            await trans.CommitAsync(cancellationToken);
 
-            return Result.Ok(entity.Id);
+            return entity.Id;
         }
         finally
         {
-            _tableLocker.SellerNumber.Release();
+            _repository.Transaction = null;
         }
     }
 
-    public async Task<Result<Domain.Models.Seller>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Seller>> Find(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
 
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
         return entity.MapToDomain(new());
@@ -118,32 +119,33 @@ internal sealed class Sellers : ISellers
         return entities.Select(e => e.MapToDomain(dc)).ToArray();
     }
 
-    public async Task<Result<Domain.Models.Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.IdentityId, identityId, cancellationToken);
         entities = [.. entities.Where(e => e.EventId == eventId)];
         if (entities.Length == 0)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
-        return Result.Ok(entities[0].MapToDomain(new()));
+        return entities[0].MapToDomain(new());
     }
 
-    public async Task<Result> Update(Domain.Models.Seller model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Update(Domain.Models.Seller model, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
         model.MapToEntity(entity);
 
-        if (!await _tableLocker.SellerNumber.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        /*using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
+        if (locker is null)
         {
-            return Result.Fail(Domain.Errors.Seller.SaveFailed);
-        }
+            return Domain.Errors.Seller.SaveFailed;
+        }*/
 
         try
         {
@@ -156,10 +158,7 @@ internal sealed class Sellers : ISellers
                 entity
             };
 
-            var max = entities
-                .Where(e => e.Id != model.Id)
-                .DefaultIfEmpty()
-                .Max(e => e?.SellerNumber ?? 0);
+            var max = entities.Max(e => e.Id != model.Id ? e.SellerNumber : 0);
 
             foreach (var e in entities.Where(e => e.Id != entity.Id && e.SellerNumber == entity.SellerNumber))
             {
@@ -172,25 +171,25 @@ internal sealed class Sellers : ISellers
                 var result = await _repository.Update(updates, cancellationToken);
                 if (result != updates.Count)
                 {
-                    return Result.Fail(Domain.Errors.Seller.SaveFailed);
+                    return Domain.Errors.Seller.SaveFailed;
                 }
             }
 
-            await trans.Commit(cancellationToken);
+            await trans.CommitAsync(cancellationToken);
 
-            return Result.Ok();
+            return Result.Success;
         }
         finally
         {
-            _tableLocker.SellerNumber.Release();
+            _repository.Transaction = null;
         }
     }
 
-    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
         var affectedRows = await _repository.Delete(id, cancellationToken);
 
-        return affectedRows > 0 ? Result.Ok() : Result.Fail(Domain.Errors.Seller.SaveFailed);
+        return affectedRows > 0 ? Result.Success : Domain.Errors.Seller.SaveFailed;
     }
 
     public async Task<Domain.Models.Seller[]> GetAll(CancellationToken cancellationToken)
@@ -217,16 +216,16 @@ internal sealed class Sellers : ISellers
         return [.. entities.Select(e => e.MapToDomain(dc))];
     }
 
-    public async Task<Result<Domain.Models.Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.EventId, eventId, cancellationToken);
-        entities = [.. entities.Where(e => e.SellerNumber == sellerNumber)];
+        var entity = entities.FirstOrDefault(e => e.SellerNumber == sellerNumber);
 
-        if (entities.Length == 0)
+        if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Seller.NotFound);
+            return Domain.Errors.Seller.NotFound;
         }
 
-        return Result.Ok(entities[0].MapToDomain(new()));
+        return entity.MapToDomain(new());
     }
 }

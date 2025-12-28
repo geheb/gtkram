@@ -1,5 +1,5 @@
+using ErrorOr;
 using GtKram.Application.Converter;
-using GtKram.Domain.Base;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
@@ -15,7 +15,7 @@ internal sealed class Checkouts : ICheckouts
         _repository = repository;
     }
 
-    public async Task<Result<Guid>> Create(Guid eventId, Guid identityId, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Guid>> Create(Guid eventId, Guid identityId, CancellationToken cancellationToken)
     {
         var entity = new Checkout
         {
@@ -29,22 +29,22 @@ internal sealed class Checkouts : ICheckouts
 
         await _repository.Insert(entity, cancellationToken);
 
-        return Result.Ok(entity.Id);
+        return entity.Id;
     }
 
-    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
         var affectedRows = await _repository.Delete(id, cancellationToken);
 
-        return affectedRows > 0 ? Result.Ok() : Result.Fail(Domain.Errors.Checkout.SaveFailed);
+        return affectedRows > 0 ? Result.Success : Domain.Errors.Checkout.SaveFailed;
     }
 
-    public async Task<Result<Domain.Models.Checkout>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Checkout>> Find(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Checkout.NotFound);
+            return Domain.Errors.Checkout.NotFound;
         }
 
         return entity.MapToDomain(new());
@@ -129,17 +129,17 @@ internal sealed class Checkouts : ICheckouts
         return ids.Contains(articleId);
     }
 
-    public async Task<Result> Update(Domain.Models.Checkout model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Update(Domain.Models.Checkout model, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.Checkout.NotFound);
+            return Domain.Errors.Checkout.NotFound;
         }
 
         model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Ok() : Result.Fail(Domain.Errors.Checkout.SaveFailed);
+        return result ? Result.Success : Domain.Errors.Checkout.SaveFailed;
     }
 }

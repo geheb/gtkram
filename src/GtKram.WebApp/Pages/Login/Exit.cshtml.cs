@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.WebApp.Pages.Login;
 
 [Authorize]
-public class ExitModel : PageModel
+public sealed class ExitModel : PageModel
 {
     private readonly IMediator _mediator;
 

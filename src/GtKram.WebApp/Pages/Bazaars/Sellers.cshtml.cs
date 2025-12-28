@@ -2,7 +2,8 @@ using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace GtKram.WebApp.Pages.Bazaars;
 
 [Node("Registrierungen", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "manager,admin", Policy = Policies.TwoFactorAuth)]
-public class SellersModel : PageModel
+public sealed class SellersModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -38,7 +39,7 @@ public class SellersModel : PageModel
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var @event = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
             ModelState.AddError(@event.Errors);
             return;
@@ -63,19 +64,19 @@ public class SellersModel : PageModel
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteSellerRegistrationCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostAcceptAsync(Guid id, CancellationToken cancellationToken)
     {
         var callbackUrl = Url.PageLink("/Login/ConfirmRegistration", values: new { id = Guid.Empty, token = string.Empty });
         var result = await _mediator.Send(new AcceptSellerRegistrationCommand(id,  callbackUrl!), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 
     public async Task<IActionResult> OnPostDenyAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DenySellerRegistrationCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 }

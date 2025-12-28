@@ -1,19 +1,19 @@
+using ErrorOr;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Domain.Base;
 using GtKram.Domain.Repositories;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Handlers;
 
 internal sealed class EventHandler :
-    IQueryHandler<FindEventQuery, Result<Domain.Models.Event>>,
-    IQueryHandler<FindEventForRegistrationQuery, Result<EventWithRegistrationCount>>,
+    IQueryHandler<FindEventQuery, ErrorOr<Domain.Models.Event>>,
+    IQueryHandler<FindEventForRegistrationQuery, ErrorOr<EventWithRegistrationCount>>,
     IQueryHandler<GetEventsWithRegistrationCountQuery, EventWithRegistrationCount[]>,
-    ICommandHandler<CreateEventCommand, Result>,
-    ICommandHandler<UpdateEventCommand, Result>,
-    ICommandHandler<DeleteEventCommand, Result>
+    ICommandHandler<CreateEventCommand, ErrorOr<Success>>,
+    ICommandHandler<UpdateEventCommand, ErrorOr<Success>>,
+    ICommandHandler<DeleteEventCommand, ErrorOr<Success>>
 {
     private readonly IEvents _events;
     private readonly ISellerRegistrations _sellerRegistrations;
@@ -26,24 +26,24 @@ internal sealed class EventHandler :
         _sellerRegistrations = sellerRegistrations;
     }
 
-    public async ValueTask<Result<Domain.Models.Event>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
+    public async ValueTask<ErrorOr<Domain.Models.Event>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
         await _events.Find(query.EventId, cancellationToken);
 
-    public async ValueTask<Result<EventWithRegistrationCount>> Handle(FindEventForRegistrationQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<EventWithRegistrationCount>> Handle(FindEventForRegistrationQuery query, CancellationToken cancellationToken)
     {
         var @event = await _events.Find(query.EventId, cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
-            return @event.ToResult();
+            return @event.Errors;
         }
 
         var count = await _sellerRegistrations.GetCountByEventId(query.EventId, cancellationToken);
-        if (count.IsFailed)
+        if (count.IsError)
         {
-            return count.ToResult();
+            return count.Errors;
         }
 
-        return Result.Ok(new EventWithRegistrationCount(@event.Value, count.Value));
+        return new EventWithRegistrationCount(@event.Value, count.Value);
     }
 
     public async ValueTask<EventWithRegistrationCount[]> Handle(GetEventsWithRegistrationCountQuery query, CancellationToken cancellationToken)
@@ -67,69 +67,74 @@ internal sealed class EventHandler :
         return results;
     }
 
-    public async ValueTask<Result> Handle(CreateEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(CreateEventCommand command, CancellationToken cancellationToken)
     {
         var result = Validate(command.Event);
 
-        return result.IsSuccess
-            ? await _events.Create(command.Event, cancellationToken)
-            : result;
+        if (result.IsError)
+        {
+            return result;
+        }
+
+        var idResult = await _events.Create(command.Event, cancellationToken);
+
+        return idResult.IsError ? idResult.Errors : Result.Success;
     }
 
-    public async ValueTask<Result> Handle(UpdateEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(UpdateEventCommand command, CancellationToken cancellationToken)
     {
         var result = Validate(command.Event);
 
-        return result.IsSuccess
+        return !result.IsError
             ? await _events.Update(command.Event, cancellationToken)
             : result;
     }
 
-    public async ValueTask<Result> Handle(DeleteEventCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(DeleteEventCommand command, CancellationToken cancellationToken)
     {
         var registrations = await _sellerRegistrations.GetByEventId(command.EventId, cancellationToken);
         if (registrations.Length > 0)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationDeleteNotPossibleDueToRegistrations);
+            return Domain.Errors.Event.ValidationDeleteNotPossibleDueToRegistrations;
         }
         return await _events.Delete(command.EventId, cancellationToken);
     }
 
-    private static Result Validate(Domain.Models.Event model)
+    private static ErrorOr<Success> Validate(Domain.Models.Event model)
     {
         if (model.Start >= model.End)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationDateFailed);
+            return Domain.Errors.Event.ValidationDateFailed;
         }
 
         if (model.RegisterStart >= model.RegisterEnd || 
             model.RegisterStart > model.Start)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationRegisterDateFailed);
+            return Domain.Errors.Event.ValidationRegisterDateFailed;
         }
 
         if (model.EditArticleEnd >= model.Start)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationEditArticleDateBeforeFailed);
+            return Domain.Errors.Event.ValidationEditArticleDateBeforeFailed;
         }
         else if (model.EditArticleEnd <= model.RegisterEnd)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationEditArticleDateAfterFailed);
+            return Domain.Errors.Event.ValidationEditArticleDateAfterFailed;
         }
 
         if (model.PickUpLabelsStart >= model.PickUpLabelsEnd)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationPickUpLabelDateFailed);
+            return Domain.Errors.Event.ValidationPickUpLabelDateFailed;
         }
         else if (model.PickUpLabelsStart >= model.Start)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationPickupLabelDateBeforeFailed);
+            return Domain.Errors.Event.ValidationPickupLabelDateBeforeFailed;
         }
         else if (model.PickUpLabelsStart <= model.EditArticleEnd)
         {
-            return Result.Fail(Domain.Errors.Event.ValidationPickupLabelDateAfterFailed);
+            return Domain.Errors.Event.ValidationPickupLabelDateAfterFailed;
         }
 
-        return Result.Ok();
+        return Result.Success;
     }
 }

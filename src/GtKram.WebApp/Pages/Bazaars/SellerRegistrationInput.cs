@@ -1,12 +1,11 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
-using GtKram.Application.UseCases.Bazaar.Extensions;
 using GtKram.Domain.Models;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.Bazaars;
 
-public class SellerRegistrationInput
+public sealed class SellerRegistrationInput
 {
     public string State_Event { get; set; } = "Unbekannt";
 

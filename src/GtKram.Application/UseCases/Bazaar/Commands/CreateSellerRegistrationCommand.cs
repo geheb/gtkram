@@ -1,7 +1,7 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Domain.Models;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
 
-public record struct CreateSellerRegistrationCommand(SellerRegistration Registration, bool ShouldValidateEvent) : ICommand<Result>;
+public record struct CreateSellerRegistrationCommand(SellerRegistration Registration, bool ShouldValidateEvent) : ICommand<ErrorOr<Success>>;

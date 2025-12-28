@@ -2,7 +2,8 @@ using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Domain.Errors;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace GtKram.WebApp.Pages.MyBazaars;
 
 [Node("Artikel bearbeiten", FromPage = typeof(ArticlesModel))]
 [Authorize(Roles = "seller")]
-public class EditArticleModel : PageModel
+public sealed class EditArticleModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -33,7 +34,7 @@ public class EditArticleModel : PageModel
     public async Task OnGetAsync(Guid sellerId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindArticleByUserQuery(User.GetId(), id), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(result.Errors);
@@ -74,7 +75,7 @@ public class EditArticleModel : PageModel
 
         var command = Input.ToUpdateCommand(User.GetId(), id);
         var result = await _mediator.Send(command, cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

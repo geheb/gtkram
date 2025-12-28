@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 
 namespace GtKram.Domain.Errors;
 
@@ -7,14 +7,14 @@ public static class Seller
     private const string _prefix = "seller";
 
     public static Error SaveFailed { get; } =
-        new($"{_prefix}.save.failed", "Der Verkäufer konnte nicht gespeichert werden.");
+        Error.Failure($"{_prefix}.save.failed", "Der Verkäufer konnte nicht gespeichert werden.");
 
     public static Error NotFound { get; } =
-        new($"{_prefix}.not.found", "Der Verkäufer wurde nicht gefunden.");
+        Error.NotFound($"{_prefix}.not.found", "Der Verkäufer wurde nicht gefunden.");
 
     public static Error Locked { get; } =
-        new($"{_prefix}.locked", "Der Verkäufer ist gesperrt.");
+        Error.Failure($"{_prefix}.locked", "Der Verkäufer ist gesperrt.");
 
     public static Error CheckoutNotAllowed { get; } =
-        new($"{_prefix}.checkout.not.allowed", "Das Anlegen der Kassenvorgänge ist nicht erlaubt.");
+        Error.Failure($"{_prefix}.checkout.not.allowed", "Das Anlegen der Kassenvorgänge ist nicht erlaubt.");
 }

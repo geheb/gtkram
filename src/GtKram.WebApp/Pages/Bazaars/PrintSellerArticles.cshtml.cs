@@ -1,7 +1,6 @@
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Domain.Models;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GtKram.WebApp.Pages.Bazaars;
 
 [Authorize(Roles = "manager,admin")]
-public class PrintSellerArticlesModel : PageModel
+public sealed class PrintSellerArticlesModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -24,7 +23,7 @@ public class PrintSellerArticlesModel : PageModel
     public async Task OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindSellerWithRegistrationAndArticlesQuery(id), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;

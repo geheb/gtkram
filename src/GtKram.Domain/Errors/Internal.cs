@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 
 namespace GtKram.Domain.Errors;
 
@@ -7,23 +7,23 @@ public static class Internal
     private const string _prefix = "internal";
 
     public static Error InvalidRequest { get; } =
-        new($"{_prefix}.invalid.request", "Ungültige Anfrage.");
+        Error.Validation($"{_prefix}.invalid.request", "Ungültige Anfrage.");
 
     public static Error ConflictData { get; } =
-        new($"{_prefix}.conflict.data", "Es gibt einen Datenkonflikt. Die Daten haben sich zwischenzeitlich geändert.");
+        Error.Conflict($"{_prefix}.conflict.data", "Es gibt einen Datenkonflikt. Die Daten haben sich zwischenzeitlich geändert.");
 
     public static Error InvalidData { get; } =
-        new($"{_prefix}.invalid.data", "Ungültige Datenkonsistenz festgestellt.");
+        Error.Failure($"{_prefix}.invalid.data", "Ungültige Datenkonsistenz festgestellt.");
 
     public static Error EmailNotFound { get; } =
-        new($"{_prefix}.not.found", "Die Email wurde nicht gefunden.");
+        Error.NotFound($"{_prefix}.not.found", "Die Email wurde nicht gefunden.");
 
     public static Error EmailSaveFailed { get; } =
-        new($"{_prefix}.save.failed", "Die Email konnte nicht gespeichert werden.");
+        Error.Failure($"{_prefix}.save.failed", "Die Email konnte nicht gespeichert werden.");
 
     public static Error CreateKeyFailed { get; } =
-        new($"{_prefix}.create.key.failed", "Fehler beim Erstellen des geheimen Schlüssels.");
+        Error.Failure($"{_prefix}.create.key.failed", "Fehler beim Erstellen des geheimen Schlüssels.");
 
     public static Error InvalidCode { get; } =
-        new($"{_prefix}.invalid.code", "Der Code ist ungültig.");
+        Error.Validation($"{_prefix}.invalid.code", "Der Code ist ungültig.");
 }

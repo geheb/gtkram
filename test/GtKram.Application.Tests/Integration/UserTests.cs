@@ -8,7 +8,7 @@ using Shouldly;
 namespace GtKram.Application.Tests.Integration;
 
 [TestClass]
-public class UserTests
+public sealed class UserTests
 {
     private readonly ServiceFixture _fixture = new();
     private IServiceProvider _serviceProvider = null!;

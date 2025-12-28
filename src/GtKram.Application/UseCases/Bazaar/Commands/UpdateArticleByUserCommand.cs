@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
@@ -8,4 +8,4 @@ public record struct UpdateArticleByUserCommand(
     Guid ArticleId,
     string Name,
     string Size,
-    decimal Price) : ICommand<Result>;
+    decimal Price) : ICommand<ErrorOr<Success>>;

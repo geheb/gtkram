@@ -41,9 +41,6 @@ internal sealed class HostedWorker : BackgroundService
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
         runner.MigrateUp();
-
-        var migration = scope.ServiceProvider.GetRequiredService<MysqlMigration>();
-        await migration.Migrate(cancellationToken);
     }
 
     private async Task HandleSuperUser()
@@ -75,9 +72,9 @@ internal sealed class HostedWorker : BackgroundService
                 await smtpDispatcher.Send(model.Recipient, model.Subject, model.Body, attachment);
 
                 var result = await emailQueueRepository.UpdateSent(model.Id, cancellationToken);
-                if (result.IsFailed)
+                if (result.IsError)
                 {
-                    _logger.LogError(string.Join(", ", result.Errors.Select(e => e.Message)));
+                    _logger.LogError(string.Join(",", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
                 }
             }
             catch (SmtpException ex)

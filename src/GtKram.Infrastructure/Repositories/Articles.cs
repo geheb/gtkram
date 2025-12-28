@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
@@ -18,40 +18,35 @@ internal sealed class Articles : IArticles
         _repository = repository;
     }
 
-    public async Task<Result> Create(Domain.Models.Article model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Create(Domain.Models.Article model, CancellationToken cancellationToken)
     {
-        if (!await _tableLocker.LabelNumber.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
+        if (locker is null)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.SaveFailed);
+            return Domain.Errors.SellerArticle.SaveFailed;
         }
 
-        try
-        {
-            var max = await _repository.MaxBy(e => e.LabelNumber, e => e.SellerId, model.SellerId, cancellationToken);
+        var max = await _repository.MaxBy(e => e.LabelNumber, e => e.SellerId, model.SellerId, cancellationToken);
 
-            var entity = model.MapToEntity(new() { Json = new() });
-            entity.Json.LabelNumber = ++max;
+        var entity = model.MapToEntity(new() { Json = new() });
+        entity.Json.LabelNumber = ++max;
 
-            await _repository.Insert(entity, cancellationToken);
+        await _repository.Insert(entity, cancellationToken);
 
-            return Result.Ok();
-        }
-        finally
-        {
-            _tableLocker.LabelNumber.Release();
-        }
+        return Result.Success;
     }
 
-    public async Task<Result> Create(Domain.Models.Article[] models, Guid sellerId, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Create(Domain.Models.Article[] models, Guid sellerId, CancellationToken cancellationToken)
     {
         if (models.Length == 0)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.Empty);
+            return Domain.Errors.SellerArticle.Empty;
         }
 
-        if (!await _tableLocker.LabelNumber.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken))
+        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
+        if (locker is null)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.SaveFailed);
+            return Domain.Errors.SellerArticle.SaveFailed;
         }
 
         try
@@ -69,41 +64,41 @@ internal sealed class Articles : IArticles
                 await _repository.Insert(entity, cancellationToken);
             }
 
-            await trans.Commit(cancellationToken);
+            await trans.CommitAsync(cancellationToken);
 
-            return Result.Ok();
+            return Result.Success;
         }
         finally
         {
-            _tableLocker.LabelNumber.Release();
+            _repository.Transaction = null;
         }
     }
 
-    public async Task<Result> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
         var result = await _repository.Delete(id, cancellationToken);
-        return result > 0 ? Result.Ok() : Result.Fail(Domain.Errors.SellerArticle.DeleteFailed);
+        return result > 0 ? Result.Success : Domain.Errors.SellerArticle.DeleteFailed;
     }
 
-    public async Task<Result<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
 
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.NotFound);
+            return Domain.Errors.SellerArticle.NotFound;
         }
 
         return entity.MapToDomain();
     }
 
-    public async Task<Result<Domain.Models.Article>> FindBySellerIdAndLabelNumber(Guid sellerId, int labelNumber, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Domain.Models.Article>> FindBySellerIdAndLabelNumber(Guid sellerId, int labelNumber, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.SellerId, sellerId, cancellationToken);
         var entity = entities.FirstOrDefault(e => e.LabelNumber == labelNumber);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.NotFound);
+            return Domain.Errors.SellerArticle.NotFound;
         }
 
         return entity.MapToDomain();
@@ -155,23 +150,29 @@ internal sealed class Articles : IArticles
         return [.. entities.Select(e => e.MapToDomain())];
     }
 
-    public async Task<Result<int>> GetCountBySellerId(Guid id, CancellationToken cancellationToken)
+    public async Task<ErrorOr<int>> GetCountBySellerId(Guid id, CancellationToken cancellationToken)
     {
+        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
+        if (locker is null)
+        {
+            return Domain.Errors.SellerArticle.Timeout;
+        }
+
         var count = await _repository.CountBy(e => e.SellerId, id, cancellationToken);
-        return Result.Ok(count);
+        return  count;
     }
 
-    public async Task<Result> Update(Domain.Models.Article model, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> Update(Domain.Models.Article model, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(model.Id, cancellationToken);
         if (entity is null)
         {
-            return Result.Fail(Domain.Errors.SellerArticle.NotFound);
+            return Domain.Errors.SellerArticle.NotFound;
         }
 
         model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Ok() : Result.Fail(Domain.Errors.SellerArticle.SaveFailed);
+        return result ? Result.Success : Domain.Errors.SellerArticle.SaveFailed;
     }
 }

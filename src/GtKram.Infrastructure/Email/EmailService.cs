@@ -1,7 +1,7 @@
+using ErrorOr;
 using GtKram.Application.Converter;
 using GtKram.Application.Options;
 using GtKram.Application.Services;
-using GtKram.Domain.Base;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -30,7 +30,7 @@ internal sealed class EmailService : IEmailService
         _changeEmailOrPasswordTimeout = changeEmailOrPasswordOptions.Value.TokenLifespan;
     }
 
-    public async Task<Result> EnqueueChangeEmail(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> EnqueueChangeEmail(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
@@ -55,7 +55,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(model, cancellationToken);
     }
 
-    public async Task<Result> EnqueueConfirmRegistration(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> EnqueueConfirmRegistration(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
@@ -80,7 +80,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(model, cancellationToken);
     }
 
-    public async Task<Result> EnqueueResetPassword(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> EnqueueResetPassword(Domain.Models.User user, string callbackUrl, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 
@@ -105,7 +105,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(model, cancellationToken);
     }
 
-    public async Task<Result> EnqueueAcceptSeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> EnqueueAcceptSeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
     {
         var editEndDate = @event.EditArticleEnd ?? @event.Start;
         var pickUpStart = @event.PickUpLabelsStart?? @event.Start;
@@ -141,7 +141,7 @@ internal sealed class EmailService : IEmailService
         return await _repository.Create(model, cancellationToken);
     }
 
-    public async Task<Result> EnqueueDenySeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> EnqueueDenySeller(Domain.Models.Event @event, string email, string name, CancellationToken cancellationToken)
     {
         var dc = new GermanDateTimeConverter();
 

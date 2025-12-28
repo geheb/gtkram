@@ -1,6 +1,7 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Infrastructure.Database.Models;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories;

@@ -1,9 +1,7 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Domain.Base;
 using GtKram.Domain.Errors;
-using GtKram.WebApp.Extensions;
-using GtKram.WebApp.I18n;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +11,8 @@ namespace GtKram.WebApp.Pages.Bazaars;
 
 [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 [AllowAnonymous]
-public class RegisterModel : PageModel
+public sealed class RegisterModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
 
@@ -26,11 +23,9 @@ public class RegisterModel : PageModel
     public string? Message { get; set; }
 
     public RegisterModel(
-        ILogger<RegisterModel> logger,
         TimeProvider timeProvider,
         IMediator mediator)
     {
-        _logger = logger;
         _timeProvider = timeProvider;
         _mediator = mediator;
     }
@@ -38,7 +33,7 @@ public class RegisterModel : PageModel
     public async Task OnGetAsync(Guid id, bool? success, CancellationToken cancellationToken)
     {
         var @event = await _mediator.Send(new FindEventForRegistrationQuery(id), cancellationToken);
-        if (@event.IsFailed)
+        if (@event.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(@event.Errors);
@@ -84,18 +79,17 @@ public class RegisterModel : PageModel
         if (!string.IsNullOrEmpty(Input.SellerUserName))
         {
             IsDisabled = true;
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
         var command = Input.ToCommand(id);
         var result = await _mediator.Send(command, cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
-            IsDisabled = result.Errors!.Any(e => 
-                e == Domain.Errors.Event.Expired ||
-                e == Domain.Errors.SellerRegistration.LimitExceeded);
+            IsDisabled = result.Errors.Any(e => 
+                e.Code == Domain.Errors.Event.Expired.Code ||
+                e.Code == Domain.Errors.SellerRegistration.LimitExceeded.Code);
 
             ModelState.AddError(result.Errors);
             return Page();

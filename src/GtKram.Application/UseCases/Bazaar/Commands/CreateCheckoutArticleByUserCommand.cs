@@ -1,4 +1,4 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
@@ -6,4 +6,4 @@ namespace GtKram.Application.UseCases.Bazaar.Commands;
 public record struct CreateCheckoutArticleByUserCommand(
     Guid UserId, 
     Guid CheckoutId, 
-    Guid SellerArticleId) : ICommand<Result>;
+    Guid SellerArticleId) : ICommand<ErrorOr<Success>>;

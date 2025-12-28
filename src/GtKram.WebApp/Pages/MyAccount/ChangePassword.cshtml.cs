@@ -1,7 +1,8 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ namespace GtKram.WebApp.Pages.MyAccount;
 
 [Node("Passwort ändern", FromPage = typeof(IndexModel))]
 [Authorize]
-public class ChangePasswordModel : PageModel
+public sealed class ChangePasswordModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -40,7 +41,7 @@ public class ChangePasswordModel : PageModel
 
         var result = await _mediator.Send(new ChangePasswordCommand(User.GetId(), CurrentPassword!, NewPassword!), cancellationToken);
 
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

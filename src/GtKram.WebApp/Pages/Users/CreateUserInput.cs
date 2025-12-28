@@ -1,11 +1,11 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Domain.Models;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.Users;
 
-public class CreateUserInput
+public sealed class CreateUserInput
 {
     [Display(Name = "Name")]
     [RequiredField, TextLengthField]

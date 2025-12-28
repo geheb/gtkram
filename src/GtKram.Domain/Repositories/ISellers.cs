@@ -1,18 +1,18 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Domain.Models;
 
 namespace GtKram.Domain.Repositories;
 
 public interface ISellers
 {
-    Task<Result<Guid>> Create(Seller model, CancellationToken cancellationToken);
-    Task<Result<Seller>> Find(Guid id, CancellationToken cancellationToken);
+    Task<ErrorOr<Guid>> Create(Seller model, CancellationToken cancellationToken);
+    Task<ErrorOr<Seller>> Find(Guid id, CancellationToken cancellationToken);
     Task<Seller[]> GetByEventId(Guid id, CancellationToken cancellationToken);
     Task<Seller[]> GetByIdentityId(Guid id, CancellationToken cancellationToken);
-    Task<Result<Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken);
-    Task<Result> Update(Seller model, CancellationToken cancellationToken);
-    Task<Result> Delete(Guid id, CancellationToken cancellationToken);
+    Task<ErrorOr<Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken);
+    Task<ErrorOr<Success>> Update(Seller model, CancellationToken cancellationToken);
+    Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken);
     Task<Seller[]> GetAll(CancellationToken cancellationToken);
     Task<Seller[]> GetById(Guid[] ids, CancellationToken cancellationToken);
-    Task<Result<Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken);
+    Task<ErrorOr<Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken);
 }

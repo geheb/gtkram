@@ -1,4 +1,4 @@
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.MyCheckouts;

@@ -1,9 +1,8 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using GtKram.WebApp.Converter;
-using GtKram.WebApp.Extensions;
-using GtKram.WebApp.I18n;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +12,8 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class ConfirmResetPasswordModel : PageModel
+public sealed class ConfirmResetPasswordModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly IMediator _mediator;
 
     [BindProperty]
@@ -35,10 +33,8 @@ public class ConfirmResetPasswordModel : PageModel
     public string ChangePasswordEmail { get; set; } = "n.v.";
 
     public ConfirmResetPasswordModel(
-        ILogger<ConfirmResetPasswordModel> logger,
         IMediator mediator)
     {
-        _logger = logger;
         _mediator = mediator;
     }
 
@@ -52,7 +48,7 @@ public class ConfirmResetPasswordModel : PageModel
         }
 
         var result = await _mediator.Send(new VerifyConfirmChangePasswordQuery(id, token), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
@@ -60,7 +56,7 @@ public class ConfirmResetPasswordModel : PageModel
         }
 
         var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
@@ -75,13 +71,12 @@ public class ConfirmResetPasswordModel : PageModel
         if (id == Guid.Empty || string.IsNullOrWhiteSpace(token) || !string.IsNullOrWhiteSpace(UserName))
         {
             IsDisabled = true;
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
         var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
@@ -93,7 +88,7 @@ public class ConfirmResetPasswordModel : PageModel
         if (!ModelState.IsValid) return Page();
 
         var result = await _mediator.Send(new ConfirmResetPasswordCommand(id, Password!, token), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return Page();

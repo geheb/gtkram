@@ -1,6 +1,7 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace GtKram.WebApp.Pages.Bazaars;
 
 [Node("Verwaltung", FromPage = typeof(Pages.IndexModel))]
 [Authorize(Roles = "manager,admin")]
-public class IndexModel : PageModel
+public sealed class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -29,6 +30,6 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostDeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new DeleteEventCommand(id), cancellationToken);
-        return new JsonResult(result.IsSuccess);
+        return new JsonResult(!result.IsError);
     }
 }

@@ -1,4 +1,4 @@
-using GtKram.WebApp.Routing;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [IgnoreAntiforgeryToken]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [AllowAnonymous]
-public class ErrorModel : PageModel
+public sealed class ErrorModel : PageModel
 {
     private readonly NodeGeneratorService _nodeGeneratorService;
 

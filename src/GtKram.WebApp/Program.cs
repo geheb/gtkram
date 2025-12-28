@@ -1,8 +1,9 @@
 using GtKram.Application;
 using GtKram.Infrastructure;
-using GtKram.WebApp.Bindings;
-using GtKram.WebApp.Filters;
-using GtKram.WebApp.Middlewares;
+using GtKram.Infrastructure.AspNetCore.Bindings;
+using GtKram.Infrastructure.AspNetCore.Filters;
+using GtKram.Infrastructure.AspNetCore.Middlewares;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using System.Net;

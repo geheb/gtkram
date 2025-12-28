@@ -1,11 +1,11 @@
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Domain.Models;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.MyBazaars;
 
-public class ArticleInput
+public sealed class ArticleInput
 {
     public string State_Event { get; set; } = "Unbekannt";
     public string? State_EditArticleEndDate { get; set; }

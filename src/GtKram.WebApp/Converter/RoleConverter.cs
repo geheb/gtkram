@@ -3,7 +3,7 @@ using GtKram.Domain.Models;
 
 namespace GtKram.WebApp.Converter;
 
-public class RoleConverter
+public sealed class RoleConverter
 {
     public string RoleToString(UserRoleType role)
     {

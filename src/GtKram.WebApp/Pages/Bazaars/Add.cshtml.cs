@@ -1,5 +1,6 @@
 using GtKram.Application.Options;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace GtKram.WebApp.Pages.Bazaars;
 
 [Node("Anlegen", FromPage = typeof(IndexModel))]
 [Authorize(Roles = "manager,admin")]
-public class AddModel : PageModel
+public sealed class AddModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -30,7 +31,7 @@ public class AddModel : PageModel
         if (!ModelState.IsValid) return Page();
 
         var result = await _mediator.Send(Input.ToCreateCommand(), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

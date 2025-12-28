@@ -85,7 +85,7 @@ public sealed class SellerHandlerTests
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(context.EventId, _mockUserEmail, _cancellationToken);
 
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
         sellerReg.Value.PreferredType.ShouldBe(SellerRegistrationPreferredType.Kita);
         sellerReg.Value.ClothingType!.Length.ShouldBe(2);
     }
@@ -98,7 +98,7 @@ public sealed class SellerHandlerTests
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(new CreateSellerRegistrationCommand(context, true), _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -110,15 +110,15 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var reg = new Domain.Models.SellerRegistration { EventId = context.EventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         reg = new Domain.Models.SellerRegistration { EventId = context.EventId, Name = "bar", Phone = "12345", Email = "bar@bar" };
         result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         reg = new Domain.Models.SellerRegistration { EventId = context.EventId, Name = "baz", Phone = "12345", Email = "baz@baz" };
         result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.SellerRegistration.LimitExceeded).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == Domain.Errors.SellerRegistration.LimitExceeded.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -132,8 +132,8 @@ public sealed class SellerHandlerTests
         var reg = new Domain.Models.SellerRegistration { EventId = context.EventId, Name = "foo", Phone = "12345", Email = "foo@foo" };
         var result = await sut.Handle(new CreateSellerRegistrationCommand(reg, true), _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == Domain.Errors.Event.Expired.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -146,7 +146,7 @@ public sealed class SellerHandlerTests
         var command = new AcceptSellerRegistrationCommand { SellerRegistrationId = context.Id, ConfirmUserCallbackUrl = "http://localhost" };
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -159,7 +159,7 @@ public sealed class SellerHandlerTests
         var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = context.Id };
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -171,11 +171,11 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = context.Id, ConfirmUserCallbackUrl = "http://localhost" };
         var result = await sut.Handle(acceptCommand, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         var command = new DeleteSellerRegistrationCommand { SellerRegistrationId = context.Id };
         result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -188,7 +188,7 @@ public sealed class SellerHandlerTests
         var command = new DenySellerRegistrationCommand { SellerRegistrationId = context.Id };
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -201,7 +201,7 @@ public sealed class SellerHandlerTests
         var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -215,8 +215,8 @@ public sealed class SellerHandlerTests
         var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == Domain.Errors.Event.Expired.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -230,8 +230,8 @@ public sealed class SellerHandlerTests
         var query = new FindSellerEventByUserQuery { UserId = context.Seller.IdentityId, SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.EditExpired.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -244,8 +244,8 @@ public sealed class SellerHandlerTests
         var query = new FindSellerEventByUserQuery { UserId = Guid.NewGuid(), SellerId = context.Seller.Id };
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == Domain.Errors.Internal.InvalidRequest).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == Domain.Errors.Internal.InvalidRequest.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -256,9 +256,10 @@ public sealed class SellerHandlerTests
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var command = new CreateArticleByUserCommand(context.Seller.IdentityId, context.Seller.Id, "foo", "bar", 1);
+
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -272,8 +273,8 @@ public sealed class SellerHandlerTests
         var command = new CreateArticleByUserCommand(context.Seller.IdentityId, context.Seller.Id, "foo", "bar", 1);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.MaxExceeded).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.MaxExceeded.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -303,7 +304,7 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -320,8 +321,8 @@ public sealed class SellerHandlerTests
         var command = new DeleteArticleByUserCommand(context.Seller.IdentityId, articles[0].Id);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.EditExpired.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -337,7 +338,7 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
         articles.Select(a => a.LabelNumber).Distinct().Count().ShouldBe(3);
         articles.Sum(a => a.Price).ShouldBeGreaterThan(10);
@@ -357,8 +358,8 @@ public sealed class SellerHandlerTests
         var command = new UpdateArticleByUserCommand(context.Seller.IdentityId, articles[0].Id, "bar", "baz", 10);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.EditExpired).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.EditExpired.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -374,7 +375,7 @@ public sealed class SellerHandlerTests
         var query = new FindArticleByUserQuery(context.Seller.IdentityId, articles[0].Id);
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.HasBooked.ShouldBeFalse();
     }
@@ -391,7 +392,7 @@ public sealed class SellerHandlerTests
         var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Seller.Id.ShouldBe(context.Seller.Id);
         result.Value.Articles.ShouldBeEmpty();
@@ -410,7 +411,7 @@ public sealed class SellerHandlerTests
         var query = new FindSellerWithEventAndArticlesByUserQuery(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Seller.Id.ShouldBe(context.Seller.Id);
         result.Value.Articles.Select(a => a.Article.Id).SequenceEqual(articles.Select(a => a.Id)).ShouldBeTrue();
@@ -460,7 +461,7 @@ public sealed class SellerHandlerTests
         var query = new FindSellerWithRegistrationAndArticlesQuery(context.Registration.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Seller.Id.ShouldBe(context.Seller.Id);
         result.Value.Registration.EventId.ShouldBe(context.Seller.EventId);
         result.Value.Articles.Length.ShouldBe(3);
@@ -490,13 +491,13 @@ public sealed class SellerHandlerTests
 
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindBySellerId(context.Seller.Id, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var query = new FindRegistrationWithSellerQuery(sellerReg.Value.Id);
         var result = await sut.Handle(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Seller.ShouldNotBeNull();
     }
 
@@ -513,7 +514,7 @@ public sealed class SellerHandlerTests
         var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -528,11 +529,11 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         result = await sut.Handle(command, _cancellationToken);
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.MaxExceeded).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.MaxExceeded.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -547,8 +548,8 @@ public sealed class SellerHandlerTests
         var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.Empty).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.Empty.Code).ShouldBeTrue();
     }
 
     [TestMethod]
@@ -566,8 +567,8 @@ public sealed class SellerHandlerTests
         var command = new TakeOverSellerArticlesByUserCommand(context.Seller.IdentityId, context.Seller.Id);
         var result = await sut.Handle(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
-        result.Errors.Any(e => e == SellerArticle.Empty).ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
+        result.Errors.Any(e => e.Code == SellerArticle.Empty.Code).ShouldBeTrue();
     }
 
     private async Task CanCreateCheckout(IServiceScope scope, (Domain.Models.Seller seller, Domain.Models.SellerRegistration registration) context)
@@ -577,7 +578,7 @@ public sealed class SellerHandlerTests
         var handler = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var command = new UpdateSellerCommand(context.registration.Id, seller.SellerNumber, seller.Role, seller.CanCheckout);
         var result = await handler.Handle(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     private async Task<Guid> CreateCompletedCheckout(IServiceScope scope, Domain.Models.Seller seller)
@@ -585,7 +586,7 @@ public sealed class SellerHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<CheckoutHandler>();
         var checkoutCommand = new CreateCheckoutByUserCommand(seller.IdentityId, seller.EventId);
         var checkoutResult = await sut.Handle(checkoutCommand, _cancellationToken);
-        checkoutResult.IsSuccess.ShouldBeTrue();
+        checkoutResult.IsError.ShouldBeFalse();
 
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(seller.Id, _cancellationToken);
@@ -594,12 +595,12 @@ public sealed class SellerHandlerTests
         {
             var command = new CreateCheckoutArticleByUserCommand(seller.IdentityId, checkoutResult.Value, article.Id);
             var result = await sut.Handle(command, _cancellationToken);
-            result.IsSuccess.ShouldBeTrue();
+            result.IsError.ShouldBeFalse();
         }
 
         var completeCommand = new CompleteCheckoutByUserCommand(seller.IdentityId, checkoutResult.Value);
         var completeResult = await sut.Handle(completeCommand, _cancellationToken);
-        completeResult.IsSuccess.ShouldBeTrue();
+        completeResult.IsError.ShouldBeFalse();
 
         return checkoutResult.Value;
     }
@@ -615,7 +616,7 @@ public sealed class SellerHandlerTests
 
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         return sellerReg.Value;
     }
@@ -631,22 +632,22 @@ public sealed class SellerHandlerTests
 
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerReg.Value.Id, ConfirmUserCallbackUrl = "http://localhost" };
         result = await sut.Handle(acceptCommand, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, _mockUserEmail, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         var sellerRepo = scope.ServiceProvider.GetRequiredService<ISellers>();
         var seller = await sellerRepo.Find(sellerReg.Value.SellerId!.Value, _cancellationToken);
-        seller.IsSuccess.ShouldBeTrue();
+        seller.IsError.ShouldBeFalse();
 ;
         seller.Value.MaxArticleCount = 3;
         result = await sellerRepo.Update(seller.Value, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         return (seller.Value, sellerReg.Value);
     }
@@ -659,7 +660,7 @@ public sealed class SellerHandlerTests
         {
             var c = new CreateArticleByUserCommand(seller.IdentityId, seller.Id, "foo", "bar", i);
             var r = await sut.Handle(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
+            r.IsError.ShouldBeFalse();
         }
     }
 }

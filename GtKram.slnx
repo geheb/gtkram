@@ -10,6 +10,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/GtKram.Application/GtKram.Application.csproj" />
+    <Project Path="src/GtKram.Aspire/GtKram.Aspire.csproj" />
     <Project Path="src/GtKram.Domain/GtKram.Domain.csproj" />
     <Project Path="src/GtKram.Infrastructure/GtKram.Infrastructure.csproj" />
     <Project Path="src/GtKram.WebApp/GtKram.WebApp.csproj" />

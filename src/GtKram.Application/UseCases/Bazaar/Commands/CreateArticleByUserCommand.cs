@@ -1,5 +1,4 @@
-using GtKram.Domain.Base;
-using GtKram.Domain.Models;
+using ErrorOr;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Commands;
@@ -9,4 +8,4 @@ public record struct CreateArticleByUserCommand(
     Guid SellerId,
     string Name,
     string Size,
-    decimal Price) : ICommand<Result>;
+    decimal Price) : ICommand<ErrorOr<Success>>;

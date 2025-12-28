@@ -1,6 +1,6 @@
 using GtKram.Application.UseCases.User.Commands;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class ConfirmCodeModel : PageModel
+public sealed class ConfirmCodeModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -46,12 +46,12 @@ public class ConfirmCodeModel : PageModel
     {
         var result = await _mediator.Send(new SignInOtpCommand(Code!, IsTrustBrowser), cancellationToken);
 
-        if (result.IsSuccess)
+        if (result.IsError)
         {
-            return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
+            ModelState.AddError(result.Errors);
+            return Page();
         }
 
-        ModelState.AddError(result.Errors);
-        return Page();
+        return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl : "/");
     }
 }

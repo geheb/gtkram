@@ -1,8 +1,7 @@
+using ErrorOr;
 using GtKram.Application.UseCases.Bazaar.Models;
-using GtKram.Domain.Base;
-using GtKram.Domain.Models;
 using Mediator;
 
 namespace GtKram.Application.UseCases.Bazaar.Queries;
 
-public record struct FindEventForRegistrationQuery(Guid EventId) : IQuery<Result<EventWithRegistrationCount>>;
+public record struct FindEventForRegistrationQuery(Guid EventId) : IQuery<ErrorOr<EventWithRegistrationCount>>;

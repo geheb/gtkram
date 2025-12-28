@@ -1,6 +1,7 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Commands;
+using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Domain.Repositories;
 using Mediator;
@@ -10,9 +11,9 @@ namespace GtKram.Application.UseCases.User.Handlers;
 
 internal sealed class UserHandler :
     IQueryHandler<GetAllUsersQuery, Domain.Models.User[]>,
-    IQueryHandler<FindUserByIdQuery, Result<Domain.Models.User>>,
-    ICommandHandler<CreateUserCommand, Result<Guid>>,
-    ICommandHandler<UpdateUserCommand, Result>
+    IQueryHandler<FindUserByIdQuery, ErrorOr<Domain.Models.User>>,
+    ICommandHandler<CreateUserCommand, ErrorOr<Guid>>,
+    ICommandHandler<UpdateUserCommand, ErrorOr<Success>>
 {
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
@@ -34,38 +35,37 @@ internal sealed class UserHandler :
     public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken) =>
         await _users.GetAll(cancellationToken);
 
-    public async ValueTask<Result<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken)
     {
         var result = await _users.FindById(query.Id, cancellationToken);
-        return result.IsError ? Result.Fail(result.FirstError.Code, "error") : result.Value;
+        return result;
     }
 
-    public async ValueTask<Result<Guid>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Guid>> Handle(CreateUserCommand command, CancellationToken cancellationToken)
     {
         if (!await _emailValidatorService.Validate(command.Email, cancellationToken))
         {
-            var error = _errorDescriber.InvalidEmail(command.Email);
-            return Result.Fail(error.Code, error.Description);
+            return _errorDescriber.InvalidEmail(command.Email).ToError();
         }
         
         var idResult = await _users.Create(command.Name, command.Email, command.Roles, cancellationToken);
         if (idResult.IsError)
         {
-            return Result.Fail(idResult.FirstError.Code, "error");
+            return idResult;
         }
 
         var result = await _mediator.Send(new SendConfirmRegistrationCommand(idResult.Value, command.CallbackUrl), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
-            return result;
+            return result.Errors;
         }
 
-        return idResult.Value;
+        return idResult;
     }
 
-    public async ValueTask<Result> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
+    public async ValueTask<ErrorOr<Success>> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
     {
         var result = await _users.Update(command.Id, command.Name, command.Roles, cancellationToken);
-        return result.IsError ? Result.Fail(result.FirstError.Code, "error") : Result.Ok();
+        return result;
     }
 }

@@ -145,7 +145,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventQuery(context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(0);
     }
@@ -162,7 +162,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventQuery(context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(1);
         result.Value.Checkouts[0].CreatedBy.ShouldBe("foo");
@@ -183,7 +183,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventQuery(context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(1);
         result.Value.Checkouts[0].CreatedBy.ShouldBe("foo");
@@ -300,7 +300,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventByUserQuery(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(0);
     }
@@ -317,7 +317,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventByUserQuery(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(1);
         result.Value.Checkouts[0].CreatedBy.ShouldBe("foo");
@@ -338,7 +338,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetCheckoutWithTotalsAndEventByUserQuery(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkouts.Length.ShouldBe(1);
         result.Value.Checkouts[0].CreatedBy.ShouldBe("foo");
@@ -347,7 +347,7 @@ public sealed class CheckoutHandlerTests
     }
 
     [TestMethod]
-    public async Task SellerWithoutCheckout_CreateCheckoutByUserCommand_IsFailed()
+    public async Task SellerWithoutCheckout_CreateCheckoutByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -356,7 +356,7 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutByUserCommand(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Seller.CheckoutNotAllowed).ShouldBeTrue();
     }
 
@@ -371,11 +371,11 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutByUserCommand(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
-    public async Task SellerWithCheckout_And_EventExpired_CreateCheckoutByUserCommand_IsFailed()
+    public async Task SellerWithCheckout_And_EventExpired_CreateCheckoutByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -387,7 +387,7 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutByUserCommand(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
     }
 
@@ -401,7 +401,7 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutByUserCommand(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -416,7 +416,7 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutByUserCommand(context.Seller.IdentityId, context.Seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -431,7 +431,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetArticlesWithCheckoutAndEventQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkout.Id.ShouldBe(checkoutId);
         result.Value.Articles.ShouldBeEmpty();
@@ -450,7 +450,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetArticlesWithCheckoutAndEventQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkout.Id.ShouldBe(checkoutId);
         result.Value.Articles.Length.ShouldBe(3);
@@ -471,14 +471,14 @@ public sealed class CheckoutHandlerTests
         var command = new CancelCheckoutByUserCommand(context.Seller.IdentityId, checkoutId);
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         checkouts = await checkoutRepo.GetByEventId(context.Seller.EventId, _cancellationToken);
         checkouts.ShouldBeEmpty();
     }
 
     [TestMethod]
-    public async Task CompletedCheckout_CancelCheckoutByUserCommand_IsFailed()
+    public async Task CompletedCheckout_CancelCheckoutByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -494,7 +494,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.StatusCompleted).ShouldBeTrue();
     }
 
@@ -515,11 +515,11 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
-    public async Task OpenCheckout_And_EventExpired_CancelCheckoutByUserCommand_IsFailed()
+    public async Task OpenCheckout_And_EventExpired_CancelCheckoutByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -537,7 +537,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
     }
 
@@ -556,7 +556,7 @@ public sealed class CheckoutHandlerTests
 
         var command = new CancelCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         checkouts = await checkoutRepo.GetByEventId(context.Seller.EventId, _cancellationToken);
         checkouts.ShouldBeEmpty();
@@ -577,7 +577,7 @@ public sealed class CheckoutHandlerTests
 
         var command = new CancelCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         checkouts = await checkoutRepo.GetByEventId(context.Seller.EventId, _cancellationToken);
         checkouts.ShouldBeEmpty();
@@ -599,14 +599,14 @@ public sealed class CheckoutHandlerTests
 
         var command = new CancelCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         checkouts = await checkoutRepo.GetByEventId(context.Seller.EventId, _cancellationToken);
         checkouts.ShouldBeEmpty();
     }
 
     [TestMethod]
-    public async Task CompletedCheckout_CreateCheckoutArticleByUserCommand_IsFailed()
+    public async Task CompletedCheckout_CreateCheckoutArticleByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -622,7 +622,7 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutArticleByUserCommand(context.Seller.IdentityId, checkoutId, articleNotChecked.Id);
 
         var result = await sut.Send(command, _cancellationToken);
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.StatusCompleted).ShouldBeTrue();
     }
 
@@ -644,14 +644,14 @@ public sealed class CheckoutHandlerTests
 
         var command = new CancelCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         checkouts = await checkoutRepo.GetByEventId(context.Seller.EventId, _cancellationToken);
         checkouts.ShouldBeEmpty();
     }
 
     [TestMethod]
-    public async Task EmptyCheckout_CompleteCheckoutByUserCommand_IsFailed()
+    public async Task EmptyCheckout_CompleteCheckoutByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -663,12 +663,12 @@ public sealed class CheckoutHandlerTests
         var command = new CompleteCheckoutByUserCommand(context.Seller.IdentityId, checkoutId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.Empty).ShouldBeTrue();
     }
 
     [TestMethod]
-    public async Task EmptyCheckout_CompleteCheckoutCommand_IsFailed()
+    public async Task EmptyCheckout_CompleteCheckoutCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -679,7 +679,7 @@ public sealed class CheckoutHandlerTests
         var command = new CompleteCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.Empty).ShouldBeTrue();
     }
 
@@ -699,7 +699,7 @@ public sealed class CheckoutHandlerTests
 
         var command = new CompleteCheckoutCommand(checkoutId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -714,7 +714,7 @@ public sealed class CheckoutHandlerTests
         var query = new FindCheckoutTotalQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.ArticleCount.ShouldBe(0);
         result.Value.Total.ShouldBe(0);
     }
@@ -731,7 +731,7 @@ public sealed class CheckoutHandlerTests
         var query = new FindCheckoutTotalQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.ArticleCount.ShouldBe(0);
         result.Value.Total.ShouldBe(0);
     }
@@ -749,7 +749,7 @@ public sealed class CheckoutHandlerTests
         var query = new FindCheckoutTotalQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.ArticleCount.ShouldBe(3);
         result.Value.Total.ShouldBe(6);
     }
@@ -766,7 +766,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetArticlesWithCheckoutAndEventByUserQuery(context.Seller.IdentityId, checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkout.Id.ShouldBe(checkoutId);
         result.Value.Articles.ShouldBeEmpty();
@@ -785,7 +785,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetArticlesWithCheckoutAndEventByUserQuery(context.Seller.IdentityId, checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkout.Id.ShouldBe(checkoutId);
         result.Value.Checkout.Status.ShouldBe(CheckoutStatus.InProgress);
@@ -805,7 +805,7 @@ public sealed class CheckoutHandlerTests
         var query = new GetArticlesWithCheckoutAndEventByUserQuery(context.Seller.IdentityId, checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(context.Seller.EventId);
         result.Value.Checkout.Id.ShouldBe(checkoutId);
         result.Value.Checkout.Status.ShouldBe(CheckoutStatus.Completed);
@@ -824,7 +824,7 @@ public sealed class CheckoutHandlerTests
         var query = new FindEventByCheckoutQuery(checkoutId);
         var result = await sut.Send(query, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Id.ShouldBe(context.Seller.EventId);
     }
 
@@ -841,11 +841,11 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutArticleManuallyByUserCommand(context.Seller.IdentityId, checkoutId, context.Seller.SellerNumber, articles[0].LabelNumber);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
-    public async Task SomeArticleTwoTimes_CreateCheckoutArticleManuallyByUserCommand_IsFailed()
+    public async Task SomeArticleTwoTimes_CreateCheckoutArticleManuallyByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -856,15 +856,15 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateCheckoutArticleManuallyByUserCommand(context.Seller.IdentityId, checkoutId, context.Seller.SellerNumber, articles[0].LabelNumber);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
     }
 
     [TestMethod]
-    public async Task SomeArticleTwoTimes_CreateCheckoutArticleByUserCommand_IsFailed()
+    public async Task SomeArticleTwoTimes_CreateCheckoutArticleByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -875,15 +875,15 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateCheckoutArticleByUserCommand(context.Seller.IdentityId, checkoutId, articles[0].Id);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
     }
 
     [TestMethod]
-    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleByUserCommand_IsFailed()
+    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -896,12 +896,12 @@ public sealed class CheckoutHandlerTests
         var command = new CreateCheckoutArticleByUserCommand(context.Seller.IdentityId, checkoutId, articles[0].Id);
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
     }
 
     [TestMethod]
-    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleManuallyByUserCommand_IsFailed()
+    public async Task SomeArticleTwoCheckouts_CreateCheckoutArticleManuallyByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -913,7 +913,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateCheckoutArticleManuallyByUserCommand(context.Seller.IdentityId, checkoutId, context.Seller.SellerNumber, articles[0].LabelNumber);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
 
         result.Errors.Any(e => e == Domain.Errors.Checkout.AlreadyBooked);
     }
@@ -936,7 +936,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(2);
     }
@@ -959,7 +959,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(2);
     }
@@ -981,13 +981,13 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(2);
     }
 
     [TestMethod]
-    public async Task CompletedCheckout_And_EventExpired_DeleteCheckoutArticleCommand_IsFailed()
+    public async Task CompletedCheckout_And_EventExpired_DeleteCheckoutArticleCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -1005,11 +1005,11 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
-    public async Task OpenCheckout_And_EventExpired_DeleteCheckoutArticleByUserCommand_IsFailed()
+    public async Task OpenCheckout_And_EventExpired_DeleteCheckoutArticleByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -1027,12 +1027,12 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Event.Expired).ShouldBeTrue();
     }
 
     [TestMethod]
-    public async Task CompletedCheckout_DeleteCheckoutArticleByUserCommand_IsFailed()
+    public async Task CompletedCheckout_DeleteCheckoutArticleByUserCommand_IsError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var context = await CreateEventAndSeller(scope);
@@ -1048,7 +1048,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var result = await sut.Send(command, _cancellationToken);
 
-        result.IsFailed.ShouldBeTrue();
+        result.IsError.ShouldBeTrue();
         result.Errors.Any(e => e == Domain.Errors.Checkout.StatusCompleted).ShouldBeTrue();
     }
 
@@ -1063,22 +1063,22 @@ public sealed class CheckoutHandlerTests
 
         var sellerRegRepo = scope.ServiceProvider.GetRequiredService<ISellerRegistrations>();
         var sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, email, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         var acceptCommand = new AcceptSellerRegistrationCommand { SellerRegistrationId = sellerReg.Value.Id, ConfirmUserCallbackUrl = "http://localhost" };
         result = await sut.Send(acceptCommand, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         sellerReg = await sellerRegRepo.FindByEventIdAndEmail(eventId, email, _cancellationToken);
-        sellerReg.IsSuccess.ShouldBeTrue();
+        sellerReg.IsError.ShouldBeFalse();
 
         var sellerRepo = scope.ServiceProvider.GetRequiredService<ISellers>();
         var seller = await sellerRepo.Find(sellerReg.Value.SellerId!.Value, _cancellationToken);
-        seller.IsSuccess.ShouldBeTrue();
+        seller.IsError.ShouldBeFalse();
         
         seller.Value.MaxArticleCount = 3;
         result = await sellerRepo.Update(seller.Value, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
 
         return (seller.Value, sellerReg.Value);
     }
@@ -1090,7 +1090,7 @@ public sealed class CheckoutHandlerTests
         {
             var c = new CreateArticleByUserCommand(seller.IdentityId, seller.Id, "foo", "bar", i);
             var r = await sut.Send(c, _cancellationToken);
-            r.IsSuccess.ShouldBeTrue();
+            r.IsError.ShouldBeFalse();
         }
 
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
@@ -1104,7 +1104,7 @@ public sealed class CheckoutHandlerTests
         var handler = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new UpdateSellerCommand(context.registration.Id, seller.SellerNumber, seller.Role, seller.CanCheckout);
         var result = await handler.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     private async Task<Guid> CreateEmptyCheckout(IServiceScope scope, Domain.Models.Seller seller)
@@ -1112,7 +1112,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var command = new CreateCheckoutByUserCommand(seller.IdentityId, seller.EventId);
         var result = await sut.Send(command, _cancellationToken);
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         return result.Value;
     }
 
@@ -1121,7 +1121,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var checkoutCommand = new CreateCheckoutByUserCommand(seller.IdentityId, seller.EventId);
         var checkoutResult = await sut.Send(checkoutCommand, _cancellationToken);
-        checkoutResult.IsSuccess.ShouldBeTrue();
+        checkoutResult.IsError.ShouldBeFalse();
 
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(seller.Id, _cancellationToken);
@@ -1130,7 +1130,7 @@ public sealed class CheckoutHandlerTests
         {
             var command = new CreateCheckoutArticleByUserCommand(seller.IdentityId, checkoutResult.Value, article.Id);
             var result = await sut.Send(command, _cancellationToken);
-            result.IsSuccess.ShouldBeTrue();
+            result.IsError.ShouldBeFalse();
         }
 
         return checkoutResult.Value;
@@ -1141,7 +1141,7 @@ public sealed class CheckoutHandlerTests
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
         var checkoutCommand = new CreateCheckoutByUserCommand(seller.IdentityId, seller.EventId);
         var checkoutResult = await sut.Send(checkoutCommand, _cancellationToken);
-        checkoutResult.IsSuccess.ShouldBeTrue();
+        checkoutResult.IsError.ShouldBeFalse();
 
         var sellerArticleRepo = scope.ServiceProvider.GetRequiredService<IArticles>();
         var articles = await sellerArticleRepo.GetBySellerId(seller.Id, _cancellationToken);
@@ -1150,12 +1150,12 @@ public sealed class CheckoutHandlerTests
         {
             var command = new CreateCheckoutArticleByUserCommand(seller.IdentityId, checkoutResult.Value, article.Id);
             var result = await sut.Send(command, _cancellationToken);
-            result.IsSuccess.ShouldBeTrue();
+            result.IsError.ShouldBeFalse();
         }
 
         var completeCommand = new CompleteCheckoutByUserCommand(seller.IdentityId, checkoutResult.Value);
         var completeResult = await sut.Send(completeCommand, _cancellationToken);
-        completeResult.IsSuccess.ShouldBeTrue();
+        completeResult.IsError.ShouldBeFalse();
 
         return checkoutResult.Value;
     }

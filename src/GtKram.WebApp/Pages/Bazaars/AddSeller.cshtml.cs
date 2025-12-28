@@ -1,7 +1,8 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Errors;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ namespace GtKram.WebApp.Pages.Bazaars;
 
 [Node("Verkäufer anlegen", FromPage = typeof(SellersModel))]
 [Authorize(Roles = "manager,admin")]
-public class AddSellerModel : PageModel
+public sealed class AddSellerModel : PageModel
 {
     private readonly TimeProvider _timeProvider;
     private readonly IMediator _mediator;
@@ -32,7 +33,7 @@ public class AddSellerModel : PageModel
     public async Task OnGetAsync(Guid eventId, CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindEventQuery(eventId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(result.Errors);
@@ -54,7 +55,7 @@ public class AddSellerModel : PageModel
         if (!ModelState.IsValid) return Page();
 
         var result = await _mediator.Send(Input.ToCommand(eventId), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return Page();

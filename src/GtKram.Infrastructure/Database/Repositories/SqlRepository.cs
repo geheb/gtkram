@@ -21,6 +21,11 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
     private readonly SQLiteDbContext _dbContext;
     private DbTransaction? _transaction;
 
+    public DbTransaction? Transaction
+    {
+        set {  _transaction = value; }
+    }
+
     static SqlRepository()
     {
         var attribute = typeof(TEntity).GetCustomAttribute<JsonTableAttribute>();
@@ -76,13 +81,8 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         _dbContext = dbContext;
     }
 
-    public async Task<ISqlTransaction> CreateTransaction(CancellationToken cancellationToken)
-    {
-        var transaction = await _dbContext.BeginTransaction(cancellationToken);
-        return new SqlTransaction<TEntity>(this, transaction);
-    }
-
-    internal void UseTransaction(DbTransaction? transaction) => _transaction = transaction;
+    public async Task<DbTransaction> CreateTransaction(CancellationToken cancellationToken) =>
+        _transaction = await _dbContext.BeginTransaction(cancellationToken);
 
     public async Task Insert(TEntity entity, CancellationToken cancellationToken)
     {

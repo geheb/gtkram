@@ -54,7 +54,7 @@ public sealed class EventHandlerTests
 
         var result = await sut.Send(new CreateEventCommand(TestData.CreateEvent(_mockTimeProvider.GetUtcNow())), _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -67,7 +67,7 @@ public sealed class EventHandlerTests
 
         var result = await sut.Send(new DeleteEventCommand(id), _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
     }
 
     [TestMethod]
@@ -83,7 +83,7 @@ public sealed class EventHandlerTests
         var result = await sut.Send(new UpdateEventCommand(model.Value), _cancellationToken);
         model = await repo.Find(id, _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         model.Value.Description.ShouldBe("foo");
     }
 
@@ -97,7 +97,7 @@ public sealed class EventHandlerTests
 
         var result = await sut.Send(new FindEventQuery(id), _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Commission.ShouldBe(20);
     }
 
@@ -111,7 +111,7 @@ public sealed class EventHandlerTests
 
         var result = await sut.Send(new FindEventForRegistrationQuery(id), _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.Event.Id.ShouldBe(id);
         result.Value.RegistrationCount.ShouldBe(0);
     }
@@ -130,7 +130,7 @@ public sealed class EventHandlerTests
 
         var result = await sut.Send(new FindEventForRegistrationQuery(id), _cancellationToken);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsError.ShouldBeFalse();
         result.Value.RegistrationCount.ShouldBe(3);
     }
 

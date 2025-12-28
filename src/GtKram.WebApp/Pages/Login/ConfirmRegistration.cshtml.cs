@@ -1,8 +1,8 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Queries;
-using GtKram.WebApp.Annotations;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
 using GtKram.WebApp.Converter;
-using GtKram.WebApp.Extensions;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,9 +12,8 @@ using System.ComponentModel.DataAnnotations;
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
-public class ConfirmRegistrationModel : PageModel
+public sealed class ConfirmRegistrationModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly IMediator _mediator;
 
     public string ConfirmedEmail { get; set; } = "n.v.";
@@ -30,10 +29,8 @@ public class ConfirmRegistrationModel : PageModel
     public string? RepeatPassword { get; set; }
 
     public ConfirmRegistrationModel(
-        ILogger<ConfirmRegistrationModel> logger,
         IMediator mediator)
     {
-        _logger = logger;
         _mediator = mediator;
     }
 
@@ -47,7 +44,7 @@ public class ConfirmRegistrationModel : PageModel
         }
 
         var result = await _mediator.Send(new VerifyConfirmRegistrationQuery(id, token), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
@@ -55,7 +52,7 @@ public class ConfirmRegistrationModel : PageModel
         }
 
         var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
@@ -75,13 +72,12 @@ public class ConfirmRegistrationModel : PageModel
         if (id == Guid.Empty || string.IsNullOrEmpty(token))
         {
             IsDisabled = true;
-            _logger.LogWarning("Ungültige Anfrage von {Ip}", HttpContext.Connection.RemoteIpAddress);
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
             return Page();
         }
 
         var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsFailed)
+        if (resultUser.IsError)
         {
             IsDisabled = true;
             ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
@@ -89,7 +85,7 @@ public class ConfirmRegistrationModel : PageModel
         }
 
         var result = await _mediator.Send(new ConfirmRegistrationCommand(id, Password!, token), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
             return Page();

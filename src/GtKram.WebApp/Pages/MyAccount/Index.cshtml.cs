@@ -1,8 +1,9 @@
 using GtKram.Application.UseCases.User.Commands;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Queries;
-using GtKram.WebApp.Annotations;
-using GtKram.WebApp.Extensions;
+using GtKram.Infrastructure.AspNetCore.Annotations;
+using GtKram.Infrastructure.AspNetCore.Extensions;
+using GtKram.Infrastructure.AspNetCore.Routing;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace GtKram.WebApp.Pages.MyAccount;
 
 [Node("Mein Konto", FromPage = typeof(Pages.IndexModel))]
 [Authorize]
-public class IndexModel : PageModel
+public sealed class IndexModel : PageModel
 {
     private readonly IMediator _mediator;
 
@@ -52,7 +53,7 @@ public class IndexModel : PageModel
         if (!await Update(cancellationToken)) return;
 
         var result = await _mediator.Send(new UpdateUserCommand(User.GetId(), Name!, null), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             ModelState.AddError(result.Errors);
             return;
@@ -64,7 +65,7 @@ public class IndexModel : PageModel
     private async Task<bool> Update(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new FindUserByIdQuery(User.GetId()), cancellationToken);
-        if (result.IsFailed)
+        if (result.IsError)
         {
             IsDisabled = true;
             return false;

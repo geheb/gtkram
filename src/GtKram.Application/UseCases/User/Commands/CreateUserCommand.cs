@@ -1,7 +1,7 @@
-using GtKram.Domain.Base;
+using ErrorOr;
 using GtKram.Domain.Models;
 using Mediator;
 
 namespace GtKram.Application.UseCases.User.Commands;
 
-public record struct CreateUserCommand(string Name, string Email, UserRoleType[] Roles, string CallbackUrl) : ICommand<Result<Guid>>;
+public record struct CreateUserCommand(string Name, string Email, UserRoleType[] Roles, string CallbackUrl) : ICommand<ErrorOr<Guid>>;
