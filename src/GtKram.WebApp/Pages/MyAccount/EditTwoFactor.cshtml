@@ -40,7 +40,7 @@
                     <div class="field">
                         <label class="label" for="qrcode">QR-Code</label>
                         <div class="control">
-                            <a href="@Model.AuthUri"><canvas id="qrcode"></canvas></a>
+                            <a href="@Model.AuthUri"><img src="@Model.AuthQrCodeEncoded" alt="QR-Code" /></a>
                         </div>
                     </div>
                     <div class="field">
@@ -74,12 +74,3 @@
 
 @await Html.PartialAsync("_Footer")
 
-@section Scripts {
-    <script type="text/javascript">
-        $(function () {
-            const payload = '@Model.AuthUri';
-            const element = document.getElementById('qrcode')
-            QRCode.toCanvas(element, payload, { errorCorrectionLevel: 'H', width: 256, margin: 0, type: 'svg' });
-        });
-    </script>
-}

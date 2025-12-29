@@ -10,6 +10,7 @@ using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using QRCoder;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.MyAccount;
@@ -29,6 +30,8 @@ public sealed class EditTwoFactorModel : PageModel
 
     public string? AuthUri { get; set; }
     public bool IsTwoFactorEnabled { get; set; }
+
+    public string? AuthQrCodeEncoded { get; set; }
 
     public EditTwoFactorModel(IMediator mediator)
     {
@@ -52,6 +55,7 @@ public sealed class EditTwoFactorModel : PageModel
             IsTwoFactorEnabled = result2fa.Value.IsEnabled;
             SecretKey = result2fa.Value.SecretKey;
             AuthUri = result2fa.Value.AuthUri;
+            AuthQrCodeEncoded = GenerateQrCodeEncoded(result2fa.Value.AuthUri);
         }
     }
 
@@ -67,6 +71,7 @@ public sealed class EditTwoFactorModel : PageModel
         IsTwoFactorEnabled = result2fa.Value.IsEnabled;
         SecretKey = result2fa.Value.SecretKey;
         AuthUri = result2fa.Value.AuthUri;
+        AuthQrCodeEncoded = GenerateQrCodeEncoded(result2fa.Value.AuthUri);
 
         ErrorOr<Success> result;
         if (IsTwoFactorEnabled)
@@ -90,5 +95,14 @@ public sealed class EditTwoFactorModel : PageModel
         }
 
         return RedirectToPage("Index", new { message = IsTwoFactorEnabled ? 4 : 3 });
+    }
+
+    private static string GenerateQrCodeEncoded(string data)
+    {
+        using var generator = new QRCodeGenerator();
+        using var code = generator.CreateQrCode(data, QRCodeGenerator.ECCLevel.H);
+        using var image = new PngByteQRCode(code);
+        var content = image.GetGraphic(5);
+        return "data:image/png;base64," + Convert.ToBase64String(content);
     }
 }

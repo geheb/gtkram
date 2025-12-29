@@ -13,6 +13,7 @@
 
   <ItemGroup>
 	<PackageReference Include="Microsoft.Web.LibraryManager.Build" />
+	<PackageReference Include="QRCoder" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Async" />
     <PackageReference Include="Serilog.Sinks.Console" />
