@@ -37,7 +37,7 @@ internal sealed class SellerHandler :
     private readonly IMediator _mediator;
     private readonly IUsers _users;
     private readonly IEmailService _emailService;
-    private readonly IEmailValidatorService _emailValidatorService;
+    private readonly IEmailValidator _emailValidatorService;
     private readonly ISellerRegistrations _sellerRegistrations;
     private readonly ISellers _sellers;
     private readonly IArticles _articles;
@@ -50,7 +50,7 @@ internal sealed class SellerHandler :
         IMediator mediator,
         IUsers users,
         IEmailService emailService,
-        IEmailValidatorService emailValidatorService,
+        IEmailValidator emailValidatorService,
         ISellerRegistrations sellerRegistrations,
         ISellers sellers,
         IArticles articles,

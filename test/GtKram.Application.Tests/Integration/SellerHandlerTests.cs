@@ -43,7 +43,7 @@ public sealed class SellerHandlerTests
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ConfirmEmailDataProtectionTokenProviderOptions()));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new DataProtectionTokenProviderOptions()));
 
-        var mockEmailValidatorService = Substitute.For<IEmailValidatorService>();
+        var mockEmailValidatorService = Substitute.For<IEmailValidator>();
         mockEmailValidatorService.Validate(Arg.Any<string>(), _cancellationToken).Returns(true);
         _fixture.Services.AddScoped(_ => mockEmailValidatorService);
         _fixture.Services.AddScoped<IEmailService, EmailService>();

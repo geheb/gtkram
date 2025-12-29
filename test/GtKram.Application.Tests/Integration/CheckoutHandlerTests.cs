@@ -37,7 +37,7 @@ public sealed class CheckoutHandlerTests
         _mockTimeProvider.GetUtcNow().Returns(_ => DateTimeOffset.UtcNow);
         _fixture.Services.AddSingleton(_mockTimeProvider);
  
-        var mockEmailValidatorService = Substitute.For<IEmailValidatorService>();
+        var mockEmailValidatorService = Substitute.For<IEmailValidator>();
         mockEmailValidatorService.Validate(Arg.Any<string>(), _cancellationToken).Returns(true);
         _fixture.Services.AddScoped(_ => mockEmailValidatorService);
 

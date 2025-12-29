@@ -30,8 +30,10 @@ public static class ServiceExtensions
         services.AddHostedService<HostedWorker>();
 
         services.Configure<SmtpConnectionOptions>(configuration.GetSection("Smtp"));
-        services.AddSingleton<IEmailValidatorService, EmailValidatorService>();
-        services.AddScoped<SmtpDispatcher>();
+        services.AddSingleton<IpReputationChecker>();
+        services.AddSingleton<IEmailValidator, EmailValidator>();
+        services.AddSingleton<SmtpDispatcher>();
+
         services.AddScoped<IUserAuthenticator, UserAuthenticator>();
         services.AddScoped<IEmailService, EmailService>();
     }

@@ -18,13 +18,13 @@ internal sealed class UserHandler :
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
     private readonly IUsers _users;
-    private readonly IEmailValidatorService _emailValidatorService;
+    private readonly IEmailValidator _emailValidatorService;
 
     public UserHandler(
         IdentityErrorDescriber errorDescriber,
         IMediator mediator,
         IUsers users, 
-        IEmailValidatorService emailValidatorService)
+        IEmailValidator emailValidatorService)
     {
         _errorDescriber = errorDescriber;
         _mediator = mediator;

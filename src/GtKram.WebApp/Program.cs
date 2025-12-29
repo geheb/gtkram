@@ -65,6 +65,7 @@ void ConfigurePipeline(WebApplication app)
     // Configure the HTTP request pipeline.
     app.UseExceptionHandler("/Error/500");
 
+    app.UseMiddleware<BotBlockerMiddleware>();
     app.UseMiddleware<CspMiddleware>();
 
     app.UseStatusCodePagesWithReExecute("/Error/{0}");

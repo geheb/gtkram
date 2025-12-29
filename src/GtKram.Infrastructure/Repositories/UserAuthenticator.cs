@@ -19,7 +19,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
-    private readonly IEmailValidatorService _emailValidator;
+    private readonly IEmailValidator _emailValidator;
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly SignInManager<Identity> _signInManager;
     private readonly string _appTitle;
@@ -28,7 +28,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         ILogger<UserAuthenticator> logger,
         TimeProvider timeProvider,
         IOptions<AppSettings> appSettings,
-        IEmailValidatorService emailValidator,
+        IEmailValidator emailValidator,
         IdentityErrorDescriber errorDescriber,
         SignInManager<Identity> signInManager)
     {

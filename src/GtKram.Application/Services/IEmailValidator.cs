@@ -1,6 +1,6 @@
 namespace GtKram.Application.Services;
 
-public interface IEmailValidatorService
+public interface IEmailValidator
 {
     Task<bool> Validate(string email, CancellationToken cancellationToken);
 }
