@@ -10,7 +10,6 @@
 
     var dateConverter = new GermanDateTimeConverter();
 
-    var audioBeepUrl = Html.AppendVersion("/audio/scan.ogg");
     var checkoutUrl = Url.PageLink("Checkout", null, new { eventId });
     var articleAddUrl = Url.PageLink("ArticleAdd", null, new { eventId, id });
 
@@ -136,7 +135,7 @@
     <div class="modal-background"></div>
     <div class="modal-content">
         <h1 class="has-text-centered has-text-white is-size-3">QR-Code Scanner</h1>
-        <video class="qr-video"></video>
+        <video class="qr-video" playsinline></video>
     </div>
     <button class="modal-close is-large close-modal" aria-label="close"></button>
 </div>
@@ -166,30 +165,23 @@
 {
 <script type="text/javascript">
     $(function () {
+
         var scanner = null;
-        QrScanner.hasCamera().then(function (result) {
-            if (!result) {
-                $('.scan-button').addClass('is-hidden');
-            }
-        });
 
         const scanModal = $('#scanModal');
         scanModal.on('modal:open', function (e) {
             const video = $(e.target).find(".qr-video").get(0);
-            const beep = new Audio('@audioBeepUrl');
 
-            scanner = new QrScanner(video, function (result) {
-                scanner.stop();
-                beep.play();
-
-                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(result.data);
+            scanner = new QrCodeScanner(video, code =>
+            {
+                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
                 if (!isValid) {
                     createToast('QR-Code ist ungültig', 'is-danger');
-                    sleep(2000).then(() => scanner.start());
+                    sleep(500).then(() => scanner.play());
                     return;
                 }
 
-                $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: result.data }).done(function (data) {
+                $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: code }).done(function (data) {
                     if (data && data.created) {
                         createToast(`Artikel wurde angelegt.`);
                     }
@@ -202,14 +194,20 @@
                     else {
                         createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
                     }
-                    sleep(2000).then(() => scanner.start());
+                    sleep(1000).then(() => scanner.play());
                 });
-            }, { highlightScanRegion:true, highlightCodeOutline:true });
 
-            scanner.start();
+            });
+
+            scanner.start().then(result =>
+            {
+                if (!result) {
+                    $('.scan-button').addClass('is-hidden');
+                }
+            });
         });
         scanModal.on('modal:close', function (e) {
-            scanner.destroy();
+            scanner.stop();
             scanner = null;
             window.location.reload();
         });

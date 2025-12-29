@@ -43,19 +43,12 @@
       ]
     },
     {
-      "library": "qrcode@1.5.1",
-      "destination": "wwwroot/lib/qrcode/",
+      "provider": "jsdelivr",
+      "library": "jsqr@1.4.0",
+      "destination": "wwwroot/lib/jsqr/",
       "files": [
-        "qrcode.min.js"
+        "dist/jsQR.min.js"
       ]
-    },
-    {
-        "library": "qr-scanner@1.4.2",
-        "destination": "wwwroot/lib/qr-scanner/",
-        "files": [
-            "qr-scanner-worker.min.js",
-            "qr-scanner.umd.min.js"
-        ]
     },
     {
         "provider": "jsdelivr",
