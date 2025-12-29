@@ -5,7 +5,6 @@ using GtKram.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Net.Mail;
 
 namespace GtKram.Infrastructure.Worker;
@@ -41,6 +40,9 @@ internal sealed class HostedWorker : BackgroundService
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
         runner.MigrateUp();
+
+        var mysqlMigration = scope.ServiceProvider.GetRequiredService<MysqlMigration>();
+        await mysqlMigration.Migrate(cancellationToken);
     }
 
     private async Task HandleSuperUser()

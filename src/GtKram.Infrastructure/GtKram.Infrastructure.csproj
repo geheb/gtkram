@@ -15,6 +15,7 @@
 		<PackageReference Include="FluentMigrator.Runner.SQLite" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+		<PackageReference Include="MySqlConnector" />
 		<PackageReference Include="Scriban" />
 		<PackageReference Include="SourceGear.sqlite3" />
 		<PackageReference Include="System.Data.SQLite" />
