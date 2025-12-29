@@ -16,7 +16,6 @@
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
 		<PackageReference Include="Microsoft.Data.Sqlite" />
-		<PackageReference Include="MySqlConnector" />
 		<PackageReference Include="Scriban" />
 	</ItemGroup>
 
