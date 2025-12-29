@@ -1,0 +1,17 @@
+﻿@page
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Impressum";
+    ViewData["HasFooter"] = true;
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+        @await Html.ReadTextContent("~/html/imprint.html")
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+

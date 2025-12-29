@@ -1,0 +1,170 @@
+﻿@page "/MyBazaars/{sellerId:guid}/Articles"
+@model GtKram.WebApp.Pages.MyBazaars.ArticlesModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["sellerId"] as string, out var sellerId);
+
+    var addUrl = Url.PageLink("AddArticle", null, new { sellerId });
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { sellerId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="menu-action" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <div>Gesamt: @Model.AvailableCount / @Model.MaxArticleCount</div>
+                                <div>Gesamtwert: @Model.AvailableTotalValue.ToString("0.00") €</div>
+                                <div>Verkauft: @Model.SoldCount</div>
+                                <div>Verkaufswert: @Model.SoldTotalValue.ToString("0.00") €</div>
+                                <div>Auszahlung: @Model.PayoutTotalValue.ToString("0.00") €</div>
+                            </div>
+                            @if (Model.Event != null && Model.CanAdd)
+                            {
+                                <hr class="dropdown-divider" />
+                                <a href="@addUrl" class="dropdown-item">
+                                    Artikel anlegen
+                                </a>
+                                <a href="#" data-target="#takeOverModal" data-url="@Url.PageLink(string.Empty, "takeoverarticles", new { sellerId })" class="dropdown-item open-modal">
+                                    Artikel übernehmen
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="title is-4">@Model.Event</h1>
+        <h2 class="subtitle">Bearbeitung endet am: @Model.EditArticleEndDate</h2>
+
+        @if (Model.CanAdd)
+        {
+            <div>
+                <a href="@addUrl" class="button is-floating is-link">
+                    <i class="fas fa-plus-circle"></i>
+                </a>
+            </div>
+        }
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Artikel gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-box-archive fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.Article.Name (#@i.Article.LabelNumber)</div>
+                        <div class="list-item-description">
+                            @if (!string.IsNullOrWhiteSpace(i.Article.Size))
+                            {
+                                <span class="tag is-rounded)">@i.Article.Size</span>
+                            }
+                            <span class="tag is-rounded">@i.Article.Price.ToString("0.00") €</span>
+                            @if (i.Checkout?.IsCompleted == true)
+                            {
+                                <span class="tag is-rounded is-success">Verkauft</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            @if (Model.CanEdit)
+                            {
+                                <a class="button open-modal" href="#" data-target="#deleteArticleModal"
+                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.Article.Id }))">
+                                    <span class="icon is-small"><i class="fa-solid fa-trash"></i></span>
+                                </a>
+                            }
+                            <a class="button" href="@(Url.PageLink("EditArticle", null, new { id = i.Article.Id, sellerId = i.Article.SellerId }))">
+                                <span class="icon is-small"><i class="fa-solid fa-pen"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteArticleModal",
+    "Artikel löschen",
+    "Möchtest du wirklich diesen Artikel löschen?")
+
+@Html.CreateModalTemplateWithOkCancel(
+    "takeOverModal",
+    "Artikel übernehmen",
+    "Möchtest du wirklich die offenen Artikel des letzten Kinderbasars übernehmen?")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+
+            handleModal({
+                id: '#deleteArticleModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Artikel wurde gelöscht.',
+                        failed: 'Artikel konnte nicht gelöscht werden.'
+                    }
+                }
+            });
+
+            handleModal({
+                id: '#takeOverModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    closeOnFailed: true,
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Artikel wurden angelegt.',
+                        failed: 'Artikel konnten nicht angelegt werden.'
+                    }
+                }
+            });
+    });
+    </script>
+}
+

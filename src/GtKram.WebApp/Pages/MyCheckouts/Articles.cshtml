@@ -1,0 +1,287 @@
+﻿@page "/MyCheckouts/Bazaar/{eventId:guid}/Articles/{id:guid}"
+
+@model GtKram.WebApp.Pages.MyCheckouts.ArticlesModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+
+    var dateConverter = new GermanDateTimeConverter();
+
+    var checkoutUrl = Url.PageLink("Checkout", null, new { eventId });
+    var articleAddUrl = Url.PageLink("ArticleAdd", null, new { eventId, id });
+
+    var urlAdd = Url.PageLink(string.Empty, "add", new { id });
+    var cancelUrl = Url.PageLink(string.Empty, "cancel", new { id });
+    var sumUrl = Url.PageLink(string.Empty, "sum", new { id });
+    var completeUrl = Url.PageLink(string.Empty, "complete", new { id });
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId, id }, new { eventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="menu-action" role="menu">
+                        @if (Model.CanEdit)
+                        {
+                            <div class="dropdown-content">
+                                <a class="dropdown-item open-modal scan-button" data-target="#scanModal" href="#">
+                                    Artikel einscannen
+                                </a>
+                                <a class="dropdown-item" href="@articleAddUrl">
+                                    Artikel eingeben
+                                </a>
+                                <a class="dropdown-item open-modal" data-target="#cancelModal" data-url="@cancelUrl" href="#">
+                                    Kassenvorgang abbrechen
+                                </a>
+                                @if (Model.CanComplete)
+                                {
+                                    <a class="dropdown-item open-modal" data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl" href="#">
+                                        Kassenvorgang abschließen
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.CanEdit)
+        {
+            <div>
+                <a href="#" class="button is-floating is-warning open-modal scan-button" data-target="#scanModal">
+                    <i class="fas fa-barcode"></i>
+                </a>
+                <a href="@articleAddUrl" class="button is-floating is-link" style="right:4em">
+                    <i class="fas fa-keyboard"></i>
+                </a>
+                <a href="#" class="button is-floating is-danger open-modal" style="right:7em" data-target="#cancelModal" data-url="@cancelUrl">
+                    <i class="fas fa-thumbs-down"></i>
+                </a>
+                @if (Model.CanComplete)
+                {
+                    <a href="#" class="button is-floating is-success open-modal" style="right:10em"
+                        data-target="#completeModal" data-sumurl="@sumUrl" data-completeurl="@completeUrl">
+                        <i class="fas fa-thumbs-up"></i>
+                    </a>
+                }
+            </div>
+        }
+
+        <h1 class="title is-4">@Model.Event</h1>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Kassenartikel gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-box-archive fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.Article.Name (#@i.Article.LabelNumber)</div>
+                        <div class="list-item-description">
+                            <span class="tag is-rounded">Verkäufernummer @i.SellerNumber</span>
+                            <span class="tag is-rounded">@i.Article.Price.ToString("0.00") €</span>
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            @if (Model.CanEdit)
+                            {
+                            <a class="button open-modal" href="#" data-target="#deleteModal" data-info="@i.Format()" 
+                                data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.Checkout!.Id, articleId = i.Article.Id }))">
+                                <span class="icon is-small"><i class="fa-solid fa-eraser"></i></span>
+                            </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+<div id="scanModal" class="modal" aria-hidden="true">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+        <h1 class="has-text-centered has-text-white is-size-3">QR-Code Scanner</h1>
+        <video class="qr-video" playsinline></video>
+    </div>
+    <button class="modal-close is-large close-modal" aria-label="close"></button>
+</div>
+
+@Html.CreateModalTemplateWithOkCancel(
+    "cancelModal",
+    "Kassenvorgang stornieren",
+    "Möchtest du wirklich den aktuellen Kassen-Vorgang stornieren?")
+
+@Html.CreateModalTemplateStart("completeModal", "Kassen-Vorgang abschließen")
+<div class="content is-size-4">
+    <div>Anzahl: <span class="checkoutCount">?</span></div>
+    <div>Summe: <span class="checkoutTotal">?</span> €</div>
+    <div>Rückgabe: <span class="checkoutBack">?</span> €</div>
+    <hr />
+    <p>Erhalten:</p>
+    <input class="input" type="number" step="0.01" />
+</div>
+@Html.CreateModalTemplateEnd(true)
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteModal",
+    "Artikel entfernen",
+    @"Möchtest du wirklich den Artikel ""<span class=""article-info""></span>"" entfernen?")
+
+@section Scripts
+{
+<script type="text/javascript">
+    $(function () {
+
+        var scanner = null;
+
+        const scanModal = $('#scanModal');
+        scanModal.on('modal:open', function (e) {
+            const video = $(e.target).find(".qr-video").get(0);
+
+            scanner = new QrCodeScanner(video, code =>
+            {
+                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+                if (!isValid) {
+                    createToast('QR-Code ist ungültig', 'is-danger');
+                    sleep(500).then(() => scanner.play());
+                    return;
+                }
+
+                $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: code }).done(function (data) {
+                    if (data && data.created) {
+                        createToast(`Artikel wurde angelegt.`);
+                    }
+                    else if (data && data.exists) {
+                        createToast(`Artikel wurde bereits erfasst.`, 'is-warning');
+                    }
+                    else if (data && data.notfound) {
+                        createToast(`Artikel wurde nicht gefunden.`, 'is-warning');
+                    }
+                    else {
+                        createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
+                    }
+                    sleep(1000).then(() => scanner.play());
+                });
+
+            });
+
+            scanner.start().then(result =>
+            {
+                if (!result) {
+                    $('.scan-button').addClass('is-hidden');
+                }
+            });
+        });
+        scanModal.on('modal:close', function (e) {
+            scanner.stop();
+            scanner = null;
+            window.location.reload();
+        });
+
+        handleModal({
+            id: '#cancelModal',
+            token: {@Html.AjaxCsrfToken()},
+            confirm: {
+                dataurl: 'url',
+                action: function () {
+                    window.location = '@Html.Raw(checkoutUrl)';
+                },
+                toast: {
+                    success: 'Kassenvorgang wurde storniert.',
+                    failed: 'Kassenvorgang konnte nicht storniert werden.'
+                }
+            }
+        });
+
+        handleModal({
+            id: '#completeModal',
+            token: {@Html.AjaxCsrfToken()},
+            load: {
+                dataurl: 'sumurl',
+                action: function(target, data) {
+                    target.find('.checkoutCount').text(`${data.count}`);
+                    target.find('.checkoutTotal').text(`${data.total}`);
+                },
+                toast: {
+                    failed: 'Kassenvorgang konnte nicht geladen werden.'
+                }
+            },
+            confirm: {
+                dataurl: 'completeurl',
+                action: function () {
+                    window.location = '@Html.Raw(checkoutUrl)';
+                },
+                toast: {
+                    success: 'Kassenvorgang wurde abgeschlossen.',
+                    failed: 'Kassenvorgang konnte nicht abgeschlossen werden.'
+                }
+            }
+        });
+
+        $("#completeModal input").on("keyup change", function() {
+            const receivedMoney = parseFloat($(this).val().replaceAll(",", "."));
+            const totalMoney = parseFloat($('#completeModal').find(".checkoutTotal").text());
+            if (!isNaN(receivedMoney) && receivedMoney > 0.0 && !isNaN(totalMoney) && totalMoney > 0.0 && receivedMoney >= totalMoney) {
+                const val = receivedMoney - totalMoney;
+                $('#completeModal').find(".checkoutBack").text(val.toFixed(2));
+            } else {
+                $('#completeModal').find(".checkoutBack").text('?');
+            }                
+        });
+
+        handleModal({
+            id: '#deleteModal',
+            token: {@Html.AjaxCsrfToken()},
+            init: function(target, relatedTarget) {
+                const info = relatedTarget.dataset['info'];
+                target.find('.article-info').text(info);
+            },
+            confirm: {
+                dataurl: 'url',
+                action: function () {
+                    window.location.reload();
+                },
+                toast: {
+                    success: 'Artikel wurde entfernt.',
+                    failed: 'Artikel konnte nicht entfernt werden.'
+                }
+            }
+        });
+
+    });
+</script>
+}

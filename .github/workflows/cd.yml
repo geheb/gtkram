@@ -1,4 +1,4 @@
-name: Release
+name: CD
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
+    - name: Setup
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: '10.0.x'
 
-    - name: Restore dependencies
+    - name: Restore
       run: dotnet restore
 
     - name: Create version
@@ -32,8 +32,7 @@ jobs:
 
     - name: Publish files
       run: |
-        dotnet publish ./src/GtKram.Cli -c Release -o ./dist/cli -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
-        dotnet publish ./src/GtKram.Ui -c Release -o ./dist/ui -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+        dotnet publish ./src/GtKram.WebApp -c Release -o ./dist -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
 
     - name: Create archive
       run: |

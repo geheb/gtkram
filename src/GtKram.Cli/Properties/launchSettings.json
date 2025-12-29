@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "GtKram.Cli": {
-      "commandName": "Project",
-      "commandLineArgs": ""
-    }
-  }
-}

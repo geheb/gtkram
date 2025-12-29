@@ -398,9 +398,9 @@ FodyWeavers.xsd
 *.sln.iml
 
 # app specific
-src/GtKram.Ui/wwwroot/html
-src/GtKram.Ui/wwwroot/lib
-appsettings.Development.json
-appsettings.Production.json
-logs/
-
+**/wwwroot/html
+**/wwwroot/lib
+appsettings.*.json
+.logs/
+.dataprotection/
+.database/

@@ -1,0 +1,205 @@
+﻿@page "/Bazaars/{eventId:guid}/Sellers"
+@model GtKram.WebApp.Pages.Bazaars.SellersModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+
+    var clothingConverter = new ClothingConverter();
+    var sellerConverter = new SellerConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId }, new { id = eventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="menu-action" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <div>Gesamt: @Model.Items.Length</div>
+                                <div>Zugesagt: @Model.AcceptedCount</div>
+                                <div>Abgesagt: @Model.CancelledCount</div>
+                                <div>Unbestätigt: @Model.UnconfirmedCount</div>
+                                <div>Zugesagt ohne Artikel: @Model.AcceptedWithoutArticleCount</div>
+                                <div>Eingetragene Artikel: @Model.ArticleCount</div>
+                            </div>
+                            <hr class="dropdown-divider" />
+                            <a href="@Url.PageLink("AddSeller", null, new { eventId })" class="dropdown-item">
+                                Verkäufer anlegen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="title is-4">@Model.Event</h1>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Registrierungen gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-id-card fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@i.Registration.Name</div>
+                        <div class="list-item-description">
+                            @if (i.Registration.IsAccepted is not null)
+                            {
+                                <span class="tag is-rounded @(i.Registration.IsAccepted == true ? "is-success" : "is-danger")">@(i.Registration.IsAccepted == true ? "Zugesagt" : "Abgesagt")</span>
+                            }
+                            @if (i.Registration.PreferredType == Domain.Models.SellerRegistrationPreferredType.Kita)
+                            {
+                                <span class="tag is-rounded">Kita</span>
+                            }
+                            @if (i.Registration.ClothingType?.Length > 0)
+                            {
+                                <span class="tag is-rounded">@string.Join(",", clothingConverter.MapToString(i.Registration.ClothingType))</span>
+                            }
+                            @if (i.Seller is not null)
+                            {
+                                <div class="pt-1">
+                                    <span class="tag is-rounded is-light">Verkäufernummer @i.Seller.SellerNumber</span>
+                                    <span class="tag is-rounded is-light">@i.ArticleCount / @i.Seller.MaxArticleCount Artikel</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            @if (i.Seller is not null)
+                            {
+                                <a class="button" href="@(Url.PageLink("PrintSellerArticles", null, new { i.Registration.Id }))" target="_blank" rel="noopener noreferrer">
+                                    <span class="icon is-small"><i class="fa-solid fa-print"></i></span>
+                                </a>
+                            }
+                            <a class="button" href="@(Url.PageLink("EditSeller", null, new { eventId, id = i.Registration.Id }))">
+                                <span class="icon is-small"><i class="fa-solid fa-pen"></i></span>
+                            </a>
+                            <div class="dropdown is-hoverable is-right">
+                                <div class="dropdown-trigger">
+                                    <button class="button" aria-haspopup="true" aria-controls="row-action">
+                                        <span class="icon is-small">
+                                            <i class="fas fa-ellipsis-vertical"></i>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="row-action" role="menu">
+                                    <div class="dropdown-content">
+                                        @if (!Model.IsExpired)
+                                        {
+                                            <a class="dropdown-item seller-confirm" href="#"
+                                            data-url="@(Url.PageLink(string.Empty, "accept", new { id = i.Registration.Id }))">Zusagen</a>
+
+                                            <a class="dropdown-item seller-deny" href="#"
+                                            data-url="@(Url.PageLink(string.Empty, "deny", new { id = i.Registration.Id }))">Absagen</a>
+
+                                            <a class="dropdown-item open-modal" href="#"
+                                            data-target="#deleteSellerModal"
+                                            data-seller="@i.Registration.Name (@i.Registration.Email)"
+                                            data-url="@(Url.PageLink(string.Empty, "delete", new { id = i.Registration.Id }))">Löschen</a>
+                                        }
+                                        @if (i.Seller is not null)
+                                        {
+                                            <hr class="dropdown-divider" />
+                                            <a class="dropdown-item" href="@(Url.PageLink("SellerArticles", null, new { eventId, id = i.Registration.Id }))">
+                                                Artikel
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+</section>
+
+@Html.CreateModalTemplateWithOkCancel(
+    "deleteSellerModal",
+    "Registrierung löschen",
+    $@"Möchtest du wirklich die Registrierung ""<span class=""modal-seller""></span>"" für den Kinderbasar ""{Model.Event}"" löschen?")
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+
+            handleModal({
+                id: '#deleteSellerModal',
+                token: {@Html.AjaxCsrfToken()},
+                init: function(target, relatedTarget) {
+                    const info = relatedTarget.dataset['seller'];
+                    target.find('.modal-seller').text(info);
+                },
+                confirm: {
+                    dataurl: 'url',
+                    action: function () {
+                        window.location.reload();
+                    },
+                    toast: {
+                        success: 'Teilnahme wurde gelöscht.',
+                        failed: 'Teilnahme konnte nicht gelöscht werden.'
+                    }
+                }
+            });
+
+            $(".seller-confirm").click(function (e) {
+                const url = $(this).data('url');
+                $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
+                    if (data) {
+                        createToast('Teilnahme wurde zugesagt.');
+                        window.location.reload();
+                    } else {
+                        createToast('Teilnahme konnte nicht zugesagt werden.');
+                    }
+                });
+            });
+
+            $(".seller-deny").click(function (e) {
+                const url = $(this).data('url');
+                $.post(url, {@Html.AjaxCsrfToken()}).done(function (data) {
+                    if (data) {
+                        createToast('Teilnahme wurde abgesagt.');
+                        window.location.reload();
+                    } else {
+                        createToast('Teilnahme konnte nicht abgesagt werden.');
+                    }
+                });
+            });
+
+        });
+    </script>
+}

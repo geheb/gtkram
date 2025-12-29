@@ -1,22 +1,20 @@
 ﻿# GtKram
-Die Web-App für einen Kinderbasar
+
+A web app for organising children's bazaars
 
 ## Frontend
 
-* https://github.com/jquery/jquery
-* https://github.com/jquery-validation/jquery-validation
-* https://github.com/aspnet/jquery-validation-unobtrusive
-* https://github.com/jgthms/bulma
-* https://github.com/bluefantail/bulma-list
-* https://github.com/FortAwesome/Font-Awesome
-* https://github.com/soldair/node-qrcode
-* https://github.com/nimiq/qr-scanner
-
+* Razor Pages in ASP.NET Core
+* Bulma Framework
+* jQuery 
+* Font Awesome
+* QR Code reading
+ 
 ## Backend
 
-* https://github.com/dotnet/aspnetcore
-* https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql
-* https://github.com/scriban/scriban
-* https://github.com/altmann/FluentResults
-* https://github.com/MichaCo/DnsClient.NET
-* https://github.com/serilog/serilog-aspnetcore
+* .NET Core 10.0
+  * ASP.NET Core
+* Template Engine with Scriban
+* Logging via Serilog
+* SQLite Persistence with Dapper ORM
+* Madiator Pattern

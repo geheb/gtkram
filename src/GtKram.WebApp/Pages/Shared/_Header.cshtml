@@ -1,0 +1,70 @@
+﻿<nav class="navbar is-info">
+    <div class="container">
+
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <span class="icon mr-2">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                </span>
+                <span>GT Kram</span>
+            </a>
+            <a role="button" class="navbar-burger" data-target="navMenu" aria-label="menu" aria-expanded="false">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div id="navMenu" class="navbar-menu">
+
+            <div class="navbar-end">
+                        
+                <a class="navbar-item" href="/">
+                    <span class="icon">
+                        <i class="fas fa-home" aria-hidden="true"></i>
+                    </span>
+                    <span>Startseite</span>
+                </a>
+
+                @if (User.Identity == null || !User.Identity.IsAuthenticated)
+                {
+                    <span class="navbar-item">
+                        <a class="button is-info is-inverted" href="/Login">
+                            <span class="icon">
+                                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                            </span>
+                            <span>Login</span>
+                        </a>
+                    </span>
+                }
+                else
+                {
+                    <a class="navbar-item" href="/MyAccount">
+                        <span class="icon">
+                            <i class="fas fa-user-circle" aria-hidden="true"></i>
+                        </span>
+                        <span>Mein Konto</span>
+                    </a>
+
+                    <span class="navbar-item">
+                        <a class="button is-info is-inverted" href="/Login/Exit">
+                            <span class="icon">
+                                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                            </span>
+                            <span>Logout</span>
+                        </a>
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+</nav>
+
+<section class="hero is-info is-small">
+
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <p class="title">@appSettings.Value.HeaderTitle</p>
+        </div>
+    </div>
+
+</section>

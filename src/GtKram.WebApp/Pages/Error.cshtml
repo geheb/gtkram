@@ -1,0 +1,31 @@
+﻿@page "/Error/{code:int}"
+@model ErrorModel
+@{
+    ViewData["Title"] = "Fehler";
+    ViewData["HasFooter"] = true;
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="has-text-centered">
+
+            <i class="fa-solid fa-ghost fa-fade icon-big mb-6"></i>
+            <h1 class="title">Fehlercode: @Model.Code</h1>
+            <h2 class="subtitle mt-6">@Model.Description</h2>
+
+            @if (Model.Is2faRequired)
+            {
+                <div class="content">
+                    <blockquote>
+                        Für diese Seite wird Zwei-Faktor-Authentifizierung (2FA) benötigt. Unter "Mein Konto" kann dieses aktiviert werden.
+                    </blockquote>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")

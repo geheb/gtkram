@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="add-migration.ps1" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/GtKram.Application/GtKram.Application.csproj" />
+    <Project Path="src/GtKram.Aspire/GtKram.Aspire.csproj" />
+    <Project Path="src/GtKram.Domain/GtKram.Domain.csproj" />
+    <Project Path="src/GtKram.Infrastructure/GtKram.Infrastructure.csproj" />
+    <Project Path="src/GtKram.WebApp/GtKram.WebApp.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/GtKram.Application.Tests/GtKram.Application.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<EmbeddedResource Include="Email\AcceptSeller.html" />
+		<EmbeddedResource Include="Email\ChangeEmail.html" />
+		<EmbeddedResource Include="Email\ConfirmRegistration.html" />
+		<EmbeddedResource Include="Email\DenySeller.html" />
+		<EmbeddedResource Include="Email\ResetPassword.html" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Dapper" />
+		<PackageReference Include="DnsClient" />
+		<PackageReference Include="FluentMigrator" />
+		<PackageReference Include="FluentMigrator.Runner.SQLite" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
+		<PackageReference Include="Scriban" />
+		<PackageReference Include="SourceGear.sqlite3" />
+		<PackageReference Include="System.Data.SQLite" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\GtKram.Application\GtKram.Application.csproj" />
+		<ProjectReference Include="..\GtKram.Domain\GtKram.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="GtKram.Application.Tests" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="AspNetCore\LocalizedMessages.Designer.cs">
+	    <DependentUpon>LocalizedMessages.resx</DependentUpon>
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="AspNetCore\LocalizedMessages.resx">
+	    <SubType>Designer</SubType>
+	    <LastGenOutput>LocalizedMessages.Designer.cs</LastGenOutput>
+	    <Generator>ResXFileCodeGenerator</Generator>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+</Project>

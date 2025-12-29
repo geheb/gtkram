@@ -1,0 +1,119 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+    ViewData["IsHome"] = true;
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        @if (!isAuthenticated)
+        {
+            <div class="has-text-centered">
+                <h3 class="title is-3">Willkommen !</h3>
+                <h4 class="subtitle is-4">@appSettings.Value.Slogan</h4>
+            </div>
+
+            <figure class="has-centered mt-5">
+                <img src="~/images/intro.png" asp-append-version="true" alt="" />
+            </figure>
+        }
+
+        @if (Model.HasNodeAccess(
+            typeof(MyBazaars.IndexModel), 
+            typeof(MyCheckouts.IndexModel)))
+        {
+            <p class="title">Meine Teilnahme</p>
+            <nav class="bd-links">
+                @if (Model.HasNodeAccess(typeof(MyBazaars.IndexModel)))
+                {
+                    <a href="/MyBazaars" class="bd-link has-text-grey">
+                        <span class="icon bd-link-icon has-text-info">
+                            <i class="fa-solid fa-boxes-packing"></i>
+                        </span>
+                        <div>
+                            <h2 class="bd-link-title">Meine Kinderbasare</h2>
+                            <div class="bd-link-subtitle">
+                                Meine Teilnahme als Verkäufer.
+                            </div>
+                        </div>
+                    </a>
+                }
+                @if (Model.HasNodeAccess(typeof(MyCheckouts.IndexModel)))
+                {
+                    <a href="/MyCheckouts" class="bd-link has-text-grey">
+                        <span class="icon bd-link-icon has-text-info">
+                            <i class="fa-solid fa-cash-register"></i>
+                        </span>
+                        <div>
+                            <h2 class="bd-link-title">Meine Kasse</h2>
+                            <div class="bd-link-subtitle">
+                                Meine Teilnahme als Kassierer.
+                            </div>
+                        </div>
+                    </a>
+                }
+            </nav>
+        }
+
+        @if (Model.HasNodeAccess(
+            typeof(Bazaars.IndexModel), 
+            typeof(Checkouts.IndexModel),
+            typeof(Users.IndexModel)))
+        {
+            <p class="title">Verwaltung</p>
+            <nav class="bd-links">
+            @if (Model.HasNodeAccess(typeof(Bazaars.IndexModel)))
+            {
+                <a href="/Bazaars" class="bd-link has-text-grey">
+                    <span class="icon bd-link-icon has-text-info">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </span>
+                    <div>
+                        <h2 class="bd-link-title">Kinderbasare</h2>
+                        <div class="bd-link-subtitle">
+                            Kinderbasare verwalten.
+                        </div>
+                    </div>
+                </a>
+            }
+            @if (Model.HasNodeAccess(typeof(Checkouts.IndexModel)))
+            {
+                <a href="/Checkouts" class="bd-link has-text-grey">
+                    <span class="icon bd-link-icon has-text-info">
+                        <i class="fa-solid fa-cash-register"></i>
+                    </span>
+                    <div>
+                        <h2 class="bd-link-title">Kasse</h2>
+                        <div class="bd-link-subtitle">
+                            Kassenvorgänge verwalten.
+                        </div>
+                    </div>
+                </a>
+            }
+            @if (Model.HasNodeAccess(typeof(Users.IndexModel)))
+            {
+                <a href="/Users" class="bd-link has-text-grey">
+                    <span class="icon bd-link-icon has-text-info">
+                        <i class="fas fa-users"></i>
+                    </span>
+                    <div>
+                        <h2 class="bd-link-title">Benutzer</h2>
+                        <div class="bd-link-subtitle">
+                            Benutzer für das Portal verwalten.
+                        </div>
+                    </div>
+                </a>
+            }
+            </nav>
+        }
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
