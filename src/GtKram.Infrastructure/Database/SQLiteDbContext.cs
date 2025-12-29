@@ -1,12 +1,12 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using System.Data.Common;
-using System.Data.SQLite;
 
 namespace GtKram.Infrastructure.Database;
 
 internal sealed class SQLiteDbContext : IAsyncDisposable
 {
-    private SQLiteConnection? _connection;
+    private SqliteConnection? _connection;
     private readonly string _connectionString;
 
     public SQLiteDbContext(IConfiguration configuration)
@@ -18,7 +18,7 @@ internal sealed class SQLiteDbContext : IAsyncDisposable
     {
         if (_connection is null)
         {
-            var connection = new SQLiteConnection(_connectionString);
+            var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
             _connection = connection;
         }

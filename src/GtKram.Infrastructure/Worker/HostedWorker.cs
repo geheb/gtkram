@@ -1,3 +1,4 @@
+using Dapper;
 using FluentMigrator.Runner;
 using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Email;
@@ -38,6 +39,11 @@ internal sealed class HostedWorker : BackgroundService
     private async Task HandleMigration(CancellationToken cancellationToken)
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
+
+        var dbContext = scope.ServiceProvider.GetRequiredService<SQLiteDbContext>();
+        var connection = await dbContext.GetConnection(cancellationToken);
+        await connection.ExecuteAsync("PRAGMA journal_mode = 'wal';");
+
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
         runner.MigrateUp();
 

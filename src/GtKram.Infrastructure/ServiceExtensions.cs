@@ -1,3 +1,4 @@
+using Dapper;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.VersionTableInfo;
 using GtKram.Application.Options;
@@ -12,10 +13,11 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Data.SQLite;
+using System.Data;
 
 namespace GtKram.Infrastructure;
 
@@ -179,7 +181,13 @@ public static class ServiceExtensions
 
     private static void InitSQLiteContext(this IConfiguration configuration)
     {
-        var connectionStringBuilder = new SQLiteConnectionStringBuilder(configuration.GetConnectionString("SQLite"));
+        // https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/dapper-limitations
+        SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+        SqlMapper.AddTypeHandler(new GuidHandler());
+        SqlMapper.AddTypeHandler(new TimeSpanHandler());
+
+        var connectionStringBuilder = new SqliteConnectionStringBuilder(configuration.GetConnectionString("SQLite"));
+
         var file = new FileInfo(connectionStringBuilder.DataSource);
         if (file.Directory?.Exists == false)
         {
@@ -197,5 +205,29 @@ public static class ServiceExtensions
         public string DescriptionColumnName => "Description";
         public bool OwnsSchema => true;
         public bool CreateWithPrimaryKey => false;
+    }
+
+    private abstract class SqliteTypeHandler<T> : SqlMapper.TypeHandler<T>
+    {
+        public override void SetValue(IDbDataParameter parameter, T? value)
+            => parameter.Value = value;
+    }
+
+    private sealed class DateTimeOffsetHandler : SqliteTypeHandler<DateTimeOffset>
+    {
+        public override DateTimeOffset Parse(object value)
+            => DateTimeOffset.Parse((string)value);
+    }
+
+    private sealed class GuidHandler : SqliteTypeHandler<Guid>
+    {
+        public override Guid Parse(object value)
+            => Guid.Parse((string)value);
+    }
+
+    private sealed class TimeSpanHandler : SqliteTypeHandler<TimeSpan>
+    {
+        public override TimeSpan Parse(object value)
+            => TimeSpan.Parse((string)value);
     }
 }

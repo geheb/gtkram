@@ -4,10 +4,10 @@ using GtKram.Infrastructure.Database.Repositories;
 using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Data.SQLite;
 
 namespace GtKram.Application.Tests;
 
@@ -21,7 +21,7 @@ public sealed class ServiceFixture : IAsyncDisposable
 
     public ServiceFixture()
     {
-        var connectionStringBuilder = new SQLiteConnectionStringBuilder();
+        var connectionStringBuilder = new SqliteConnectionStringBuilder();
         _databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".sqlite");
         connectionStringBuilder.DataSource = _databaseFile;
         connectionStringBuilder.ForeignKeys = true;

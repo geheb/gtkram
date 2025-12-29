@@ -43,6 +43,13 @@
       ]
     },
     {
+      "library": "qrcode@1.5.1",
+      "destination": "wwwroot/lib/qrcode/",
+      "files": [
+        "qrcode.min.js"
+      ]
+    },
+    {
       "provider": "jsdelivr",
       "library": "jsqr@1.4.0",
       "destination": "wwwroot/lib/jsqr/",
@@ -51,13 +58,13 @@
       ]
     },
     {
-        "provider": "jsdelivr",
-        "library": "bulma-list@2.1.0",
-        "destination": "wwwroot/lib/bulma-list/",
-        "files": [
-            "css/bulma-list.min.css",
-            "css/bulma-list.css.map"
-        ]
+      "provider": "jsdelivr",
+      "library": "bulma-list@2.1.0",
+      "destination": "wwwroot/lib/bulma-list/",
+      "files": [
+        "css/bulma-list.min.css",
+        "css/bulma-list.css.map"
+      ]
     }
   ]
 }
