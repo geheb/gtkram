@@ -61,6 +61,7 @@ internal sealed class EventHandler :
             .ToDictionary(r => r.Key, r => r.Count());
 
         var results = events
+            .OrderByDescending(e => e.Start)
             .Select(e => new EventWithRegistrationCount(e, countByBazaarEventId.TryGetValue(e.Id, out var count) ? count : 0))
             .ToArray();
 

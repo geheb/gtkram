@@ -129,7 +129,7 @@ internal sealed class CheckoutHandler :
         }
 
         var result = new List<EventWithCheckoutTotals>(events.Length);
-        foreach (var @event in events)
+        foreach (var @event in events.OrderByDescending(e => e.Start))
         {
             var soldTotal = 0m;
             var checkoutCount = 0;
@@ -387,7 +387,7 @@ internal sealed class CheckoutHandler :
         }
 
         var result = new List<EventWithCheckoutCount>();
-        foreach (var @event in events)
+        foreach (var @event in events.OrderByDescending(e => e.Start))
         {
             if (!checkoutsByEventId.TryGetValue(@event.Id, out var count))
             {

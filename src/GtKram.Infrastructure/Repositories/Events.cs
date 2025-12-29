@@ -50,7 +50,7 @@ internal sealed class Events : IEvents
         var entities = await _repository.SelectAll(cancellationToken);
 
         var dc = new GermanDateTimeConverter();
-        return [.. entities.Select(e => e.MapToDomain(dc)).OrderByDescending(e => e.Start)];
+        return [.. entities.Select(e => e.MapToDomain(dc))];
     }
 
     public async Task<ErrorOr<Success>> Update(Domain.Models.Event model, CancellationToken cancellationToken)
