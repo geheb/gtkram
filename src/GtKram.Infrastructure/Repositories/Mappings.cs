@@ -123,7 +123,7 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Created = dc.ToLocal(entity.Created),
+            Created = dc.ToLocal(new DateTimeOffset(entity.Created, TimeSpan.Zero)),
             Status = (Domain.Models.CheckoutStatus)entity.Json.Status,
             EventId = entity.EventId,
             IdentityId = entity.IdentityId,
@@ -164,7 +164,7 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Created = dc.ToLocal(entity.Created),
+            Created = dc.ToLocal(new DateTimeOffset(entity.Created, TimeSpan.Zero)),
             EventId = entity.EventId,
             IdentityId = entity.IdentityId,
             SellerNumber = entity.Json.SellerNumber,
