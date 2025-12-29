@@ -179,7 +179,7 @@ public static class ServiceExtensions
         services.AddScoped<SmtpDispatcher>();
     }
 
-    private static void InitSQLiteContext(this IConfiguration configuration)
+    internal static void InitSQLiteContext(this IConfiguration configuration)
     {
         // https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/dapper-limitations
         SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());

@@ -1,4 +1,5 @@
 using FluentMigrator.Runner;
+using GtKram.Infrastructure;
 using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Database.Repositories;
 using GtKram.Infrastructure.Email;
@@ -32,6 +33,8 @@ public sealed class ServiceFixture : IAsyncDisposable
                 { "ConnectionStrings:SQLite", connectionStringBuilder.ToString() }
             })
             .Build();
+
+        configuration.InitSQLiteContext();
 
         _services.AddSingleton<IConfiguration>(configuration);
         _services.AddScoped<SQLiteDbContext>();
