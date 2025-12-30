@@ -44,7 +44,7 @@ public sealed class Initial : Migration
             .WithColumn(nameof(EmailQueue.Updated)).AsString().Nullable()
             .WithColumn(nameof(EmailQueue.JsonProperties)).AsString()
             .WithColumn(nameof(EmailQueue.JsonVersion)).AsInt32()
-            .WithColumn(nameof(EmailQueue.IsSent)).AsBoolean();
+            .WithColumn(nameof(EmailQueue.IsSent)).AsInt32();
 
         Create.Index($"IX_{table}_{nameof(EmailQueue.IsSent)}")
             .OnTable(table)
