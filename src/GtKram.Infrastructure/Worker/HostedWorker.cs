@@ -46,6 +46,9 @@ internal sealed class HostedWorker : BackgroundService
 
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
         runner.MigrateUp();
+
+        var mysqlMigration = scope.ServiceProvider.GetRequiredService<MysqlMigration>();
+        await mysqlMigration.Migrate(cancellationToken);
     }
 
     private async Task HandleSuperUser()
