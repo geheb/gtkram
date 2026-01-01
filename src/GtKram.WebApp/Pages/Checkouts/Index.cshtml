@@ -31,7 +31,7 @@
                         <div class="list-item-title">@eventConverter.Format(i.Event)</div>
                         <div class="list-item-description">
                             <span class="tag is-rounded">@i.CheckoutCount @(i.CheckoutCount == 1 ? "Kassenvorgang" : "Kassenvorgänge")</span>
-                            <span class="tag is-rounded">@i.SoldTotal.ToString("0.00 €") / @i.CommissionTotal.ToString("0.00 €")</span>
+                            <span class="tag is-rounded">@i.CommissionTotal.ToString("0.00 €") / @i.SoldTotal.ToString("0.00 €")</span>
                         </div>
                     </div>
                     <div class="list-item-controls">

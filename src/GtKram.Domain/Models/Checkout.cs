@@ -15,4 +15,6 @@ public sealed class Checkout
     public bool IsCompleted => Status == CheckoutStatus.Completed;
 
     public ICollection<Guid> ArticleIds { get; set; } = [];
+
+    public decimal Total { get; set; }
 }

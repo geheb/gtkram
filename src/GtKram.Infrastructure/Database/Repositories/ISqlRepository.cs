@@ -21,7 +21,7 @@ internal interface ISqlRepository<TEntity> where TEntity : class, IEntity
         Expression<Func<TEntity, object?>> whereField,
         object? whereValue,
         CancellationToken cancellationToken);
-    Task<TEntity[]> SelectMany(Guid[] ids, CancellationToken cancellationToken);
+    Task<TEntity[]> SelectMany(ICollection<Guid> ids, CancellationToken cancellationToken);
     Task<TEntity[]> SelectAll(CancellationToken cancellationToken);
     Task<bool> Update(TEntity entity, CancellationToken cancellationToken);
     Task<int> Update(IEnumerable<TEntity> entities, CancellationToken cancellationToken);

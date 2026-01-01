@@ -128,6 +128,7 @@ internal static class Mappings
             EventId = entity.EventId,
             IdentityId = entity.IdentityId,
             ArticleIds = entity.Json.ArticleIds,
+            Total = entity.Json.Total ?? 0,
         };
 
     public static Database.Models.Checkout MapToEntity(this Domain.Models.Checkout model, Checkout entity)
@@ -136,6 +137,7 @@ internal static class Mappings
         entity.Json.EventId = model.EventId;
         entity.Json.IdentityId = model.IdentityId;
         entity.Json.ArticleIds = [.. model.ArticleIds];
+        entity.Json.Total = model.Total;
         return entity;
     }
 

@@ -1,5 +1,6 @@
 using Dapper;
 using GtKram.Application.UseCases.User.Models;
+using GtKram.Domain.Models;
 using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Database.Repositories;
 using Microsoft.Extensions.Configuration;
@@ -80,8 +81,15 @@ internal sealed class MysqlMigration
                 }
             };
 
-            var articles = await connection.QueryAsync<byte[]>("select BazaarSellerArticleId from bazaar_billing_articles where BazaarBillingId=@id", new { id });
-            checkout.Json.ArticleIds = articles.Select(id => new Guid(id)).ToArray();
+            var articleIds = await connection.QueryAsync<byte[]>("select BazaarSellerArticleId from bazaar_billing_articles where BazaarBillingId=@id", new { id });
+            checkout.Json.ArticleIds = articleIds.Select(id => new Guid(id)).ToArray();
+
+            if (checkout.Json.Status == (int)CheckoutStatus.Completed)
+            {
+                var total = await connection.ExecuteScalarAsync<decimal>("select sum(Price) from bazaar_seller_articles where Id in @ids",
+                    new { ids = articleIds });
+                checkout.Json.Total = total;
+            }
 
             await _checkoutRepository.Insert(checkout, cancellationToken);
         }

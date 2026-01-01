@@ -164,12 +164,12 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         }).ToArray();
     }
 
-    public async Task<TEntity[]> SelectMany(Guid[] ids, CancellationToken cancellationToken)
+    public async Task<TEntity[]> SelectMany(ICollection<Guid> ids, CancellationToken cancellationToken)
     {
-        if (ids.Length == 0) throw new ArgumentException(nameof(ids));
+        if (ids.Count == 0) throw new ArgumentException(nameof(ids));
 
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var result = new List<TEntity>(ids.Length);
+        var result = new List<TEntity>(ids.Count);
 
         foreach (var chunk in ids.Chunk(100))
         {

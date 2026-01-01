@@ -104,17 +104,6 @@ internal sealed class Articles : IArticles
         return entity.MapToDomain();
     }
 
-    public async Task<Domain.Models.Article[]> GetAll(CancellationToken cancellationToken)
-    {
-        var entities = await _repository.SelectAll(cancellationToken);
-        if (entities.Length == 0)
-        {
-            return [];
-        }
-
-        return [.. entities.Select(e => e.MapToDomain())];
-    }
-
     public async Task<Domain.Models.Article[]> GetBySellerId(Guid id, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.SellerId, id, cancellationToken);
@@ -139,7 +128,7 @@ internal sealed class Articles : IArticles
         return [.. result];
     }
 
-    public async Task<Domain.Models.Article[]> GetById(Guid[] ids, CancellationToken cancellationToken)
+    public async Task<Domain.Models.Article[]> GetById(ICollection<Guid> ids, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectMany(ids, cancellationToken);
         if (entities.Length == 0)

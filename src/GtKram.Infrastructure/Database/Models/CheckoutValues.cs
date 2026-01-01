@@ -9,4 +9,6 @@ internal sealed class CheckoutValues
     public Guid IdentityId { get; set; }
 
     public ICollection<Guid> ArticleIds { get; set; } = [];
+
+    public decimal? Total { get; set; }
 }

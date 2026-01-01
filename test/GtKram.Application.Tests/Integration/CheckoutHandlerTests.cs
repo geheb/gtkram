@@ -954,6 +954,7 @@ public sealed class CheckoutHandlerTests
         var checkoutRepo = scope.ServiceProvider.GetRequiredService<ICheckouts>();
         var checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(3);
+        checkout.Value.Total.ShouldBe(0);
 
         var command = new DeleteCheckoutArticleCommand(checkoutId, articles[1].Id);
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -976,6 +977,7 @@ public sealed class CheckoutHandlerTests
         var checkoutRepo = scope.ServiceProvider.GetRequiredService<ICheckouts>();
         var checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(3);
+        checkout.Value.Total.ShouldBe(articles.Sum(a => a.Price));
 
         var command = new DeleteCheckoutArticleCommand(checkoutId, articles[0].Id);
         var sut = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -984,6 +986,7 @@ public sealed class CheckoutHandlerTests
         result.IsError.ShouldBeFalse();
         checkout = await checkoutRepo.Find(checkoutId, _cancellationToken);
         checkout.Value.ArticleIds.Count.ShouldBe(2);
+        checkout.Value.Total.ShouldBe(articles.Skip(1).Sum(a => a.Price));
     }
 
     [TestMethod]

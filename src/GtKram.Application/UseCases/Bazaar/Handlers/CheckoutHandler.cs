@@ -122,12 +122,6 @@ internal sealed class CheckoutHandler :
             checkoutsByEventId = checkouts.GroupBy(b => b.EventId).ToDictionary(b => b.Key, b => b.ToArray());
         }
 
-        Dictionary<Guid, Article> articlesById;
-        {
-            var articles = await _articles.GetAll(cancellationToken);
-            articlesById = articles.ToDictionary(a => a.Id);
-        }
-
         var result = new List<EventWithCheckoutTotals>(events.Length);
         foreach (var @event in events.OrderByDescending(e => e.Start))
         {
@@ -136,11 +130,7 @@ internal sealed class CheckoutHandler :
             if (checkoutsByEventId.TryGetValue(@event.Id, out var checkouts))
             {
                 checkoutCount = checkouts.Length;
-
-                foreach (var checkout in checkouts.Where(b => b.IsCompleted))
-                {
-                    soldTotal += checkout.ArticleIds.Sum(id => articlesById[id].Price);
-                }
+                soldTotal = checkouts.Where(c => c.IsCompleted).Sum(c => c.Total);
             }
             var commissionTotal = (@event.Commission / 100.0M) * soldTotal;
 
@@ -169,7 +159,7 @@ internal sealed class CheckoutHandler :
             return new ArticlesWithCheckoutAndEvent(@event.Value, checkout.Value, []);
         }
 
-        var articles = await _articles.GetById([.. checkout.Value.ArticleIds], cancellationToken);
+        var articles = await _articles.GetById(checkout.Value.ArticleIds, cancellationToken);
         if (articles.Length == 0)
         {
             return Domain.Errors.Internal.InvalidData;
@@ -208,6 +198,19 @@ internal sealed class CheckoutHandler :
             return Domain.Errors.Internal.InvalidData;
         }
 
+        if (checkout.Value.IsCompleted)
+        {
+            if (checkout.Value.ArticleIds.Count == 0)
+            {
+                checkout.Value.Total = 0;
+            }
+            else
+            {
+                var articles = await _articles.GetById(checkout.Value.ArticleIds, cancellationToken);
+                checkout.Value.Total = articles.Sum(a => a.Price);
+            }
+        }
+
         return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
@@ -219,7 +222,7 @@ internal sealed class CheckoutHandler :
             return checkout.Errors;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
@@ -260,7 +263,7 @@ internal sealed class CheckoutHandler :
             return checkout.Errors;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
@@ -293,7 +296,7 @@ internal sealed class CheckoutHandler :
             return checkout.Errors;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
@@ -304,6 +307,11 @@ internal sealed class CheckoutHandler :
         }
 
         checkout.Value.Status = CheckoutStatus.Completed;
+
+        var articles = await _articles.GetById(checkout.Value.ArticleIds, cancellationToken);
+
+        checkout.Value.Total = articles.Sum(a => a.Price);
+
         return await _checkouts.Update(checkout.Value, cancellationToken); 
     }
 
@@ -315,7 +323,7 @@ internal sealed class CheckoutHandler :
             return checkout.Errors;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
@@ -331,6 +339,11 @@ internal sealed class CheckoutHandler :
         }
 
         checkout.Value.Status = CheckoutStatus.Completed;
+
+        var articles = await _articles.GetById(checkout.Value.ArticleIds, cancellationToken);
+
+        checkout.Value.Total = articles.Sum(a => a.Price);
+
         return await _checkouts.Update(checkout.Value, cancellationToken);
     }
 
@@ -545,7 +558,7 @@ internal sealed class CheckoutHandler :
             return Domain.Errors.Internal.InvalidRequest;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
@@ -603,7 +616,7 @@ internal sealed class CheckoutHandler :
             return Domain.Errors.Internal.InvalidRequest;
         }
 
-        if (checkout.Value.Status == CheckoutStatus.Completed)
+        if (checkout.Value.IsCompleted)
         {
             return Domain.Errors.Checkout.StatusCompleted;
         }
