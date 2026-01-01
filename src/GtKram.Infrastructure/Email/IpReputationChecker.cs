@@ -56,14 +56,21 @@ internal sealed class IpReputationChecker
 
         foreach (var server in Servers)
         {
-            var querydns = ipAddressReversed + "." + server;
-            var entry = await _lookupClient.GetHostEntryAsync(querydns);
-
-            if (entry is null ||
-                entry.AddressList.Length == 0 ||
-                !entry.AddressList.Any(e => e.ToString().StartsWith("127.0.0", StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                continue;
+                var querydns = ipAddressReversed + "." + server;
+                var entry = await _lookupClient.GetHostEntryAsync(querydns);
+
+                if (entry is null ||
+                    entry.AddressList.Length == 0 ||
+                    !entry.AddressList.Any(e => e.ToString().StartsWith("127.0.0", StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+            }
+            catch (DnsResponseException)
+            {
+                return false;
             }
 
             _logger.LogInformation("Address {Address} is listed at {Server}", address, server);
@@ -101,13 +108,22 @@ internal sealed class IpReputationChecker
         foreach (var answer in response.Answers.MxRecords())
         {
             var host = answer.Exchange.Value;
-            var entry = await _lookupClient.GetHostEntryAsync(host);
-            if (entry == null || entry.AddressList.Length == 0)
+            IPAddress[] addressList = [];
+            try
             {
-                continue;
+                var entry = await _lookupClient.GetHostEntryAsync(host);
+                if (entry == null || entry.AddressList.Length == 0)
+                {
+                    continue;
+                }
+                addressList = entry.AddressList;
+            }
+            catch (DnsResponseException)
+            {
+                return false;
             }
 
-            foreach (var addr in entry.AddressList)
+            foreach (var addr in addressList)
             {
                 if (await IsListed(addr))
                 {
