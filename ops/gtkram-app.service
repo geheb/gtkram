@@ -1,0 +1,17 @@
+[Unit]
+Description=GT Kram
+
+[Service]
+WorkingDirectory=/opt/gtkram/
+ExecStart=/opt/gtkram/GtKram.WebApp --urls http://localhost:5000
+Restart=always
+RestartSec=60
+KillSignal=SIGINT
+SyslogIdentifier=gtkram
+User=gtkram
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+[Install]
+WantedBy=multi-user.target

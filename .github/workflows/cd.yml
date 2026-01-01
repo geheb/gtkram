@@ -32,11 +32,14 @@ jobs:
 
     - name: Publish files
       run: |
-        dotnet publish ./src/GtKram.WebApp -c Release -o ./dist -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
+        dotnet publish ./src/GtKram.WebApp -c Release -o ./dist/app -r linux-x64 --self-contained true /p:UseAppHost=true /p:Version=${SEMVER}
 
     - name: Create archive
       run: |
-        cd dist ; tar cfJ release-linux-x64.tar.xz *
+        cd dist
+        chmod -x -R app/*.dll
+        chmod -x -R app/*.so
+        tar cfJ release-linux-x64.tar.xz *
 
     - name: Create release
       env:
