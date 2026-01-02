@@ -29,6 +29,7 @@ public sealed class ArticlesModel : PageModel
     public int AvailableCount { get; set; }
     public decimal AvailableTotalValue { get; set; }
     public int SoldCount { get; set; }
+    public int UnsoldCount { get; set; }
     public decimal SoldTotalValue { get; set; }
     public decimal PayoutTotalValue { get; set; }
     public ArticleWithCheckout[] Items { get; set; } = [];
@@ -73,6 +74,7 @@ public sealed class ArticlesModel : PageModel
         AvailableTotalValue = Items.Sum(a => a.Article.Price);
         var sold = Items.Where(a => a.Checkout?.IsCompleted == true);
         SoldCount = sold.Count();
+        UnsoldCount = Items.Length - SoldCount;
         SoldTotalValue = sold.Sum(a => a.Article.Price);
         PayoutTotalValue = eventConverter.CalcPayout(@event, SoldTotalValue);
     }

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace GtKram.WebApp.Pages.Bazaars;
 
-[Node("Verwaltung", FromPage = typeof(Pages.IndexModel))]
+[Node("Kinderbasare", FromPage = typeof(Pages.IndexModel))]
 [Authorize(Roles = "manager,admin")]
 public sealed class IndexModel : PageModel
 {

@@ -105,17 +105,6 @@ internal sealed class CheckoutHandler :
             return [];
         }
 
-        Dictionary<Guid, Domain.Models.Seller[]> sellersByEventId;
-        {
-            var sellers = await _sellers.GetAll(cancellationToken);
-            var registrations = await _sellerRegistrations.GetAllByAccepted(cancellationToken);
-            var registrationsAcceptedBySellerId = new HashSet<Guid>(registrations.Select(r => r.SellerId!.Value));
-            sellersByEventId = sellers
-                .Where(s => registrationsAcceptedBySellerId.Contains(s.Id))
-                .GroupBy(s => s.EventId)
-                .ToDictionary(s => s.Key, s => s.ToArray());
-        }
-
         Dictionary<Guid, Domain.Models.Checkout[]> checkoutsByEventId;
         {
             var checkouts = await _checkouts.GetAll(cancellationToken);

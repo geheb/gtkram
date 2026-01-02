@@ -5,6 +5,7 @@
     ViewData["HasFooter"] = true;
 
     Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    var createUrl = @Url.PageLink("AddSeller", null, new { eventId });
 
     var clothingConverter = new ClothingConverter();
     var sellerConverter = new SellerConverter();
@@ -37,7 +38,7 @@
                                 <div>Eingetragene Artikel: @Model.ArticleCount</div>
                             </div>
                             <hr class="dropdown-divider" />
-                            <a href="@Url.PageLink("AddSeller", null, new { eventId })" class="dropdown-item">
+                            <a href="@createUrl" class="dropdown-item">
                                 Verkäufer anlegen
                             </a>
                         </div>
@@ -55,6 +56,12 @@
                 <div asp-validation-summary="All"></div>
             </div>
         }
+
+        <div>
+            <a href="@createUrl" class="button is-floating is-link">
+                <i class="fas fa-user-plus"></i>
+            </a>
+        </div>
 
         <div class="list">
             @if (Model.Items.Length == 0)

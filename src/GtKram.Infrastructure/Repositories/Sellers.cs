@@ -122,13 +122,13 @@ internal sealed class Sellers : ISellers
     public async Task<ErrorOr<Domain.Models.Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectBy(0, e => e.IdentityId, identityId, cancellationToken);
-        entities = [.. entities.Where(e => e.EventId == eventId)];
-        if (entities.Length == 0)
+        var entity = entities.FirstOrDefault(e => e.EventId == eventId);
+        if (entity is null)
         {
             return Domain.Errors.Seller.NotFound;
         }
 
-        return entities[0].MapToDomain(new());
+        return entity.MapToDomain(new());
     }
 
     public async Task<ErrorOr<Success>> Update(Domain.Models.Seller model, CancellationToken cancellationToken)
@@ -141,11 +141,11 @@ internal sealed class Sellers : ISellers
 
         model.MapToEntity(entity);
 
-        /*using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
+        using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
         if (locker is null)
         {
             return Domain.Errors.Seller.SaveFailed;
-        }*/
+        }
 
         try
         {
@@ -190,18 +190,6 @@ internal sealed class Sellers : ISellers
         var affectedRows = await _repository.Delete(id, cancellationToken);
 
         return affectedRows > 0 ? Result.Success : Domain.Errors.Seller.SaveFailed;
-    }
-
-    public async Task<Domain.Models.Seller[]> GetAll(CancellationToken cancellationToken)
-    {
-        var entities = await _repository.SelectAll(cancellationToken);
-        if (entities.Length == 0)
-        {
-            return [];
-        }
-
-        var dc = new GermanDateTimeConverter();
-        return [.. entities.Select(e => e.MapToDomain(dc))];
     }
 
     public async Task<Domain.Models.Seller[]> GetById(Guid[] ids, CancellationToken cancellationToken)

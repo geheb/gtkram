@@ -4,6 +4,8 @@
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
 
+    var createUrl = Url.PageLink("Add");
+
     var dateConverter = new GermanDateTimeConverter();
     var eventConverter = new EventConverter();
 }
@@ -26,13 +28,19 @@
                     </div>
                     <div class="dropdown-menu" id="menu-action" role="menu">
                         <div class="dropdown-content">
-                            <a href="@(Url.PageLink("Add"))" class="dropdown-item">
+                            <a href="@createUrl" class="dropdown-item">
                                 Kinderbasar anlegen
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div>
+            <a href="@createUrl" class="button is-floating is-link">
+                <i class="fas fa-square-plus"></i>
+            </a>
         </div>
 
         <div class="list">

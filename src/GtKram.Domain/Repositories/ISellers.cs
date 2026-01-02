@@ -12,7 +12,6 @@ public interface ISellers
     Task<ErrorOr<Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken);
     Task<ErrorOr<Success>> Update(Seller model, CancellationToken cancellationToken);
     Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken);
-    Task<Seller[]> GetAll(CancellationToken cancellationToken);
     Task<Seller[]> GetById(Guid[] ids, CancellationToken cancellationToken);
     Task<ErrorOr<Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken);
 }

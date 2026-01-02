@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.GetNode().Title;
     ViewData["HasFooter"] = true;
+    var createUrl = Url.PageLink("CreateUser");
 
     var roleConverter = new RoleConverter();
     var dateConverter = new GermanDateTimeConverter();
@@ -32,11 +33,17 @@
                                 <div>Gesperrt: @Model.UsersLocked</div>
                             </div>
                             <hr class="dropdown-divider" />
-                            <a href="@(Url.PageLink("CreateUser"))" class="dropdown-item">Benutzer anlegen</a>
+                            <a href="@createUrl" class="dropdown-item">Benutzer anlegen</a>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div>
+            <a href="@createUrl" class="button is-floating is-link">
+                <i class="fas fa-user-plus"></i>
+            </a>
         </div>
 
         <div class="list">
