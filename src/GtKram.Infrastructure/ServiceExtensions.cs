@@ -68,7 +68,6 @@ public static class ServiceExtensions
         services.AddScoped<IPlannings, Plannings>();
 
         services.AddScoped<DbContextInitializer>();
-        services.AddScoped<MysqlMigration>();
     }
 
     public static void AddAuth(this IServiceCollection services, IConfiguration config, string policyName)

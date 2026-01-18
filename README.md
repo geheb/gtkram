@@ -17,6 +17,3 @@ A web app for organising children's bazaars
 * Logging via Serilog
 * SQLite Persistence with Dapper ORM
 * Madiator Pattern
-
-
-
