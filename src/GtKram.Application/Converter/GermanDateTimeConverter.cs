@@ -8,6 +8,7 @@ public sealed class GermanDateTimeConverter
     private const string IsoDateTimeFormat = "yyyy-MM-ddTHH:mm";
     private const string IsoDateFormat = "yyyy-MM-dd";
     private const string TimeFormat = "HH\\:mm";
+    private const string DateFormat = "dd.MM.yyyy";
     private static readonly CultureInfo _culture = CultureInfo.CreateSpecificCulture("de-DE");
     private static readonly TimeZoneInfo _westEuropeTimeZone;
 
@@ -22,11 +23,13 @@ public sealed class GermanDateTimeConverter
 
     public string ToDateTimeShort(DateTimeOffset date) => date.ToString("dd.MM. HH\\:mm", _culture);
 
-    public string ToDate(DateTimeOffset date) => date.ToString("dd.MM.yyyy", _culture);
+    public string ToDate(DateTimeOffset date) => date.ToString(DateFormat, _culture);
 
-    public string ToDate(DateOnly date) => date.ToString("dd.MM.yyyy", _culture);
+    public string ToDate(DateOnly date) => date.ToString(DateFormat, _culture);
 
     public string ToTime(DateTimeOffset date) => date.ToString(TimeFormat, _culture);
+
+    public string ToDateTimeLong(DateTimeOffset date) => date.ToString("dddd, dd.MM.yyyy", _culture);
 
     public DateTimeOffset ToUtc(DateOnly date)
     {

@@ -36,7 +36,7 @@ internal sealed class Checkouts : ICheckouts
     {
         var affectedRows = await _repository.Delete(id, cancellationToken);
 
-        return affectedRows > 0 ? Result.Success : Domain.Errors.Checkout.SaveFailed;
+        return affectedRows > 0 ? Result.Success : Domain.Errors.Checkout.NotFound;
     }
 
     public async Task<ErrorOr<Domain.Models.Checkout>> Find(Guid id, CancellationToken cancellationToken)
@@ -140,6 +140,6 @@ internal sealed class Checkouts : ICheckouts
         model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Success : Domain.Errors.Checkout.SaveFailed;
+        return result ? Result.Success : Domain.Errors.Internal.ConflictData;
     }
 }

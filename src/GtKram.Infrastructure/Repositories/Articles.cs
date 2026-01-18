@@ -23,7 +23,7 @@ internal sealed class Articles : IArticles
         using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
         if (locker is null)
         {
-            return Domain.Errors.SellerArticle.SaveFailed;
+            return Domain.Errors.Internal.Timeout;
         }
 
         var max = await _repository.MaxBy(e => e.LabelNumber, e => e.SellerId, model.SellerId, cancellationToken);
@@ -46,7 +46,7 @@ internal sealed class Articles : IArticles
         using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
         if (locker is null)
         {
-            return Domain.Errors.SellerArticle.SaveFailed;
+            return Domain.Errors.Internal.Timeout;
         }
 
         try
@@ -162,6 +162,6 @@ internal sealed class Articles : IArticles
         model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Success : Domain.Errors.SellerArticle.SaveFailed;
+        return result ? Result.Success : Domain.Errors.Internal.ConflictData;
     }
 }

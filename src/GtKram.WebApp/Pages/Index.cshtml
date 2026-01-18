@@ -65,6 +65,7 @@
         @if (Model.HasNodeAccess(
             typeof(Bazaars.IndexModel), 
             typeof(Checkouts.IndexModel),
+            typeof(Plannings.IndexModel),
             typeof(Users.IndexModel)))
         {
             <p class="title">Verwaltung</p>
@@ -73,7 +74,7 @@
             {
                 <a href="/Bazaars" class="bd-link has-text-grey">
                     <span class="icon bd-link-icon has-text-info">
-                        <i class="fa-solid fa-calendar-days"></i>
+                        <i class="fa-solid fa-store"></i>
                     </span>
                     <div>
                         <h2 class="bd-link-title">Kinderbasare</h2>
@@ -93,6 +94,20 @@
                         <h2 class="bd-link-title">Kasse</h2>
                         <div class="bd-link-subtitle">
                             Kassenvorgänge verwalten.
+                        </div>
+                    </div>
+                </a>
+            }
+            @if (Model.HasNodeAccess(typeof(Plannings.IndexModel)))
+            {
+                <a href="/Plannings" class="bd-link has-text-grey">
+                    <span class="icon bd-link-icon has-text-info">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </span>
+                    <div>
+                        <h2 class="bd-link-title">Planungen</h2>
+                        <div class="bd-link-subtitle">
+                            Kinderbasare planen.
                         </div>
                     </div>
                 </a>

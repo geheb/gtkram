@@ -1,0 +1,66 @@
+﻿@page "/Plannings/Bazaar/{eventId:guid}/Export"
+@model GtKram.WebApp.Pages.Plannings.ExportScheduleModel
+@{
+    ViewData["Title"] = "Übersicht der Zeitpläne";
+    var dtConverter = new GermanDateTimeConverter();
+    string? lastName = null;
+}
+
+<nav class="navbar is-transparent">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="#">
+            <span>@appSettings.Value.HeaderTitle</span>
+        </a>
+    </div>
+</nav>
+
+<div class="m-5">
+
+    <div class="has-text-centered">
+        <h3 class="title is-3 m-5">@Model.Event</h3>
+    </div>
+
+
+    @if (Model.Items.Length == 0)
+    {
+        <div class="has-text-centered">Keine Zeitpläne vorhanden</div>
+    }
+
+    @foreach (var group in Model.Items.GroupBy(m => m.Date))
+    {
+        <h4 class="title is-4">@dtConverter.ToDateTimeLong(group.Key)</h4>
+        <div class="table-container">
+            <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Aktion</th>
+                        <th>Zeitpunkt</th>
+                        <th>Helfer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in group)
+                {
+                    <tr>
+                        <td>@(lastName == item.Name ? string.Empty : item.Name)</td>
+                        <td>@dtConverter.ToIso(item.From) - @dtConverter.ToIso(item.To) Uhr</td>
+                        <td>
+                        @foreach (var id in item.IdentityIds)
+                        {
+                            @(Model.UserMap.TryGetValue(id, out var user) ? user : id)<br/>
+                        }
+                        @foreach (var name in item.Persons)
+                        {
+                            @name<br/>
+                        }
+                        </td>
+                    </tr>
+                    lastName = item.Name;
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>
+

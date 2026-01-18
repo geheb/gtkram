@@ -27,7 +27,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return Domain.Errors.SellerRegistration.Timeout;
         }
 
-        var entity = model.MapToEntity(new() { Json = new() }, new());
+        var entity = model.MapToEntity(new() { Json = new() });
         await _repository.Insert(entity, cancellationToken);
         return Result.Success;
     }
@@ -41,7 +41,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return Domain.Errors.SellerRegistration.NotFound;
         }
 
-        return entity.MapToDomain(new());
+        return entity.MapToDomain();
     }
 
     public async Task<ErrorOr<Domain.Models.SellerRegistration>> FindBySellerId(Guid id, CancellationToken cancellationToken)
@@ -53,7 +53,7 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return Domain.Errors.SellerRegistration.NotFound;
         }
 
-        return entities[0].MapToDomain(new());
+        return entities[0].MapToDomain();
     }
 
     public async Task<ErrorOr<Domain.Models.SellerRegistration>> FindByEventIdAndEmail(Guid eventId, string email, CancellationToken cancellationToken)
@@ -65,23 +65,21 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return Domain.Errors.SellerRegistration.NotFound;
         }
 
-        return entity.MapToDomain(new());
+        return entity.MapToDomain();
     }
 
     public async Task<Domain.Models.SellerRegistration[]> GetAll(CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectAll(cancellationToken);
 
-        var dc = new GermanDateTimeConverter();
-        return [.. entities.Select(e => e.MapToDomain(dc))];
+        return [.. entities.Select(e => e.MapToDomain())];
     }
 
     public async Task<Domain.Models.SellerRegistration[]> GetAllByAccepted(CancellationToken cancellationToken)
     {
         var entities = await _repository.SelectAll(cancellationToken);
 
-        var dc = new GermanDateTimeConverter();
-        return [.. entities.Where(e => e.Json.IsAccepted == true).Select(e => e.MapToDomain(dc))];
+        return [.. entities.Where(e => e.Json.IsAccepted == true).Select(e => e.MapToDomain())];
     }
 
     public async Task<Domain.Models.SellerRegistration[]> GetByEventId(Guid id, CancellationToken cancellationToken)
@@ -93,20 +91,17 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return [];
         }
 
-        var dc = new GermanDateTimeConverter();
-
-        return [.. entities.Select(e => e.MapToDomain(dc))];
+        return [.. entities.Select(e => e.MapToDomain())];
     }
 
     public async Task<Domain.Models.SellerRegistration[]> GetBySellerId(Guid[] ids, CancellationToken cancellationToken)
     {
         var result = new List<Domain.Models.SellerRegistration>(ids.Length);
-        var dc = new GermanDateTimeConverter();
 
         foreach (var chunk in ids.Chunk(100))
         {
             var entities = await _repository.SelectBy(0, e => e.SellerId, chunk, cancellationToken);
-            result.AddRange(entities.Select(e => e.MapToDomain(dc)));
+            result.AddRange(entities.Select(e => e.MapToDomain()));
         }
 
         return [.. result];
@@ -120,16 +115,16 @@ internal sealed class SellerRegistrations : ISellerRegistrations
             return Domain.Errors.SellerRegistration.NotFound;
         }
 
-        model.MapToEntity(entity, new());
+        model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
-        return result ? Result.Success : Domain.Errors.SellerRegistration.SaveFailed;
+        return result ? Result.Success : Domain.Errors.Internal.ConflictData;
     }
 
     public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
         var result = await _repository.Delete(id, cancellationToken);
-        return result > 0 ? Result.Success : Domain.Errors.SellerRegistration.SaveFailed;
+        return result > 0 ? Result.Success : Domain.Errors.SellerRegistration.NotFound;
     }
 
     public async Task<ErrorOr<int>> GetCountByEventId(Guid id, CancellationToken cancellationToken)

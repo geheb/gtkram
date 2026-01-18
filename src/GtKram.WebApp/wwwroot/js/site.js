@@ -7,7 +7,7 @@
         element.fadeOut();
         element.remove();
     }, 5000);
-};
+}
 
 function openModal(event) {
     event.stopPropagation();
@@ -19,7 +19,7 @@ function openModal(event) {
     const openEvent = jQuery.Event("modal:open");
     openEvent.relatedTarget = event.currentTarget;
     modal.trigger(openEvent);
-};
+}
 
 function closeModal(event) {
     event.stopPropagation();

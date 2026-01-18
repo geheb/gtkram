@@ -21,7 +21,7 @@ public sealed class UpdateUserInput
 
     [Display(Name = "Rollen")]
     [RequiredField]
-    public bool[] Roles { get; set; } = new bool[4];
+    public bool[] Roles { get; set; } = new bool[5];
 
     public void Init(User user)
     {
@@ -31,6 +31,7 @@ public sealed class UpdateUserInput
         Roles[1] = user.Roles.Contains(UserRoleType.Manager);
         Roles[2] = user.Roles.Contains(UserRoleType.Seller);
         Roles[3] = user.Roles.Contains(UserRoleType.Checkout);
+        Roles[4] = user.Roles.Contains(UserRoleType.Helper);
     }
 
     public UpdateUserCommand ToCommand(Guid id)
@@ -40,6 +41,7 @@ public sealed class UpdateUserInput
         if (Roles[1]) roles.Add(UserRoleType.Manager);
         if (Roles[2]) roles.Add(UserRoleType.Seller);
         if (Roles[3]) roles.Add(UserRoleType.Checkout);
+        if (Roles[4]) roles.Add(UserRoleType.Helper);
 
         return new(id, Name, [.. roles]);
     }

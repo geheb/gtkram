@@ -13,6 +13,7 @@ public sealed class RoleConverter
             UserRoleType.Manager => "Manager",
             UserRoleType.Seller => "Verkäufer",
             UserRoleType.Checkout => "Kassierer",
+            UserRoleType.Helper => "Helfer",
             _ => string.Empty
         };
     }
@@ -25,6 +26,7 @@ public sealed class RoleConverter
             UserRoleType.Manager => "is-warning",
             UserRoleType.Seller => "is-info",
             UserRoleType.Checkout => "is-success",
+            UserRoleType.Helper => "is-success",
             _ => string.Empty
         };
     }

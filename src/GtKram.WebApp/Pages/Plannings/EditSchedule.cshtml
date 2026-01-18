@@ -1,0 +1,128 @@
+﻿@page "/Plannings/Bazaar/Schedule/{id:guid}/Edit"
+@model GtKram.WebApp.Pages.Plannings.EditScheduleModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["id"] as string, out var id);
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
+            @Html.CreateBreadcrumb(new { id }, new { eventId = Model.Input.State_EventId })
+        </div>
+
+        <h1 class="title is-4">@Model.Input.State_Event</h1>
+
+        <div class="columns">
+            <div class="column is-half">
+                @if (!ModelState.IsValid)
+                {
+                    <div class="notification is-danger">
+                        <button class="delete"></button>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset disabled="@Model.IsDisabled">
+                        @Html.HiddenFor(m => m.Input.State_Event);
+                        @Html.HiddenFor(m => m.Input.State_EventId);
+
+                        <div class="field">
+                            <label class="label" asp-for="Input.Name"></label>
+                            <div class="control">
+                                <input class="input" type="text" autofocus="" asp-for="Input.Name" />
+                            </div>
+                            <span asp-validation-for="Input.Name"></span>
+                        </div>
+                        <div class="field">
+                            <label class="label" asp-for="Input.Date"></label>
+                            <div class="control">
+                                <input class="input" type="date" asp-for="Input.Date" />
+                            </div>
+                            <span asp-validation-for="Input.Date"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Von/Bis</label>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="time" asp-for="Input.From" />
+                                    </div>
+                                    <span asp-validation-for="Input.From"></span>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="time" asp-for="Input.To" />
+                                    </div>
+                                    <span asp-validation-for="Input.To"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Helfer</label>
+                        </div>
+                        <div class="field">
+                            <nav class="panel">
+                                <div>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select id="users" asp-items="Model.Users"></select>
+                                        </div>
+                                    </div>
+                                    <div class="control mt-1">
+                                        <input id="custom-person" class="input" type="text" placeholder="Individuelle Helfer" />
+                                    </div>
+                                </div>
+                                <div id="user-items">
+                                    @foreach (var id in Model.Input.UserIds)
+                                    {
+                                        <div>
+                                            <a class="panel-block"><span class="panel-icon"><i class="fas fa-circle-user"></i></span>@(Model.UserMap.TryGetValue(id, out var u) ? u : id)</a>
+                                            <input type="hidden" name="@Html.NameFor(m => m.Input.UserIds)" value="@id" />
+                                        </div>
+                                    }
+                                    @foreach (var p in Model.Input.Persons)
+                                    {
+                                        <div>
+                                            <a class="panel-block"><span class="panel-icon"><i class="far fa-circle-user"></i></span>@p</a>
+                                            <input type="hidden" name="@Html.NameFor(m => m.Input.Persons)" value="@p" />
+                                        </div>
+                                    }
+                                </div>
+                            </nav>
+                        </div>
+
+                        <button class="button is-primary" type="submit">Speichern</button>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@await Html.PartialAsync("_Footer")
+
+@section Scripts
+{
+<script type="text/javascript">
+    $(function () {
+        const list = new DynamicUserList(
+            '@Html.NameFor(m => m.Input.UserIds)',
+            '@Html.NameFor(m => m.Input.Persons)'
+        );
+        list.registerClick('#user-items a');
+        list.registerChange('#users');
+        list.registerKeypress('#custom-person');
+    });
+</script>
+}

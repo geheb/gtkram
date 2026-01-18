@@ -9,9 +9,6 @@ public static class SellerRegistration
     public static Error NotFound { get; } =
         Error.NotFound($"{_prefix}.not.found", "Die Registrierung wurde nicht gefunden.");
 
-    public static Error SaveFailed { get; } =
-        Error.Failure($"{_prefix}.save.failed", "Die Registrierung konnte nicht gespeichert werden.");
-
     public static Error Timeout { get; } =
         Error.Failure($"{_prefix}.timeout", "Zeitüberschreitung beim Beareiten der Registrierung. Bitte erneut versuchen.");
 

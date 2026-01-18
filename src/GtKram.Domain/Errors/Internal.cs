@@ -9,6 +9,9 @@ public static class Internal
     public static Error InvalidRequest { get; } =
         Error.Validation($"{_prefix}.invalid.request", "Ungültige Anfrage.");
 
+    public static Error Timeout { get; } =
+        Error.Conflict($"{_prefix}.timeout", "Die Bearbeitung dieser Anfrage dauert zu lange, sodass sie vom Server abgebrochen wurde.");
+
     public static Error ConflictData { get; } =
         Error.Conflict($"{_prefix}.conflict.data", "Es gibt einen Datenkonflikt. Die Daten haben sich zwischenzeitlich geändert.");
 

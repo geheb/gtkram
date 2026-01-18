@@ -1,0 +1,92 @@
+﻿@page "/Plannings/Bazaar/{eventId:guid}"
+@model GtKram.WebApp.Pages.Plannings.SchedulesModel
+@{
+    ViewData["Title"] = Model.GetNode().Title;
+    ViewData["HasFooter"] = true;
+
+    Guid.TryParse(Request.RouteValues["eventId"] as string, out var eventId);
+    var createUrl = @Url.PageLink("AddSchedule", null, new { eventId });
+    var exportUrl = @Url.PageLink("ExportSchedule", null, new { eventId });
+
+    var converter = new PlanningConverter();
+}
+
+@await Html.PartialAsync("_Header")
+
+<section class="small-section">
+    <div class="container">
+
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { eventId })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="menu-action" role="menu">
+                        <div class="dropdown-content">
+                            <a href="@createUrl" class="dropdown-item">
+                                Zeitplan anlegen
+                            </a>
+                            <a href="@exportUrl" target="_blank" rel="noopener noreferrer" class="dropdown-item">
+                                Zeitplan exportieren
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="title is-4">@Model.Event</h1>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="notification is-danger">
+                <button class="delete"></button>
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div>
+            <a href="@createUrl" class="button is-floating is-link">
+                <i class="fa-solid fa-calendar-plus"></i>
+            </a>
+        </div>
+
+        <div class="list">
+            @if (Model.Items.Length == 0)
+            {
+                <div>Keine Zeitpläne gefunden.</div>
+            }
+            @foreach (var i in Model.Items)
+            {
+                <div class="list-item">
+                    <div class="list-item-image">
+                        <i class="fas fa-calendar-day fa-2x has-text-info"></i>
+                    </div>
+                    <div class="list-item-content">
+                        <div class="list-item-title">@converter.Format(i)</div>
+                        <div class="list-item-description">
+                            <span class="tag is-rounded">@i.HelperCount Helfer</span>
+                        </div>
+                    </div>
+                    <div class="list-item-controls">
+                        <div class="buttons is-right">
+                            <a class="button" href="@(Url.PageLink("EditSchedule", null, new { id = i.Id }))">
+                                <span class="icon is-small"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+
+</section>
+
+@await Html.PartialAsync("_Footer")

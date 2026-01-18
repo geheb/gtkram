@@ -32,8 +32,11 @@ internal sealed class UserHandler :
         _emailValidatorService = emailValidatorService;
     }
 
-    public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken) =>
-        await _users.GetAll(cancellationToken);
+    public async ValueTask<Domain.Models.User[]> Handle(GetAllUsersQuery query, CancellationToken cancellationToken)
+    {
+        var users = await _users.GetAll(cancellationToken);
+        return query.Role is not null ? [.. users.Where(u => u.Roles.Contains(query.Role.Value))] : users;
+    }
 
     public async ValueTask<ErrorOr<Domain.Models.User>> Handle(FindUserByIdQuery query, CancellationToken cancellationToken)
     {

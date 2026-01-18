@@ -56,7 +56,7 @@ internal sealed class EmailQueues
 
         if (!result)
         {
-            return Domain.Errors.Internal.EmailSaveFailed;
+            return Domain.Errors.Internal.ConflictData;
         }
 
         return Result.Success;

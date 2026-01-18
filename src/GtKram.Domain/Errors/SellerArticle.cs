@@ -6,9 +6,6 @@ public static class SellerArticle
 {
     private const string _prefix = "seller.article";
 
-    public static Error SaveFailed { get; } =
-        Error.Failure($"{_prefix}.save.failed", "Der Artikel konnte nicht gespeichert werden.");
-
     public static Error MultipleSaveFailed { get; } =
         Error.Failure($"{_prefix}.multiple.save.failed", "Die Artikel konnten nicht gespeichert werden.");
 

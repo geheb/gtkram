@@ -6,9 +6,6 @@ public static class Seller
 {
     private const string _prefix = "seller";
 
-    public static Error SaveFailed { get; } =
-        Error.Failure($"{_prefix}.save.failed", "Der Verkäufer konnte nicht gespeichert werden.");
-
     public static Error NotFound { get; } =
         Error.NotFound($"{_prefix}.not.found", "Der Verkäufer wurde nicht gefunden.");
 

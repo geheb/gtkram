@@ -88,7 +88,7 @@ void ConfigurePipeline(WebApplication app)
 try
 {
     var configuration = new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
+        .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
         .AddJsonFile("logging.json")
         .Build();
 

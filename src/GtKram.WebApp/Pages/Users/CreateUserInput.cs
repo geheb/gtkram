@@ -17,7 +17,7 @@ public sealed class CreateUserInput
 
     [Display(Name = "Rollen")]
     [RequiredField]
-    public bool[] Roles { get; set; } = new bool[4];
+    public bool[] Roles { get; set; } = new bool[5];
 
     public CreateUserCommand ToCommand(string callbackUrl)
     {
@@ -26,6 +26,7 @@ public sealed class CreateUserInput
         if (Roles[1]) roles.Add(UserRoleType.Manager);
         if (Roles[2]) roles.Add(UserRoleType.Seller);
         if (Roles[3]) roles.Add(UserRoleType.Checkout);
+        if (Roles[4]) roles.Add(UserRoleType.Helper);
 
         return new(Name!, Email!, [.. roles], callbackUrl);
     }

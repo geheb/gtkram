@@ -1,6 +1,5 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
-using GtKram.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
@@ -31,6 +30,7 @@ internal static class Mappings
             Domain.Models.UserRoleType.Manager => Roles.Manager,
             Domain.Models.UserRoleType.Seller => Roles.Seller,
             Domain.Models.UserRoleType.Checkout => Roles.Checkout,
+            Domain.Models.UserRoleType.Helper => Roles.Helper,
             _ => throw new NotImplementedException()
         };
 
@@ -41,6 +41,7 @@ internal static class Mappings
             Roles.Manager => Domain.Models.UserRoleType.Manager,
             Roles.Seller => Domain.Models.UserRoleType.Seller,
             Roles.Checkout => Domain.Models.UserRoleType.Checkout,
+            Roles.Helper => Domain.Models.UserRoleType.Helper,
             _ => throw new NotImplementedException()
         };
 
@@ -75,7 +76,7 @@ internal static class Mappings
             HasRegistrationsLocked = entity.Json.HasRegistrationsLocked
         };
 
-    public static Database.Models.Event MapToEntity(this Domain.Models.Event model, Database.Models.Event entity, GermanDateTimeConverter dc)
+    public static Database.Models.Event MapToEntity(this Domain.Models.Event model, Database.Models.Event entity)
     {
         entity.Json.Name = model.Name;
         entity.Json.Description = model.Description;
@@ -92,7 +93,7 @@ internal static class Mappings
         return entity;
     }
 
-    public static Domain.Models.SellerRegistration MapToDomain(this Database.Models.SellerRegistration entity, GermanDateTimeConverter dc) => 
+    public static Domain.Models.SellerRegistration MapToDomain(this Database.Models.SellerRegistration entity) => 
         new()
         {
             Id = entity.Id,
@@ -106,7 +107,7 @@ internal static class Mappings
             SellerId = entity.Json.SellerId
         };
 
-    public static Database.Models.SellerRegistration MapToEntity(this Domain.Models.SellerRegistration model, Database.Models.SellerRegistration entity, GermanDateTimeConverter dc)
+    public static Database.Models.SellerRegistration MapToEntity(this Domain.Models.SellerRegistration model, Database.Models.SellerRegistration entity)
     {
         entity.Json.EventId = model.EventId;
         entity.Json.Email = model.Email;
@@ -131,7 +132,7 @@ internal static class Mappings
             Total = entity.Json.Total ?? 0,
         };
 
-    public static Database.Models.Checkout MapToEntity(this Domain.Models.Checkout model, Checkout entity)
+    public static Database.Models.Checkout MapToEntity(this Domain.Models.Checkout model, Database.Models.Checkout entity)
     {
         entity.Json.Status = (int)model.Status;
         entity.Json.EventId = model.EventId;
@@ -182,6 +183,32 @@ internal static class Mappings
         entity.Json.Role = (int)model.Role;
         entity.Json.MaxArticleCount = model.MaxArticleCount;
         entity.Json.CanCheckout = model.CanCheckout;
+        return entity;
+    }
+
+    public static Domain.Models.Planning MapToDomain(this Database.Models.Planning entity, GermanDateTimeConverter dc) =>
+        new()
+        {
+            Id = entity.Id,
+            EventId = entity.Json.EventId,
+            Date = dc.ToLocal(entity.Json.Date),
+            Name = entity.Json.Name,
+            From = entity.Json.From,
+            To = entity.Json.To,
+            IdentityIds = [ .. entity.Json.IdentityIds],
+            Persons = [.. entity.Json.Persons]
+        };
+
+    public static Database.Models.Planning MapToEntity(this Domain.Models.Planning model, Database.Models.Planning entity)
+    {
+        entity.Id = model.Id;
+        entity.Json.EventId = model.EventId;
+        entity.Json.Date = model.Date.ToUniversalTime();
+        entity.Json.Name = model.Name;
+        entity.Json.From = model.From;
+        entity.Json.To = model.To;
+        entity.Json.IdentityIds = [.. model.IdentityIds];
+        entity.Json.Persons = [.. model.Persons];
         return entity;
     }
 }

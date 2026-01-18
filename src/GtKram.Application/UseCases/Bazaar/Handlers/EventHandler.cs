@@ -11,19 +11,23 @@ internal sealed class EventHandler :
     IQueryHandler<FindEventQuery, ErrorOr<Domain.Models.Event>>,
     IQueryHandler<FindEventForRegistrationQuery, ErrorOr<EventWithRegistrationCount>>,
     IQueryHandler<GetEventsWithRegistrationCountQuery, EventWithRegistrationCount[]>,
+    IQueryHandler<GetEventsWithPlanningCountQuery, EventWithPlanningCount[]>,
     ICommandHandler<CreateEventCommand, ErrorOr<Success>>,
     ICommandHandler<UpdateEventCommand, ErrorOr<Success>>,
     ICommandHandler<DeleteEventCommand, ErrorOr<Success>>
 {
     private readonly IEvents _events;
     private readonly ISellerRegistrations _sellerRegistrations;
+    private readonly IPlannings _plannings;
 
     public EventHandler(
         IEvents events,
-        ISellerRegistrations sellerRegistrations)
+        ISellerRegistrations sellerRegistrations,
+        IPlannings plannings)
     {
         _events = events;
         _sellerRegistrations = sellerRegistrations;
+        _plannings = plannings;
     }
 
     public async ValueTask<ErrorOr<Domain.Models.Event>> Handle(FindEventQuery query, CancellationToken cancellationToken) =>
@@ -63,6 +67,28 @@ internal sealed class EventHandler :
         var results = events
             .OrderByDescending(e => e.Start)
             .Select(e => new EventWithRegistrationCount(e, countByBazaarEventId.TryGetValue(e.Id, out var count) ? count : 0))
+            .ToArray();
+
+        return results;
+    }
+
+    public async ValueTask<EventWithPlanningCount[]> Handle(GetEventsWithPlanningCountQuery query, CancellationToken cancellationToken)
+    {
+        var events = await _events.GetAll(cancellationToken);
+        if (events.Length == 0)
+        {
+            return [];
+        }
+
+        var plannings = await _plannings.GetAll(cancellationToken);
+
+        var countByEventId = plannings
+            .GroupBy(r => r.EventId)
+            .ToDictionary(r => r.Key, r => r.Count());
+
+        var results = events
+            .OrderByDescending(e => e.Start)
+            .Select(e => new EventWithPlanningCount(e, countByEventId.TryGetValue(e.Id, out var count) ? count : 0))
             .ToArray();
 
         return results;

@@ -9,9 +9,6 @@ public static class Event
     public static Error NotFound { get; } =
         Error.NotFound($"{_prefix}.not.found", "Der Kinderbasar wurde nicht gefunden.");
 
-    public static Error SaveFailed { get; } =
-        Error.Failure($"{_prefix}.save.failed", "Der Kinderbasar konnte nicht gespeichert werden.");
-
     public static Error DeleteFailed { get; } =
         Error.Failure($"{_prefix}.delete.failed", "Der Kinderbasar konnte nicht gelöscht werden.");
 

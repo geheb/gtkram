@@ -9,9 +9,6 @@ public static class Checkout
     public static Error NotFound { get; } =
         Error.NotFound($"{_prefix}.not.found", "Der Kassenvorgang wurde nicht gefunden.");
 
-    public static Error SaveFailed { get; } =
-        Error.Failure($"{_prefix}.save.failed", "Der Kassenvorgang konnte nicht gespeichert werden.");
-
     public static Error StatusCompleted { get; } =
         Error.Failure($"{_prefix}.status.completed", "Der Kassenvorgang ist geschlossen.");
 

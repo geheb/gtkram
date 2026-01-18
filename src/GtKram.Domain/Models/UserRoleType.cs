@@ -5,5 +5,6 @@ public enum UserRoleType
     Administrator,
     Manager,
     Seller,
-    Checkout
+    Checkout,
+    Helper,
 }

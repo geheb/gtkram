@@ -9,4 +9,5 @@ internal static class TableNames
     public const string SellerRegistrations = "seller_registrations";
     public const string Articles = "articles";
     public const string Checkouts = "checkouts";
+    public const string Plannings = "plannings";
 }

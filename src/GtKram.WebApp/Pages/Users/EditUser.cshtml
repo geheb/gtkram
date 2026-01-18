@@ -67,8 +67,11 @@
                             <input id="checkBoxSeller" type="checkbox" asp-for="Input.Roles[2]" />
                             <label for="checkBoxSeller">@roleConverter.RoleToString(Domain.Models.UserRoleType.Seller)</label>
 
-                            <input id="checkBoxHelper" type="checkbox" asp-for="Input.Roles[3]" />
-                            <label for="checkBoxHelper">@roleConverter.RoleToString(Domain.Models.UserRoleType.Checkout)</label>
+                            <input id="checkBoxCheckout" type="checkbox" asp-for="Input.Roles[3]" />
+                            <label for="checkBoxCheckout">@roleConverter.RoleToString(Domain.Models.UserRoleType.Checkout)</label>
+
+                            <input id="checkBoxHelper" type="checkbox" asp-for="Input.Roles[4]" />
+                            <label for="checkBoxHelper">@roleConverter.RoleToString(Domain.Models.UserRoleType.Helper)</label>
                         </div>
 
                         <button class="button is-primary" type="submit">Speichern</button>

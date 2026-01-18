@@ -27,7 +27,7 @@ internal sealed class Sellers : ISellers
         using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
         if (locker is null)
         {
-            return Domain.Errors.Seller.SaveFailed;
+            return Domain.Errors.Internal.Timeout;
         }
 
         try
@@ -66,7 +66,7 @@ internal sealed class Sellers : ISellers
                     var result = await _repository.Update(updates, cancellationToken);
                     if (result != updates.Count)
                     {
-                        return Domain.Errors.Seller.SaveFailed;
+                        return Domain.Errors.Internal.ConflictData;
                     }
                 }
             }
@@ -144,7 +144,7 @@ internal sealed class Sellers : ISellers
         using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
         if (locker is null)
         {
-            return Domain.Errors.Seller.SaveFailed;
+            return Domain.Errors.Internal.Timeout;
         }
 
         try
@@ -171,7 +171,7 @@ internal sealed class Sellers : ISellers
                 var result = await _repository.Update(updates, cancellationToken);
                 if (result != updates.Count)
                 {
-                    return Domain.Errors.Seller.SaveFailed;
+                    return Domain.Errors.Internal.ConflictData;
                 }
             }
 
@@ -189,7 +189,7 @@ internal sealed class Sellers : ISellers
     {
         var affectedRows = await _repository.Delete(id, cancellationToken);
 
-        return affectedRows > 0 ? Result.Success : Domain.Errors.Seller.SaveFailed;
+        return affectedRows > 0 ? Result.Success : Domain.Errors.Seller.NotFound;
     }
 
     public async Task<Domain.Models.Seller[]> GetById(Guid[] ids, CancellationToken cancellationToken)

@@ -65,6 +65,7 @@ public static class ServiceExtensions
         services.AddScoped<ISellers, Sellers>();
         services.AddScoped<IArticles, Articles>();
         services.AddScoped<ICheckouts, Checkouts>();
+        services.AddScoped<IPlannings, Plannings>();
 
         services.AddScoped<DbContextInitializer>();
         services.AddScoped<MysqlMigration>();

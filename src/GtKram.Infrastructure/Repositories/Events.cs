@@ -17,7 +17,7 @@ internal sealed class Events : IEvents
 
     public async Task<ErrorOr<Guid>> Create(Domain.Models.Event model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new() { Json = new() }, new());
+        var entity = model.MapToEntity(new() { Json = new() });
         entity.Json.Commission = 20;
 
         await _repository.Insert(entity, cancellationToken);
@@ -61,7 +61,7 @@ internal sealed class Events : IEvents
             return Domain.Errors.Event.NotFound;
         }
 
-        model.MapToEntity(entity, new());
+        model.MapToEntity(entity);
         var result = await _repository.Update(entity, cancellationToken);
 
         return result ? Result.Success : Domain.Errors.Internal.ConflictData;
