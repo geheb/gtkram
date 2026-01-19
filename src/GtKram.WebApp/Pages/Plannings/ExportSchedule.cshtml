@@ -45,14 +45,7 @@
                         <td>@(lastName == item.Name ? string.Empty : item.Name)</td>
                         <td>@dtConverter.ToIso(item.From) - @dtConverter.ToIso(item.To) Uhr</td>
                         <td>
-                        @foreach (var id in item.IdentityIds)
-                        {
-                            @(Model.UserMap.TryGetValue(id, out var user) ? user : id)<br/>
-                        }
-                        @foreach (var name in item.Persons)
-                        {
-                            @name<span>*</span><br/>
-                        }
+                            @(item.BuildHelpers(Model.UserMap))
                         </td>
                     </tr>
                     lastName = item.Name;

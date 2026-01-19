@@ -11,5 +11,12 @@ public sealed class Planning
     public ICollection<Guid> IdentityIds { get; set; } = [];
     public ICollection<string> Persons { get; set; } = [];
 
+    public string BuildHelpers(Dictionary<Guid, string> userMap) =>
+        (
+            string.Join(", ", IdentityIds.Select(id => userMap.TryGetValue(id, out var u) ? u : id.ToString())) +
+            ", " + 
+            string.Join(", ", Persons.Select(p => $"{p}*"))
+        ).Trim(',', ' ');
+
     public int HelperCount => IdentityIds.Count + Persons.Count;
 }
