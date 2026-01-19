@@ -54,7 +54,7 @@ internal class PlanningHandler :
     public async ValueTask<Planning[]> Handle(GetPlanningsQuery query, CancellationToken cancellationToken)
     {
         var plannings = await _plannings.GetByEventId(query.EventId, cancellationToken);
-        return [.. plannings.OrderBy(p => p.Date).ThenBy(p => p.From)];
+        return [.. plannings.OrderBy(p => p.Name).ThenBy(p => p.Date).ThenBy(p => p.From)];
     }
 
     public async ValueTask<ErrorOr<Success>> Handle(UpdatePlanningCommand command, CancellationToken cancellationToken)
