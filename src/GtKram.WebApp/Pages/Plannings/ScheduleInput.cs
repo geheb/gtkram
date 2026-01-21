@@ -11,7 +11,9 @@ public sealed class ScheduleInput
     public Guid State_EventId { get; set; }
     public string? State_Event { get; set; }
     public ICollection<Guid> UserIds { get; set; } = [];
+    public ICollection<Guid> CheckedUserIds { get; set; } = [];
     public ICollection<string> Persons { get; set; } = [];
+    public ICollection<string> CheckedPersons { get; set; } = [];
 
     [Display(Name = "Name")]
     [RequiredField, TextLengthField]
@@ -20,6 +22,10 @@ public sealed class ScheduleInput
     [Display(Name = "Datum")]
     [RequiredField]
     public string? Date { get; set; }
+
+    [Display(Name = "Helfer maximal")]
+    [RangeField(1, 100)]
+    public int? MaxHelper { get; set; }
 
     [Display(Name = "Von")]
     [RequiredField]
@@ -32,12 +38,15 @@ public sealed class ScheduleInput
     internal void Init(Planning model)
     {
         var dc = new GermanDateTimeConverter();
-        UserIds = model.IdentityIds;
-        Persons = model.Persons;
         Name = model.Name;
         Date = dc.ToIso(DateOnly.FromDateTime(model.Date.DateTime));
         From = dc.ToIso(model.From);
         To = dc.ToIso(model.To);
+        MaxHelper = model.MaxHelper;
+        UserIds = model.IdentityIds;
+        CheckedUserIds = model.CheckedIdentityIds;
+        Persons = model.Persons;
+        CheckedPersons = model.CheckedPersons;
     }
 
     internal CreatePlanningCommand ToCreateCommand(Guid eventId) 
@@ -51,6 +60,7 @@ public sealed class ScheduleInput
             Date = date is not null ? dc.ToUtc(date.Value) : DateTimeOffset.MinValue,
             From = dc.FromIsoTime(From) ?? TimeOnly.MinValue,
             To = dc.FromIsoTime(To) ?? TimeOnly.MinValue,
+            MaxHelper = MaxHelper,
             IdentityIds = new HashSet<Guid>(UserIds),
             Persons = new HashSet<string>(Persons, StringComparer.OrdinalIgnoreCase)
         });
@@ -68,8 +78,11 @@ public sealed class ScheduleInput
             Date = date is not null ? dc.ToUtc(date.Value) : DateTimeOffset.MinValue,
             From = dc.FromIsoTime(From) ?? TimeOnly.MinValue,
             To = dc.FromIsoTime(To) ?? TimeOnly.MinValue,
+            MaxHelper = MaxHelper,
             IdentityIds = new HashSet<Guid>(UserIds),
-            Persons = new HashSet<string>(Persons, StringComparer.OrdinalIgnoreCase)
+            CheckedIdentityIds = new HashSet<Guid>(CheckedUserIds),
+            Persons = new HashSet<string>(Persons, StringComparer.OrdinalIgnoreCase),
+            CheckedPersons = new HashSet<string>(CheckedPersons, StringComparer.OrdinalIgnoreCase),
         });
     }
 }

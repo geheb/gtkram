@@ -54,7 +54,7 @@ internal sealed class Users : IUsers
         return entity.Id;
     }
 
-    public async Task<ErrorOr<Success>> AddRole(Guid id, UserRoleType role, CancellationToken cancellationToken)
+    public async Task<ErrorOr<Success>> AddRoles(Guid id, UserRoleType[] roles, CancellationToken cancellationToken)
     {
         var entity = await _repository.SelectOne(id, cancellationToken);
         if (entity is null)
@@ -62,10 +62,13 @@ internal sealed class Users : IUsers
             return Domain.Errors.Identity.NotFound;
         }
 
-        var roleClaim = new IdentityClaim(ClaimTypes.Role, role.MapToRole());
-        if (!entity.Json.Claims.Contains(roleClaim))
+        foreach (var role in roles)
         {
-            entity.Json.Claims.Add(roleClaim);
+            var roleClaim = new IdentityClaim(ClaimTypes.Role, role.MapToRole());
+            if (!entity.Json.Claims.Contains(roleClaim))
+            {
+                entity.Json.Claims.Add(roleClaim);
+            }
         }
 
         var result = await _repository.Update(entity, cancellationToken);

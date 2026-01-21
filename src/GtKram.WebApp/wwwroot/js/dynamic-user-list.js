@@ -1,29 +1,40 @@
 ﻿class DynamicUserList {
 
-    constructor(formNameUsers, formNamePersons) {
+    constructor(formNameUsers, formNameCheckedUsers, formNamePersons, formNameCheckedPersons) {
         this.formNameUsers = formNameUsers;
+        this.formNameCheckedUsers = formNameCheckedUsers;
         this.formNamePersons = formNamePersons;
+        this.formNameCheckedPersons = formNameCheckedPersons;
     }
 
-    addItem(inputName, personName, value, iconClass) {
+    addItem(inputName, inputChecked, personName, value, iconClass) {
         const panelBlock = `<a class="panel-block"><span class="panel-icon"><i class="${iconClass}"></i></span>${personName}</a>`;
-        const container = $('<div>').append(
-            $('<input>').attr({ type: 'hidden', name: inputName, value: value }),
-            panelBlock);
-        $('#user-items').append(container);
+        const input = `<input type="hidden" name="${inputName}" value="${value}" />`;
+
+        if (inputChecked) {
+            const col1 = `<div class="column">${panelBlock}</div>`;
+            const col2 = `<div class="column is-narrow"><input type="checkbox" class="m-3" name="${inputChecked}" value="${value}" /></div>`;
+            const row = `<div class="helper-row columns is-gapless mb-0">${col1}${col2}${input}</div>`;
+            $('#user-items').append(row);
+        }
+        else {
+            const row = `<div class="helper-row">${panelBlock}${input}</div>`;
+            $('#user-items').append(row);
+        }
     }
 
     addUser(name, id) {
-        this.addItem(this.formNameUsers, name, id, 'fas fa-circle-user');
+        this.addItem(this.formNameUsers, this.formNameCheckedUsers, name, id, 'fas fa-circle-user');
     }
 
     addPerson(name) {
-        this.addItem(this.formNamePersons, name, name, 'far fa-circle-user');
+        this.addItem(this.formNamePersons, this.formNameCheckedPersons, name, name, 'far fa-circle-user');
     }
 
     registerClick(selector) {
         $('body').on('click', selector, function () {
-            $(this).parent().remove();
+            const row = $(this).closest('.helper-row');
+            row.remove();
         });
     }
 
@@ -34,7 +45,7 @@
             const val = item.val();
             if (val) {
                 self.addUser(item.text(), val);
-                $(selector).val('').change();
+                $(selector).val('').trigger('change');
             }
         });
     }

@@ -1,6 +1,5 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.Bazaar.Queries;
-using GtKram.Application.UseCases.User.Models;
 using GtKram.Application.UseCases.User.Queries;
 using GtKram.Domain.Models;
 using Mediator;

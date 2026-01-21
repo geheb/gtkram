@@ -209,13 +209,22 @@ internal sealed class SellerHandler :
         seller.Value.CanCheckout = command.CanCheckout;
 
         var result = await _sellers.Update(seller.Value, cancellationToken);
-        if (result.IsError || !command.CanCheckout)
+        if (result.IsError)
         {
             return result;
         }
 
-        var resultRole = await _users.AddRole(seller.Value.IdentityId, UserRoleType.Checkout, cancellationToken);
-        return resultRole;
+        if (command.CanCheckout || command.Role != SellerRole.Standard)
+        {
+            var roles = new List<UserRoleType> { UserRoleType.Helper };
+            if (command.CanCheckout)
+            {
+                roles.Add(UserRoleType.Checkout);
+            }
+            result = await _users.AddRoles(seller.Value.IdentityId, [.. roles], cancellationToken);
+        }
+
+        return result;
     }
 
     public async ValueTask<ErrorOr<Success>> Handle(DeleteSellerRegistrationCommand command, CancellationToken cancellationToken)
@@ -261,7 +270,7 @@ internal sealed class SellerHandler :
             var user = await _users.FindByEmail(registration.Value.Email, cancellationToken);
             if (!user.IsError)
             {
-                var resultUser = await _users.AddRole(user.Value.Id, UserRoleType.Seller, cancellationToken);
+                var resultUser = await _users.AddRoles(user.Value.Id, [UserRoleType.Seller], cancellationToken);
                 if (resultUser.IsError)
                 {
                     return resultUser.Errors;

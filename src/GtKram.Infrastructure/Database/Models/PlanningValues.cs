@@ -7,6 +7,9 @@ internal sealed class PlanningValues
     public DateTimeOffset Date { get; set; }
     public TimeOnly From { get; set; }
     public TimeOnly To { get; set; }
+    public int? MaxHelper { get; set; }
     public ICollection<Guid> IdentityIds { get; set; } = [];
+    public ICollection<Guid> CheckedIdentityIds { get; set; } = [];
     public ICollection<string> Persons { get; set; } = [];
+    public ICollection<string> CheckedPersons { get; set; } = [];
 }

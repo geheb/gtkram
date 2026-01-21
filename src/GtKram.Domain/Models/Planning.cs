@@ -8,8 +8,11 @@ public sealed class Planning
     public DateTimeOffset Date { get; set; }
     public TimeOnly From { get; set; }
     public TimeOnly To { get; set; }
+    public int? MaxHelper { get; set; }
     public ICollection<Guid> IdentityIds { get; set; } = [];
+    public ICollection<Guid> CheckedIdentityIds { get; set; } = [];
     public ICollection<string> Persons { get; set; } = [];
+    public ICollection<string> CheckedPersons { get; set; } = [];
 
     public string BuildHelpers(Dictionary<Guid, string> userMap) =>
         (
@@ -18,5 +21,8 @@ public sealed class Planning
             string.Join(", ", Persons.Select(p => $"{p}*"))
         ).Trim(',', ' ');
 
-    public int HelperCount => IdentityIds.Count + Persons.Count;
+    public string HelperCount =>
+        MaxHelper > 0
+        ? $"{IdentityIds.Count + Persons.Count} / {MaxHelper}"
+        : $"{IdentityIds.Count + Persons.Count}";
 }

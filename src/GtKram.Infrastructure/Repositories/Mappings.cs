@@ -195,8 +195,11 @@ internal static class Mappings
             Name = entity.Json.Name,
             From = entity.Json.From,
             To = entity.Json.To,
+            MaxHelper = entity.Json.MaxHelper,
             IdentityIds = [ .. entity.Json.IdentityIds],
-            Persons = [.. entity.Json.Persons]
+            CheckedIdentityIds = [.. entity.Json.CheckedIdentityIds],
+            Persons = [.. entity.Json.Persons],
+            CheckedPersons = [.. entity.Json.CheckedPersons],
         };
 
     public static Database.Models.Planning MapToEntity(this Domain.Models.Planning model, Database.Models.Planning entity)
@@ -207,8 +210,11 @@ internal static class Mappings
         entity.Json.Name = model.Name;
         entity.Json.From = model.From;
         entity.Json.To = model.To;
+        entity.Json.MaxHelper = model.MaxHelper;
         entity.Json.IdentityIds = [.. model.IdentityIds];
+        entity.Json.CheckedIdentityIds = [.. model.CheckedIdentityIds];
         entity.Json.Persons = [.. model.Persons];
+        entity.Json.CheckedPersons = [.. model.CheckedPersons];
         return entity;
     }
 }

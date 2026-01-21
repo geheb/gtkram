@@ -46,7 +46,6 @@
                             </div>
                             <span asp-validation-for="Input.Date"></span>
                         </div>
-
                         <div class="field">
                             <label class="label">Von/Bis</label>
                         </div>
@@ -67,6 +66,13 @@
                             </div>
                         </div>
                         <div class="field">
+                            <label class="label" asp-for="Input.MaxHelper"></label>
+                            <div class="control">
+                                <input class="input" type="number" asp-for="Input.MaxHelper" />
+                            </div>
+                            <span asp-validation-for="Input.MaxHelper"></span>
+                        </div>
+                        <div class="field">
                             <label class="label">Helfer</label>
                         </div>
                         <div class="field">
@@ -84,14 +90,14 @@
                                 <div id="user-items">
                                 @foreach(var id in Model.Input.UserIds)
                                 {
-                                    <div>
+                                    <div class="helper-row">
                                         <a class="panel-block"><span class="panel-icon"><i class="fas fa-circle-user"></i></span>@(Model.UserMap.TryGetValue(id, out var u) ? u : id)</a>
                                         <input type="hidden" name="@Html.NameFor(m => m.Input.UserIds)" value="@id" />
                                     </div>
                                 }
                                 @foreach(var p in Model.Input.Persons)
                                 {
-                                    <div>
+                                    <div class="helper-row">
                                         <a class="panel-block"><span class="panel-icon"><i class="far fa-circle-user"></i></span>@p</a>
                                         <input type="hidden" name="@Html.NameFor(m => m.Input.Persons)" value="@p" />
                                     </div>
@@ -117,8 +123,9 @@
 $(function () {
     const list = new DynamicUserList(
         '@Html.NameFor(m => m.Input.UserIds)',
-        '@Html.NameFor(m => m.Input.Persons)'
-    );
+        null,
+        '@Html.NameFor(m => m.Input.Persons)',
+        null);
     list.registerClick('#user-items a');
     list.registerChange('#users');
     list.registerKeypress('#custom-person');

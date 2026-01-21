@@ -30,8 +30,8 @@
 
                 <form method="post">
                     <fieldset disabled="@Model.IsDisabled">
-                        @Html.HiddenFor(m => m.Input.State_Event);
-                        @Html.HiddenFor(m => m.Input.State_EventId);
+                        @Html.HiddenFor(m => m.Input.State_Event)
+                        @Html.HiddenFor(m => m.Input.State_EventId)
 
                         <div class="field">
                             <label class="label" asp-for="Input.Name"></label>
@@ -68,6 +68,13 @@
                             </div>
                         </div>
                         <div class="field">
+                            <label class="label" asp-for="Input.MaxHelper"></label>
+                            <div class="control">
+                                <input class="input" type="number" asp-for="Input.MaxHelper" />
+                            </div>
+                            <span asp-validation-for="Input.MaxHelper"></span>
+                        </div>
+                        <div class="field">
                             <label class="label">Helfer</label>
                         </div>
                         <div class="field">
@@ -85,15 +92,30 @@
                                 <div id="user-items">
                                     @foreach (var id in Model.Input.UserIds)
                                     {
-                                        <div>
-                                            <a class="panel-block"><span class="panel-icon"><i class="fas fa-circle-user"></i></span>@(Model.UserMap.TryGetValue(id, out var u) ? u : id)</a>
+                                        <div class="helper-row columns is-gapless mb-0">
+                                            <div class="column">
+                                                <a class="panel-block"><span class="panel-icon"><i class="fas fa-circle-user"></i></span>
+                                                    @(Model.UserMap.TryGetValue(id, out var u) ? u : id)</a>
+                                            </div>
+                                            <div class="column is-narrow">
+                                                <input type="checkbox" class="m-3" 
+                                                    name="@Html.NameFor(m => m.Input.CheckedUserIds)" value="@id" 
+                                                    @(Model.Input.CheckedUserIds.Contains(id) ? "checked" : string.Empty) />
+                                            </div>
                                             <input type="hidden" name="@Html.NameFor(m => m.Input.UserIds)" value="@id" />
                                         </div>
                                     }
                                     @foreach (var p in Model.Input.Persons)
                                     {
-                                        <div>
-                                            <a class="panel-block"><span class="panel-icon"><i class="far fa-circle-user"></i></span>@p</a>
+                                        <div class="helper-row columns is-gapless mb-0">
+                                            <div class="column">
+                                                <a class="panel-block"><span class="panel-icon"><i class="far fa-circle-user"></i></span>@p</a>
+                                            </div>
+                                            <div class="column is-narrow">
+                                                <input type="checkbox" class="m-3" 
+                                                    name="@Html.NameFor(m => m.Input.CheckedPersons)" value="@p" 
+                                                       @(Model.Input.CheckedPersons.Contains(p) ? "checked" : string.Empty) />
+                                            </div>
                                             <input type="hidden" name="@Html.NameFor(m => m.Input.Persons)" value="@p" />
                                         </div>
                                     }
@@ -118,8 +140,9 @@
     $(function () {
         const list = new DynamicUserList(
             '@Html.NameFor(m => m.Input.UserIds)',
-            '@Html.NameFor(m => m.Input.Persons)'
-        );
+            '@Html.NameFor(m => m.Input.CheckedUserIds)',
+            '@Html.NameFor(m => m.Input.Persons)',
+            '@Html.NameFor(m => m.Input.CheckedPersons)');
         list.registerClick('#user-items a');
         list.registerChange('#users');
         list.registerKeypress('#custom-person');
