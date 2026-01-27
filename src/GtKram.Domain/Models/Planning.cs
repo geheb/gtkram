@@ -21,8 +21,11 @@ public sealed class Planning
             string.Join(", ", Persons.Select(p => $"{p}*"))
         ).Trim(',', ' ');
 
-    public string HelperCount =>
+    public string Total =>
         MaxHelper > 0
         ? $"{IdentityIds.Count + Persons.Count} / {MaxHelper}"
         : $"{IdentityIds.Count + Persons.Count}";
+
+    public int CheckedCount =>
+        CheckedIdentityIds.Count + CheckedPersons.Count;
 }

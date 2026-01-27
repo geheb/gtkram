@@ -87,7 +87,7 @@
                         <div class="list-item-description">
                             @if (!string.IsNullOrWhiteSpace(i.Article.Size))
                             {
-                                <span class="tag is-rounded)">@i.Article.Size</span>
+                                <span class="tag is-rounded">@i.Article.Size</span>
                             }
                             <span class="tag is-rounded">@i.Article.Price.ToString("0.00") €</span>
                             @if (i.Checkout?.IsCompleted == true)
