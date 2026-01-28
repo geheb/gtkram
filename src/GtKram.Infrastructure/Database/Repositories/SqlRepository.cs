@@ -284,23 +284,25 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
     private static string BuildWhere(string field, object? value)
     {
         var isCollection = value is not string && value is System.Collections.IEnumerable;
+        var collation = value is string ? " COLLATE utf8_ci" : string.Empty;
 
         return
             isCollection
             ? $"{field} IN @{field}"
-            : value is null ? $"{field} IS NULL" : $"{field}=@{field}";
+            : value is null ? $"{field} IS NULL" : $"{field}=@{field}{collation}";
     }
 
     private static string BuildWhereJson(string field, object? value)
     {
         var isCollection = value is not string && value is System.Collections.IEnumerable;
+        var collation = value is string ? " COLLATE utf8_ci" : string.Empty;
 
         return
             isCollection
             ? $"json_extract({nameof(Identity.JsonProperties)},'$.{field}') IN @{field}"
             : (value is null
                 ? $"json_extract({nameof(Identity.JsonProperties)},'$.{field}') IS NULL"
-                : $"json_extract({nameof(Identity.JsonProperties)},'$.{field}')=@{field}");
+                : $"json_extract({nameof(Identity.JsonProperties)},'$.{field}')=@{field}{collation}");
     }
 
     private static string BuildSelect(int count, string? field, object? value)

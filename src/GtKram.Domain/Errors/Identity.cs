@@ -9,6 +9,9 @@ public static class Identity
     public static Error NotFound { get; } =
         Error.NotFound($"{_prefix}.not.found", "Der Nutzer wurde nicht gefunden.");
 
+    public static Error DeleteFailed { get; } =
+        Error.Failure($"{_prefix}.delete.failed", "Der Nutzer konnte nicht gelöscht werden.");
+
     public static Error TwoFactorNotEnabled { get; } =
         Error.Failure($"{_prefix}.two.factor.auth.not.enabled", "Die Zwei-Faktor-Authentifizierung (2FA) ist nicht eingerichtet.");
 

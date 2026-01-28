@@ -58,4 +58,10 @@ public sealed class EditUserModel : PageModel
 
         return RedirectToPage("Index");
     }
+
+    public async Task<IActionResult> OnPostRemoveUserAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new RemoveUserCommand(id), cancellationToken);
+        return new JsonResult(!result.IsError);
+    }
 }

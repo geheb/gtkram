@@ -5,6 +5,7 @@ using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -113,12 +114,17 @@ internal sealed class Users : IUsers
 
         var name = new string([.. entity.Json.Name!.Split(' ').Select(u => u[0])]);
 
-        entity.Json.Email = name + "@disabled";
+        entity.Json.Email = entity.Json.UserName + "@disabled";
         entity.Json.PasswordHash = null;
         entity.Json.Name = name;
         entity.Json.IsEmailConfirmed = false;
         entity.Json.Disabled = _timeProvider.GetUtcNow();
         entity.Json.LastLogin = null;
+        entity.Json.PhoneNumber = null;
+        entity.Json.IsPhoneNumberConfirmed = false;
+        entity.Json.AuthenticatorKey = null;
+        entity.Json.LockoutEnd = null;
+        entity.Json.Claims.Clear();
 
         var result = await _repository.Update(entity, cancellationToken);
 
@@ -161,5 +167,18 @@ internal sealed class Users : IUsers
         }
 
         return entity.MapToDomain(_timeProvider.GetUtcNow(), new());
+    }
+
+    public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _repository.Delete(id, cancellationToken);
+            return result > 0 ? Result.Success : Domain.Errors.Identity.DeleteFailed;
+        }
+        catch (SqliteException)
+        {
+            return Domain.Errors.Identity.DeleteFailed;
+        }
     }
 }

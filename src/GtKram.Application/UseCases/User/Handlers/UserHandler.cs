@@ -13,7 +13,8 @@ internal sealed class UserHandler :
     IQueryHandler<GetAllUsersQuery, Domain.Models.User[]>,
     IQueryHandler<FindUserByIdQuery, ErrorOr<Domain.Models.User>>,
     ICommandHandler<CreateUserCommand, ErrorOr<Guid>>,
-    ICommandHandler<UpdateUserCommand, ErrorOr<Success>>
+    ICommandHandler<UpdateUserCommand, ErrorOr<Success>>,
+    ICommandHandler<RemoveUserCommand, ErrorOr<Success>>
 {
     private readonly IdentityErrorDescriber _errorDescriber;
     private readonly IMediator _mediator;
@@ -69,6 +70,16 @@ internal sealed class UserHandler :
     public async ValueTask<ErrorOr<Success>> Handle(UpdateUserCommand command, CancellationToken cancellationToken)
     {
         var result = await _users.Update(command.Id, command.Name, command.Roles, cancellationToken);
+        return result;
+    }
+
+    public async ValueTask<ErrorOr<Success>> Handle(RemoveUserCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _users.Delete(command.Id, cancellationToken);
+        if (result.IsError)
+        {
+            result = await _users.Disable(command.Id, cancellationToken);
+        }
         return result;
     }
 }

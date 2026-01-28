@@ -7,7 +7,6 @@
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
 
     var dateConverter = new GermanDateTimeConverter();
-    var indexLink = Url.PageLink("Index");
 }
 
 @await Html.PartialAsync("_Header")

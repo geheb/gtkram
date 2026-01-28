@@ -6,6 +6,7 @@
     Guid.TryParse(Request.RouteValues["id"] as string, out var id);
 
     var roleConverter = new RoleConverter();
+    var indexUrl = Url.PageLink("Index");
 }
 
 @await Html.PartialAsync("_Header")
@@ -13,8 +14,28 @@
 <section class="small-section">
     <div class="container">
 
-        <div class="is-flex mb-2 is-height-2-5 is-align-items-center">
-            @Html.CreateBreadcrumb(new { id })
+        <div class="columns is-gapless is-mobile mb-2 is-height-2-5">
+            <div class="column is-flex is-align-items-center">@Html.CreateBreadcrumb(new { id })</div>
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable is-right">
+                    <div class="dropdown-trigger">
+                        <button class="button" aria-haspopup="true" aria-controls="menu-action">
+                            <span class="icon is-small">
+                                <i class="fas fa-ellipsis-vertical"></i>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu" id="menu-action" role="menu">
+                        <div class="dropdown-content">
+                            <a class="dropdown-item open-modal" href="#"
+                               data-target="#removeUserModal"
+                               data-url="@(Url.PageLink(string.Empty, "removeuser", new { id }))">
+                                Benutzer entfernen
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="columns mt-4">
@@ -88,3 +109,30 @@
 </section>
 
 @await Html.PartialAsync("_Footer")
+
+@Html.CreateModalTemplateWithOkCancel(
+    "removeUserModal",
+    "Benutzer entfernen",
+    @"Möchtest du wirklich diesen Benutzer entfernen? <b>WICHTIG:</b><br/>Dieser Schritt kann nicht rückgängig gemacht werden!")
+
+@section Scripts
+{
+    <script type="text/javascript">
+        $(function () {
+
+            handleModal({
+                id: '#removeUserModal',
+                token: {@Html.AjaxCsrfToken()},
+                confirm: {
+                    dataurl: 'url',
+                    action: function () { window.location.replace('@indexUrl'); },
+                    toast: {
+                        success: 'Benutzer wurde entfernt.',
+                        failed: 'Benutzer konnte nicht entfernt werden.'
+                    }
+                }
+            });
+
+        });
+    </script>
+}

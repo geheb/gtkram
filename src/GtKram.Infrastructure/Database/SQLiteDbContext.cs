@@ -19,6 +19,8 @@ internal sealed class SQLiteDbContext : IAsyncDisposable
         if (_connection is null)
         {
             var connection = new SqliteConnection(_connectionString);
+            connection.CreateCollation("utf8_ci", (x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
+
             await connection.OpenAsync(cancellationToken);
             _connection = connection;
         }
