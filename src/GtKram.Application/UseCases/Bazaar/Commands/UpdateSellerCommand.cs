@@ -8,4 +8,5 @@ public record struct UpdateSellerCommand(
     Guid SellerRegistrationId,
     int SellerNumber,
     SellerRole Role,
-    bool CanCheckout) : ICommand<ErrorOr<Success>>;
+    bool CanCheckout,
+    int? MaxArticleCount) : ICommand<ErrorOr<Success>>;

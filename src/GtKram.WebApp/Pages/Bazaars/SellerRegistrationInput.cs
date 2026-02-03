@@ -20,16 +20,20 @@ public sealed class SellerRegistrationInput
 
     // see also BazaarEventInput.MaxSellers
     [Display(Name = "Verkäufernummer")]
-    [RequiredField, Range(0, 200, ErrorMessage = "Das Feld '{0}' muss eine Zahl zwischen {1} und {2} sein.")]
+    [RequiredField, RangeField(1, 200)]
     public int SellerNumber { get; set; }
 
     [Display(Name = "Rolle des Verkäufers")]
-    [RequiredField, Range((int)SellerRole.Standard, (int)SellerRole.Orga, ErrorMessage = "Das Feld '{0}' muss eine Zahl zwischen {1} und {2} sein.")]
+    [RequiredField, RangeField((int)SellerRole.Standard, (int)SellerRole.Orga)]
     public int Role { get; set; }
 
     [Display(Name = "Darf kassieren")]
     [RequiredField]
     public bool CanCheckout { get; set; }
+
+    [Display(Name = "Max. Artikel")]
+    [RangeField(1, 999)]
+    public int? MaxArticleCount { get; set; }
 
     internal void InitDefault(SellerRegistration registration)
     {
@@ -43,8 +47,9 @@ public sealed class SellerRegistrationInput
         SellerNumber = seller.SellerNumber;
         Role = (int)seller.Role;
         CanCheckout = seller.CanCheckout;
+        MaxArticleCount = seller.MaxArticleCount;
     }
 
     internal UpdateSellerCommand ToCommand(Guid id) =>
-        new(id, SellerNumber, (SellerRole)Role, CanCheckout);
+        new(id, SellerNumber, (SellerRole)Role, CanCheckout, MaxArticleCount);
 }

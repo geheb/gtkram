@@ -205,7 +205,10 @@ internal sealed class SellerHandler :
         }
         seller.Value.SellerNumber = command.SellerNumber;
         seller.Value.Role = command.Role;
-        seller.Value.MaxArticleCount = command.Role.GetMaxArticleCount();
+        seller.Value.MaxArticleCount = 
+            command.MaxArticleCount > 0 
+            ? command.MaxArticleCount.Value
+            : command.Role.GetMaxArticleCount();
         seller.Value.CanCheckout = command.CanCheckout;
 
         var result = await _sellers.Update(seller.Value, cancellationToken);

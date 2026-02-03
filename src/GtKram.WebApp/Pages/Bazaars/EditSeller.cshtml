@@ -76,7 +76,13 @@
                             <input id="checkBoxOrga" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Orga).ToString())" />
                             <label for="checkBoxOrga">@sellerConverter.RoleToString(Domain.Models.SellerRole.Orga)</label>
                         </div>
-
+                        <div class="field">
+                            <label class="label" asp-for="Input.MaxArticleCount"></label>
+                            <div class="control">
+                                <input class="input" type="number" asp-for="Input.MaxArticleCount" />
+                            </div>
+                            <span asp-validation-for="Input.MaxArticleCount"></span>
+                        </div>
                         <div class="field">
                             <label class="label">Kasse</label>
                         </div>
