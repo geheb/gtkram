@@ -1,10 +1,11 @@
 namespace GtKram.Infrastructure.AspNetCore.Middlewares;
 
-using System.Net;
 using GtKram.Infrastructure.Email;
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 
 public sealed class BotBlockerMiddleware
 {
@@ -30,7 +31,24 @@ public sealed class BotBlockerMiddleware
         if (memoryCache.TryGetValue(key, out int notFoundCounter) && notFoundCounter >= 7)
         {
             context.Response.StatusCode = StatusCodes.Status418ImATeapot;
-            await context.Response.WriteAsync("(”’\\(*o*)/”’) You are banned on this site!", context.RequestAborted);
+            context.Response.Headers["Connection"] = "close";
+            if (notFoundCounter == 7)
+            {
+                await context.Response.WriteAsync("You are banned on this site!", context.RequestAborted);
+                memoryCache.Set(key, notFoundCounter + 1, DateTimeOffset.UtcNow.AddHours(1));
+            }
+            else
+            {
+                var connection = context.Features.Get<IConnectionLifetimeFeature>();
+                if (connection is null)
+                {
+                    context.Abort();
+                }
+                else
+                {
+                    connection.Abort();
+                }
+            }
             return;
         }
 
