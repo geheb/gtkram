@@ -576,7 +576,7 @@ public sealed class SellerHandlerTests
         var seller = context.seller;
         seller.CanCheckout = true;
         var handler = scope.ServiceProvider.GetRequiredService<SellerHandler>();
-        var command = new UpdateSellerCommand(context.registration.Id, seller.SellerNumber, seller.Role, seller.CanCheckout);
+        var command = new UpdateSellerCommand(context.registration.Id, seller.SellerNumber, seller.Role, seller.CanCheckout, null);
         var result = await handler.Handle(command, _cancellationToken);
         result.IsError.ShouldBeFalse();
     }

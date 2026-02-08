@@ -2,6 +2,7 @@ namespace GtKram.Infrastructure.Email;
 
 using System.Globalization;
 using GtKram.Application.Services;
+using GtKram.Infrastructure.Security;
 
 internal sealed class EmailValidator : IEmailValidator
 {

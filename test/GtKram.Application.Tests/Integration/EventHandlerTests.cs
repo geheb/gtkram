@@ -31,6 +31,7 @@ public sealed class EventHandlerTests
 
         _fixture.Services.AddSingleton(_mockTimeProvider);
         _fixture.Services.AddScoped<IEvents, Events>();
+        _fixture.Services.AddScoped<IPlannings, Plannings>();
         _fixture.Services.AddScoped<ISellerRegistrations, SellerRegistrations>();
 
         _serviceProvider = _fixture.Build();

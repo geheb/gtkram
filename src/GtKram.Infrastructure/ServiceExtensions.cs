@@ -8,6 +8,7 @@ using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Database.Repositories;
 using GtKram.Infrastructure.Email;
 using GtKram.Infrastructure.Repositories;
+using GtKram.Infrastructure.Security;
 using GtKram.Infrastructure.Worker;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -32,6 +33,7 @@ public static class ServiceExtensions
         services.AddHostedService<HostedWorker>();
 
         services.Configure<SmtpConnectionOptions>(configuration.GetSection("Smtp"));
+        services.AddSingleton<BlacklistCache>();
         services.AddSingleton<IpReputationChecker>();
         services.AddSingleton<IEmailValidator, EmailValidator>();
         services.AddSingleton<SmtpDispatcher>();

@@ -1,13 +1,12 @@
-namespace GtKram.Infrastructure.AspNetCore.Middlewares;
+namespace GtKram.Infrastructure.Security;
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using System.Text;
 
 public sealed class CspMiddleware
 {
+    private static readonly string _headerValues;
     private readonly RequestDelegate _next;
-    private static readonly StringValues _headerValues;
 
     static CspMiddleware()
     {
@@ -22,7 +21,6 @@ public sealed class CspMiddleware
     public async Task Invoke(HttpContext context)
     {
         context.Response.Headers.ContentSecurityPolicy = _headerValues;
-
         await _next(context);
     }
 
@@ -35,6 +33,8 @@ public sealed class CspMiddleware
         value.Append(GetDirective("img-src", "'self'", "data:"));
         value.Append(GetDirective("font-src", "'self'"));
         value.Append(GetDirective("media-src", "'self'"));
+        value.Append(GetDirective("connect-src", "'self'"));
+        value.Append(GetDirective("worker-src", "'self'"));
         return value.ToString();
     }
 

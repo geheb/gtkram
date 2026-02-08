@@ -2,8 +2,8 @@ using GtKram.Application;
 using GtKram.Infrastructure;
 using GtKram.Infrastructure.AspNetCore.Bindings;
 using GtKram.Infrastructure.AspNetCore.Filters;
-using GtKram.Infrastructure.AspNetCore.Middlewares;
 using GtKram.Infrastructure.AspNetCore.Routing;
+using GtKram.Infrastructure.Security;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using System.Net;
@@ -65,7 +65,6 @@ void ConfigurePipeline(WebApplication app)
     // Configure the HTTP request pipeline.
     app.UseExceptionHandler("/Error/500");
 
-    app.UseMiddleware<BotBlockerMiddleware>();
     app.UseMiddleware<CspMiddleware>();
 
     app.UseStatusCodePagesWithReExecute("/Error/{0}");
@@ -75,6 +74,7 @@ void ConfigurePipeline(WebApplication app)
     app.UseRouting();
 
     app.UseAuthentication();
+    app.UseMiddleware<BlockerMiddleware>();
     app.UseAuthorization();
 
     app.MapRazorPages();
