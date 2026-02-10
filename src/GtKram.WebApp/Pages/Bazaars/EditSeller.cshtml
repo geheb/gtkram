@@ -64,16 +64,16 @@
                             <label class="label">@Html.DisplayNameFor(m => m.Input.Role)</label>
                         </div>
                         <div class="field">
-                            <input id="checkBoxStandard" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Standard).ToString())" />
+                            <input id="checkBoxStandard" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Standard).ToString())" data-max="@Domain.Models.SellerRole.Standard.GetMaxArticleCount()" />
                             <label for="checkBoxStandard">@sellerConverter.RoleToString(Domain.Models.SellerRole.Standard)</label>
 
-                            <input id="checkBoxHelper" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Helper).ToString())" />
+                            <input id="checkBoxHelper" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Helper).ToString())" data-max="@Domain.Models.SellerRole.Helper.GetMaxArticleCount()" />
                             <label for="checkBoxHelper">@sellerConverter.RoleToString(Domain.Models.SellerRole.Helper)</label>
 
-                            <input id="checkBoxLead" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.TeamLead).ToString())" />
+                            <input id="checkBoxLead" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.TeamLead).ToString())" data-max="@Domain.Models.SellerRole.TeamLead.GetMaxArticleCount()" />
                             <label for="checkBoxLead">@sellerConverter.RoleToString(Domain.Models.SellerRole.TeamLead)</label>
 
-                            <input id="checkBoxOrga" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Orga).ToString())" />
+                            <input id="checkBoxOrga" type="radio" asp-for="Input.Role" value="@(((int)Domain.Models.SellerRole.Orga).ToString())" data-max="@Domain.Models.SellerRole.Orga.GetMaxArticleCount()" />
                             <label for="checkBoxOrga">@sellerConverter.RoleToString(Domain.Models.SellerRole.Orga)</label>
                         </div>
                         <div class="field">
@@ -105,3 +105,15 @@
 </section>
 
 @await Html.PartialAsync("_Footer")
+
+@section Scripts 
+{
+    <script type="text/javascript">
+        $(function () {
+            $("input[type='radio']").change(function() {
+                const max = $(this).data('max');
+                $("#@Html.IdFor(m => m.Input.MaxArticleCount)").val(max);
+            });
+        });
+    </script>
+}

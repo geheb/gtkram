@@ -2,7 +2,6 @@ using ErrorOr;
 using GtKram.Application.Converter;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.Bazaar.Commands;
-using GtKram.Application.UseCases.Bazaar.Extensions;
 using GtKram.Application.UseCases.Bazaar.Models;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Application.UseCases.User.Commands;

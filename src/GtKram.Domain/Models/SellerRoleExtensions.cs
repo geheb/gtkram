@@ -1,6 +1,4 @@
-using GtKram.Domain.Models;
-
-namespace GtKram.Application.UseCases.Bazaar.Extensions;
+namespace GtKram.Domain.Models;
 
 public static class SellerRoleExtensions
 {
