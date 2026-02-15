@@ -9,11 +9,11 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class Sellers : ISellers
 {
     private readonly TableLocker _tableLocker;
-    private readonly ISqlRepository<Seller> _repository;
+    private readonly ISqlRepository<Seller, SellerValues> _repository;
 
     public Sellers(
         TableLocker tableLocker,
-        ISqlRepository<Seller> repository)
+        ISqlRepository<Seller, SellerValues> repository)
     {
         _tableLocker = tableLocker;
         _repository = repository;

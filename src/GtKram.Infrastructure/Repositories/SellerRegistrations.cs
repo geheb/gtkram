@@ -1,5 +1,4 @@
 using ErrorOr;
-using GtKram.Application.Converter;
 using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
@@ -9,11 +8,11 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class SellerRegistrations : ISellerRegistrations
 {
     private readonly TableLocker _tableLocker;
-    private readonly ISqlRepository<SellerRegistration> _repository;
+    private readonly ISqlRepository<SellerRegistration, SellerRegistrationValues> _repository;
 
     public SellerRegistrations(
         TableLocker tableLocker,
-        ISqlRepository<SellerRegistration> repository)
+        ISqlRepository<SellerRegistration, SellerRegistrationValues> repository)
     {
         _tableLocker = tableLocker;
         _repository = repository;

@@ -4,7 +4,8 @@ using System.Linq.Expressions;
 
 namespace GtKram.Infrastructure.Database.Repositories;
 
-internal interface ISqlRepository<TEntity> where TEntity : class, IEntity
+internal interface ISqlRepository<TEntity, TJsonValue> 
+    where TEntity : class, IEntity, IEntityJsonValue<TJsonValue>
 {
     DbTransaction? Transaction { set; }
     Task<DbTransaction> CreateTransaction(CancellationToken cancellationToken);

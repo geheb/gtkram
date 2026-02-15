@@ -8,10 +8,10 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class Plannings : IPlannings
 {
-    private readonly ISqlRepository<Planning> _repository;
+    private readonly ISqlRepository<Planning, PlanningValues> _repository;
 
     public Plannings(
-        ISqlRepository<Planning> repository)
+        ISqlRepository<Planning, PlanningValues> repository)
     {
         _repository = repository;
     }

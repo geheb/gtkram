@@ -8,11 +8,11 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class Articles : IArticles
 {
     private readonly TableLocker _tableLocker;
-    private readonly ISqlRepository<Article> _repository;
+    private readonly ISqlRepository<Article, ArticleValues> _repository;
 
     public Articles(
         TableLocker tableLocker,
-        ISqlRepository<Article> repository)
+        ISqlRepository<Article, ArticleValues> repository)
     {
         _tableLocker = tableLocker;
         _repository = repository;
@@ -88,33 +88,40 @@ internal sealed class Articles : IArticles
             return Domain.Errors.Internal.Timeout;
         }
 
-        await using var trans = await _repository.CreateTransaction(cancellationToken);
-
-        var result = await _repository.Delete(id, cancellationToken);
-        if (result < 1)
+        try
         {
-            return Domain.Errors.SellerArticle.DeleteFailed;
-        }
+            await using var trans = await _repository.CreateTransaction(cancellationToken);
 
-        var articles = await _repository.SelectBy(0, e => e.SellerId, existentArticle.SellerId, cancellationToken);
-        var labelNumber = 1;
-
-        foreach (var article in articles.OrderBy(e => e.LabelNumber))
-        {
-            if (article.LabelNumber != labelNumber)
+            var result = await _repository.Delete(id, cancellationToken);
+            if (result < 1)
             {
-                article.Json.LabelNumber = labelNumber;
-                var updated = await _repository.Update(article, cancellationToken);
-                if (!updated)
-                {
-                    return Domain.Errors.Internal.InvalidData;
-                }
+                return Domain.Errors.SellerArticle.DeleteFailed;
             }
-            labelNumber++;
-        }
 
-        await trans.CommitAsync(cancellationToken);
-        return Result.Success;
+            var articles = await _repository.SelectBy(0, e => e.SellerId, existentArticle.SellerId, cancellationToken);
+            var labelNumber = 1;
+
+            foreach (var article in articles.OrderBy(e => e.LabelNumber))
+            {
+                if (article.LabelNumber != labelNumber)
+                {
+                    article.Json.LabelNumber = labelNumber;
+                    var updated = await _repository.Update(article, cancellationToken);
+                    if (!updated)
+                    {
+                        return Domain.Errors.Internal.InvalidData;
+                    }
+                }
+                labelNumber++;
+            }
+
+            await trans.CommitAsync(cancellationToken);
+            return Result.Success;
+        }
+        finally
+        {
+            _repository.Transaction = null;
+        }
     }
 
     public async Task<ErrorOr<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)

@@ -7,11 +7,11 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class EmailQueues
 {
     private readonly TimeProvider _timeProvider;
-    private readonly ISqlRepository<EmailQueue> _repository;
+    private readonly ISqlRepository<EmailQueue, EmailQueueValues> _repository;
 
     public EmailQueues(
         TimeProvider timeProvider,
-        ISqlRepository<EmailQueue> repository)
+        ISqlRepository<EmailQueue, EmailQueueValues> repository)
     {
         _timeProvider = timeProvider;
         _repository = repository;

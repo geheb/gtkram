@@ -8,9 +8,9 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class Events : IEvents
 {
-    private readonly ISqlRepository<Event> _repository;
+    private readonly ISqlRepository<Event, EventValues> _repository;
 
-    public Events(ISqlRepository<Event> repository)
+    public Events(ISqlRepository<Event, EventValues> repository)
     {
         _repository = repository;
     }

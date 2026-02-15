@@ -59,7 +59,7 @@ public static class ServiceExtensions
         services.AddScoped<SQLiteDbContext>();
 
         services.AddSingleton<TableLocker>();
-        services.AddScoped(typeof(Database.Repositories.ISqlRepository<>), typeof(Database.Repositories.SqlRepository<>));
+        services.AddScoped(typeof(Database.Repositories.ISqlRepository<,>), typeof(Database.Repositories.SqlRepository<,>));
         services.AddScoped<EmailQueues>();
         services.AddScoped<IUsers, Users>();
         services.AddScoped<IEvents, Events>();

@@ -7,6 +7,4 @@ public interface IEntity
     DateTime? Updated { get; set; }
     string JsonProperties { get; set; }
     int JsonVersion { get; set; }
-    void Serialize();
-    void Deserialize();
 }

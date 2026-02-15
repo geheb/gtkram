@@ -295,6 +295,7 @@ public sealed class SellerHandlerTests
     public async Task DeleteSellerArticleByUserCommand_IsSuccess()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
+
         var context = await CreateEventAndSeller(scope);
         await CreateArticles(scope, context.Seller);
 
@@ -303,8 +304,12 @@ public sealed class SellerHandlerTests
         var command = new DeleteArticleByUserCommand(context.Seller.IdentityId, articles[0].Id);
         var sut = scope.ServiceProvider.GetRequiredService<SellerHandler>();
         var result = await sut.Handle(command, _cancellationToken);
-
         result.IsError.ShouldBeFalse();
+
+        articles = await sellerArticleRepo.GetBySellerId(context.Seller.Id, _cancellationToken);
+        articles.Length.ShouldBe(2);
+        articles[0].LabelNumber.ShouldBe(1);
+        articles[1].LabelNumber.ShouldBe(2);
     }
 
     [TestMethod]

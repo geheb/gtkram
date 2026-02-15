@@ -47,7 +47,7 @@ public sealed class ServiceFixture : IAsyncDisposable
                 .ScanIn(typeof(Infrastructure.Database.Migrations.Initial).Assembly).For.Migrations());
 
         _services.AddSingleton(TimeProvider.System);
-        _services.AddScoped(typeof(ISqlRepository<>), typeof(SqlRepository<>));
+        _services.AddScoped(typeof(ISqlRepository<,>), typeof(SqlRepository<,>));
 
         _services.AddDataProtection();
 

@@ -13,13 +13,13 @@ namespace GtKram.Infrastructure.Repositories;
 internal sealed class Users : IUsers
 {
     private readonly TimeProvider _timeProvider;
-    private readonly ISqlRepository<Identity> _repository;
+    private readonly ISqlRepository<Identity, IdentityValues> _repository;
     private readonly UserManager<Identity> _userManager;
     private readonly IdentityErrorDescriber _errorDescriber;
 
     public Users(
         TimeProvider timeProvider,
-        ISqlRepository<Identity> repository,
+        ISqlRepository<Identity, IdentityValues> repository,
         UserManager<Identity> userManager,
         IdentityErrorDescriber errorDescriber)
     {

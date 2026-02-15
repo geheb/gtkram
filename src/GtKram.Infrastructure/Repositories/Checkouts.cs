@@ -8,9 +8,9 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class Checkouts : ICheckouts
 {
-    private readonly ISqlRepository<Checkout> _repository;
+    private readonly ISqlRepository<Checkout, CheckoutValues> _repository;
 
-    public Checkouts(ISqlRepository<Checkout> repository)
+    public Checkouts(ISqlRepository<Checkout, CheckoutValues> repository)
     {
         _repository = repository;
     }

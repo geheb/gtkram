@@ -59,6 +59,24 @@ internal class PlanningHandler :
 
     public async ValueTask<ErrorOr<Success>> Handle(UpdatePlanningCommand command, CancellationToken cancellationToken)
     {
+        var @event = await _events.Find(command.Planning.EventId, cancellationToken);
+        if (@event.IsError)
+        {
+            return @event.Errors;
+        }
+
+        var converter = new EventConverter();
+        if (converter.IsExpired(@event.Value, _timeProvider))
+        {
+            return Domain.Errors.Event.Expired;
+        }
+
+        var errorOrSuccess = Validate(command.Planning);
+        if (errorOrSuccess.IsError)
+        {
+            return errorOrSuccess;
+        }
+
         return await _plannings.Update(command.Planning, cancellationToken);
     }
 

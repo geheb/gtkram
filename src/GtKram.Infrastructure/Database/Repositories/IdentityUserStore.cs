@@ -16,11 +16,11 @@ internal sealed class IdentityUserStore :
     IUserPhoneNumberStore<Identity>
 {
     private readonly IdentityErrorDescriber _identityErrorDescriber;
-    private readonly ISqlRepository<Identity> _repository;
+    private readonly ISqlRepository<Identity, IdentityValues> _repository;
 
     public IdentityUserStore(
         IdentityErrorDescriber identityErrorDescriber,
-        ISqlRepository<Identity> repository)
+        ISqlRepository<Identity, IdentityValues> repository)
     {
         _identityErrorDescriber = identityErrorDescriber;
         _repository = repository;

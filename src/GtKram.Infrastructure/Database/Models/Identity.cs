@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace GtKram.Infrastructure.Database.Models;
 
 [JsonTable(TableNames.Identities, MapColumns = [nameof(Email)])]
-internal sealed class Identity : IEntity
+internal sealed class Identity : IEntity, IEntityJsonValue<IdentityValues>
 {
     public Guid Id { get; set; }
 
@@ -19,10 +19,4 @@ internal sealed class Identity : IEntity
     public string Email => Json.Email;
 
     public IdentityValues Json { get; set; } = null!;
-
-    public void Deserialize() =>
-        Json = JsonSerializer.Deserialize<IdentityValues>(JsonProperties)!;
-
-    public void Serialize() =>
-        JsonProperties = JsonSerializer.Serialize(Json);
 }

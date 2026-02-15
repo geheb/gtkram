@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace GtKram.Infrastructure.Database.Models;
 
 [JsonTable(TableNames.EmailQueues, MapColumns = [nameof(IsSent)])]
-internal sealed class EmailQueue : IEntity
+internal sealed class EmailQueue : IEntity, IEntityJsonValue<EmailQueueValues>
 {
     public Guid Id { get; set; }
 
@@ -19,10 +19,4 @@ internal sealed class EmailQueue : IEntity
     public bool IsSent => Json.Sent.HasValue;
 
     public EmailQueueValues Json { get; set; } = null!;
-
-    public void Deserialize() =>
-        Json = JsonSerializer.Deserialize<EmailQueueValues>(JsonProperties)!;
-
-    public void Serialize() =>
-        JsonProperties = JsonSerializer.Serialize(Json);
 }

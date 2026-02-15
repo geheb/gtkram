@@ -3,10 +3,12 @@ using GtKram.Infrastructure.Database.Models;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
 
 namespace GtKram.Infrastructure.Database.Repositories;
 
-internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEntity : class, IEntity
+internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntity, TJsonValue> 
+    where TEntity : class, IEntity, IEntityJsonValue<TJsonValue>
 {
     private static readonly string _tableName;
     private static string _selectColumnNames;
@@ -97,7 +99,7 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         }
 
         entity.JsonVersion = 1;
-        entity.Serialize();
+        Serialize(entity);
 
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         await connection.ExecuteAsync(_insertOne, entity, _transaction);
@@ -113,7 +115,12 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var entity = await connection.QueryFirstOrDefaultAsync<TEntity>(_selectOne, new { Id = id }, _transaction);
-        entity?.Deserialize();
+        
+        if (entity is not null)
+        {
+            Deserialize(entity);
+        }
+
         return entity;
     }
 
@@ -134,11 +141,7 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         };
 
         var entities = await connection.QueryAsync<TEntity>(sql, parameters, _transaction);
-        return entities.Select(e =>
-        {
-            e.Deserialize();
-            return e;
-        }).ToArray();
+        return [.. entities.Select(Deserialize)];
     }
 
     public async Task<TEntity[]> SelectByJson(
@@ -157,11 +160,7 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
             { $"@{fieldName}", whereValue },
         };
         var entities = await connection.QueryAsync<TEntity>(sql, parameters, _transaction);
-        return entities.Select(e =>
-        {
-            e.Deserialize();
-            return e;
-        }).ToArray();
+        return [.. entities.Select(Deserialize)];
     }
 
     public async Task<TEntity[]> SelectMany(ICollection<Guid> ids, CancellationToken cancellationToken)
@@ -174,14 +173,10 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         foreach (var chunk in ids.Chunk(100))
         {
             var entities = await connection.QueryAsync<TEntity>(_selectMany, new { Id = chunk }, _transaction);
-            result.AddRange(entities.Select(e =>
-                {
-                    e.Deserialize();
-                    return e;
-                }));
+            result.AddRange(entities.Select(Deserialize));
         }
 
-        return result.ToArray();
+        return [.. result];
     }
 
     public async Task<TEntity[]> SelectAll(CancellationToken cancellationToken)
@@ -189,18 +184,14 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var entities = await connection.QueryAsync<TEntity>(_selectAll, _transaction);
 
-        return entities.Select(e =>
-        {
-            e.Deserialize();
-            return e;
-        }).ToArray();
+        return [.. entities.Select(Deserialize)];
     }
 
     public async Task<bool> Update(TEntity entity, CancellationToken cancellationToken)
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
 
-        entity.Serialize();
+        Serialize(entity);
         entity.Updated = _timeProvider.GetUtcNow().DateTime;
 
         var affectedRows = await connection.ExecuteAsync(_updateOne, entity, _transaction);
@@ -221,7 +212,7 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
 
         foreach (var entity in entities)
         {
-            entity.Serialize();
+            Serialize(entity);
             entity.Updated = _timeProvider.GetUtcNow().DateTime;
 
             var affectedRows = await connection.ExecuteAsync(_updateOne, entity, _transaction);
@@ -279,6 +270,17 @@ internal sealed class SqlRepository<TEntity> : ISqlRepository<TEntity> where TEn
         };
 
         return await connection.ExecuteScalarAsync<int?>(sql, parameters, _transaction) ?? default;
+    }
+
+    private static void Serialize(TEntity entity)
+    {
+        entity.JsonProperties = JsonSerializer.Serialize(entity.Json);
+    }
+
+    private static TEntity Deserialize(TEntity entity)
+    {
+        entity.Json = JsonSerializer.Deserialize<TJsonValue>(entity.JsonProperties)!;
+        return entity;
     }
 
     private static string BuildWhere(string field, object? value)

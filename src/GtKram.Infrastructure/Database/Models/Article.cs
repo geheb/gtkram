@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace GtKram.Infrastructure.Database.Models;
 
 [JsonTable(TableNames.Articles, MapColumns = [nameof(SellerId), nameof(LabelNumber)])]
-internal sealed class Article : IEntity
+internal sealed class Article : IEntity, IEntityJsonValue<ArticleValues>
 {
     public Guid Id { get; set; }
 
@@ -21,10 +21,4 @@ internal sealed class Article : IEntity
     public int LabelNumber => Json.LabelNumber;
 
     public ArticleValues Json { get; set; } = null!;
-
-    public void Deserialize() =>
-        Json = JsonSerializer.Deserialize<ArticleValues>(JsonProperties)!;
-
-    public void Serialize() =>
-        JsonProperties = JsonSerializer.Serialize(Json);
 }
