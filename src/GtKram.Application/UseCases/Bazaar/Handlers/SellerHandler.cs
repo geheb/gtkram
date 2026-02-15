@@ -402,7 +402,7 @@ internal sealed class SellerHandler :
         }
 
         var result = new List<ArticleWithCheckout>(articles.Length);
-        foreach (var article in articles)
+        foreach (var article in articles.OrderBy(a => a.LabelNumber))
         {
             var checkout = checkoutByArticleId.TryGetValue(article.Id, out var c) ? c : null;
             result.Add(new(article, checkout, seller.Value.SellerNumber));
@@ -506,7 +506,7 @@ internal sealed class SellerHandler :
         }
 
         var result = new List<ArticleWithCheckout>(articles.Length);
-        foreach (var article in articles)
+        foreach (var article in articles.OrderBy(a => a.LabelNumber))
         {
             var checkout = checkoutByArticleId.TryGetValue(article.Id, out var c) ? c : null;
             result.Add(new(article, checkout, seller.Value.SellerNumber));

@@ -76,8 +76,45 @@ internal sealed class Articles : IArticles
 
     public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
+        var existentArticle = await _repository.SelectOne(id, cancellationToken);
+        if (existentArticle is null)
+        {
+            return Domain.Errors.SellerArticle.NotFound;
+        }
+
+        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
+        if (locker is null)
+        {
+            return Domain.Errors.Internal.Timeout;
+        }
+
+        await using var trans = await _repository.CreateTransaction(cancellationToken);
+
         var result = await _repository.Delete(id, cancellationToken);
-        return result > 0 ? Result.Success : Domain.Errors.SellerArticle.DeleteFailed;
+        if (result < 1)
+        {
+            return Domain.Errors.SellerArticle.DeleteFailed;
+        }
+
+        var articles = await _repository.SelectBy(0, e => e.SellerId, existentArticle.SellerId, cancellationToken);
+        var labelNumber = 1;
+
+        foreach (var article in articles.OrderBy(e => e.LabelNumber))
+        {
+            if (article.LabelNumber != labelNumber)
+            {
+                article.Json.LabelNumber = labelNumber;
+                var updated = await _repository.Update(article, cancellationToken);
+                if (!updated)
+                {
+                    return Domain.Errors.Internal.InvalidData;
+                }
+            }
+            labelNumber++;
+        }
+
+        await trans.CommitAsync(cancellationToken);
+        return Result.Success;
     }
 
     public async Task<ErrorOr<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)

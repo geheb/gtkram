@@ -133,7 +133,17 @@
 @section Scripts 
 {
     <script type="text/javascript">
+
+
         $(function () {
+
+            $(document).on('keyup', function (e) {
+                if (e.key === "+") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.replace('@addUrl');
+                }
+            });
 
             handleModal({
                 id: '#deleteArticleModal',

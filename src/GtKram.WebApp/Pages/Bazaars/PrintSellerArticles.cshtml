@@ -14,10 +14,11 @@
 
 <table class="table is-bordered is-fullwidth">
     <tbody>
-        @for (int i = 0; i < Model.Items.Length; i += 3)
+        @for (var i = 0; i < Model.Items.Length; i += 3)
         {
+            var items = Model.Items.Skip(i).Take(3).ToArray();
             <tr>
-                @foreach (var a in Model.Items.Skip(i).Take(3))
+                @foreach (var a in items)
                 {
                     <td>
                         <div class="label-wrapper">
@@ -47,6 +48,13 @@
                                 </div>
                             </div>
                             <img src="~/images/label-dot.svg" asp-append-version="true" width="25" height="25" class="label-dot" />
+                        </div>
+                    </td>
+                }
+                @for (var j = 0; j < 3 - items.Length; j++)
+                {
+                    <td>
+                        <div class="label-wrapper">
                         </div>
                     </td>
                 }
