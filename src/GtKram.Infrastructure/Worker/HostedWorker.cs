@@ -92,12 +92,14 @@ internal sealed class HostedWorker : BackgroundService
                 var result = await emailQueueRepository.UpdateSent(model.Id, cancellationToken);
                 if (result.IsError)
                 {
-                    _logger.LogError(string.Join(",", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
+                    _logger.LogError("Update der EmailQueue {Id} fehlgeschlagen: {Error}",
+                        model.Id,
+                        string.Join(",", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
                 }
             }
             catch (SmtpException ex)
             {
-                _logger.LogError(ex, "Sending email {Id} failed.", model.Id);
+                _logger.LogError(ex, "Emailversand {Id} fehlgeschlagen.", model.Id);
             }
         }
     }

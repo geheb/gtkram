@@ -30,6 +30,7 @@ public sealed class ConfirmResetPasswordModel : PageModel
 
     public bool IsDisabled { get; set; }
 
+    [BindProperty]
     public string ChangePasswordEmail { get; set; } = "n.v.";
 
     public ConfirmResetPasswordModel(
@@ -51,7 +52,7 @@ public sealed class ConfirmResetPasswordModel : PageModel
         if (result.IsError)
         {
             IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsInvalidOrExpired);
             return;
         }
 
@@ -59,7 +60,7 @@ public sealed class ConfirmResetPasswordModel : PageModel
         if (resultUser.IsError)
         {
             IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsInvalidOrExpired);
             return;
         }
 
@@ -68,6 +69,11 @@ public sealed class ConfirmResetPasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(Guid id, string token, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
         if (id == Guid.Empty || string.IsNullOrWhiteSpace(token) || !string.IsNullOrWhiteSpace(UserName))
         {
             IsDisabled = true;
@@ -75,22 +81,10 @@ public sealed class ConfirmResetPasswordModel : PageModel
             return Page();
         }
 
-        var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsError)
-        {
-            IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
-            return Page();
-        }
-
-        ChangePasswordEmail = new EmailConverter().Anonymize(resultUser.Value.Email);
-
-        if (!ModelState.IsValid) return Page();
-
         var result = await _mediator.Send(new ConfirmResetPasswordCommand(id, Password!, token), cancellationToken);
         if (result.IsError)
         {
-            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
+            ModelState.AddError(result.Errors);
             return Page();
         }
 

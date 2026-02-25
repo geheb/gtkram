@@ -32,7 +32,7 @@ public sealed class ConfirmChangeEmailModel : PageModel
         var result = await _mediator.Send(new ConfirmChangeEmailCommand(id, email, token), cancellationToken);
         if (result.IsError)
         {
-            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsInvalidOrExpired);
             return;
         }       
     }

@@ -219,20 +219,24 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Domain.Errors.Identity.NotFound;
+            _logger.LogError("Registrierung bestätigen nicht möglich, da der Benutzer {Id} nicht existiert.", id);
+            return Domain.Errors.Identity.LinkIsInvalidOrExpired;
         }
 
         var result = await userManager.ConfirmEmailAsync(user, token);
         if (!result.Succeeded)
         {
-            return result.Errors.ToError();
+            _logger.LogError("Emailbestätigung für den Benutzer {Id} fehlgeschlagen: {Error}",
+                id,
+                string.Join(",", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
+            return Domain.Errors.Identity.LinkIsInvalidOrExpired;
         }
 
         token = await userManager.GeneratePasswordResetTokenAsync(user);
         result = await userManager.ResetPasswordAsync(user, token, password);
         if (!result.Succeeded)
         {
-            return result.Errors.ToError();
+            return Domain.Errors.Identity.PasswordDoesNotMeetRequirements;
         }
 
         return Result.Success;
@@ -310,13 +314,26 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         var user = await _signInManager.UserManager.FindByIdAsync(id.ToString());
         if (user is null)
         {
-            return Domain.Errors.Identity.NotFound;
+            _logger.LogError("Passwort zurücksetzen nicht möglich, da der Benutzer {Id} nicht existiert.", id);
+            return Domain.Errors.Identity.LinkIsInvalidOrExpired;
+        }
+
+        foreach (var v in _signInManager.UserManager.PasswordValidators)
+        {
+            var r = await v.ValidateAsync(_signInManager.UserManager, user, newPassword);
+            if (!r.Succeeded)
+            {
+                return Domain.Errors.Identity.PasswordDoesNotMeetRequirements;
+            }
         }
 
         var result = await _signInManager.UserManager.ResetPasswordAsync(user, token, newPassword);
         if (!result.Succeeded)
         {
-            return result.Errors.ToError();
+            _logger.LogError("Passwort zurücksetzen für den Benutzer {Id} nicht möglich: {Error}",
+                id,
+                string.Join(",", result.Errors.Select(e => $"{e.Code}:{e.Description}")));
+            return Domain.Errors.Identity.LinkIsInvalidOrExpired;
         }
 
         return Result.Success;

@@ -27,6 +27,9 @@ public static class Identity
     public static Error LoginFailed { get; } =
         Error.Unauthorized($"{_prefix}.login.failed", "Die Anmeldung ist fehlgeschlagen.");
 
-    public static Error LinkIsExpired { get; } =
-       Error.Failure($"{_prefix}.link.is.expired", "Der Link ist ungültig oder abgelaufen.");
+    public static Error LinkIsInvalidOrExpired { get; } =
+       Error.Validation($"{_prefix}.link.is.expired", "Der Link ist ungültig oder abgelaufen.");
+
+    public static Error PasswordDoesNotMeetRequirements { get; } =
+        Error.Validation($"{_prefix}.password.requirements", "Das Passwort entspricht nicht den Anforderungen.");
 }

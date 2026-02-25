@@ -16,7 +16,9 @@ public sealed class ConfirmRegistrationModel : PageModel
 {
     private readonly IMediator _mediator;
 
+    [BindProperty]
     public string ConfirmedEmail { get; set; } = "n.v.";
+
     public bool IsDisabled { get; set; }
 
     [BindProperty, Display(Name = "Passwort")]
@@ -47,7 +49,7 @@ public sealed class ConfirmRegistrationModel : PageModel
         if (result.IsError)
         {
             IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsInvalidOrExpired);
             return;
         }
 
@@ -55,7 +57,7 @@ public sealed class ConfirmRegistrationModel : PageModel
         if (resultUser.IsError)
         {
             IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
+            ModelState.AddError(Domain.Errors.Identity.LinkIsInvalidOrExpired);
             return;
         }
 
@@ -76,18 +78,10 @@ public sealed class ConfirmRegistrationModel : PageModel
             return Page();
         }
 
-        var resultUser = await _mediator.Send(new FindUserByIdQuery(id), cancellationToken);
-        if (resultUser.IsError)
-        {
-            IsDisabled = true;
-            ModelState.AddError(Domain.Errors.Internal.InvalidRequest);
-            return Page();
-        }
-
         var result = await _mediator.Send(new ConfirmRegistrationCommand(id, Password!, token), cancellationToken);
         if (result.IsError)
         {
-            ModelState.AddError(Domain.Errors.Identity.LinkIsExpired);
+            ModelState.AddError(result.Errors);
             return Page();
         }
 
