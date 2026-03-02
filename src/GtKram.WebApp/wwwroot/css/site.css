@@ -141,10 +141,6 @@ td .label-wrapper {
     cursor: pointer;
 }
 
-.qr-video {
-    border: 1px solid #fff;
-}
-
 .button.is-floating {
     position: fixed;
     width: 2.5em;
@@ -227,4 +223,100 @@ input::-ms-reveal {
 
 .is-height-2-5 {
     height: 2.5rem;
+}
+
+.qr-code-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.qr-code-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.qr-code-canvas {
+    display: none;
+}
+
+.qr-code-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.qr-code-scan-region {
+    width: 65%;
+    aspect-ratio: 1;
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+    position: relative;
+}
+
+.qr-code-scan-region.detected {
+    animation: flash 0.5s ease-out;
+}
+
+@keyframes flash {
+    0% {
+        border-color: #00e676;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45), inset 0 0 30px rgba(0, 230, 118, 0.3);
+    }
+
+    100% {
+        border-color: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+    }
+}
+
+.qr-code-scan-region .corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: #00e676;
+    border-style: solid;
+    border-width: 0;
+}
+
+.qr-code-scan-region .corner.tl {
+    top: -2px;
+    left: -2px;
+    border-top-width: 4px;
+    border-left-width: 4px;
+    border-top-left-radius: 12px;
+}
+
+.qr-code-scan-region .corner.tr {
+    top: -2px;
+    right: -2px;
+    border-top-width: 4px;
+    border-right-width: 4px;
+    border-top-right-radius: 12px;
+}
+
+.qr-code-scan-region .corner.bl {
+    bottom: -2px;
+    left: -2px;
+    border-bottom-width: 4px;
+    border-left-width: 4px;
+    border-bottom-left-radius: 12px;
+}
+
+.qr-code-scan-region .corner.br {
+    bottom: -2px;
+    right: -2px;
+    border-bottom-width: 4px;
+    border-right-width: 4px;
+    border-bottom-right-radius: 12px;
 }

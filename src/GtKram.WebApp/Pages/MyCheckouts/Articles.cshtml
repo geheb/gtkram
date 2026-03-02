@@ -135,7 +135,18 @@
     <div class="modal-background"></div>
     <div class="modal-content">
         <h1 class="has-text-centered has-text-white is-size-3">QR-Code Scanner</h1>
-        <video class="qr-video" playsinline></video>
+        <div class="qr-code-container">
+            <video class="qr-code-video" autoplay playsinline></video>
+            <canvas class="qr-code-canvas"></canvas>
+            <div class="qr-code-overlay">
+                <div class="qr-code-scan-region">
+                    <div class="corner tl"></div>
+                    <div class="corner tr"></div>
+                    <div class="corner bl"></div>
+                    <div class="corner br"></div>
+                </div>
+            </div>
+        </div>
     </div>
     <button class="modal-close is-large close-modal" aria-label="close"></button>
 </div>
@@ -166,48 +177,52 @@
 <script type="text/javascript">
     $(function () {
 
-        var scanner = null;
-
+        let scanner = null;
         const scanModal = $('#scanModal');
+
         scanModal.on('modal:open', function (e) {
-            const video = $(e.target).find(".qr-video").get(0);
-
-            scanner = new QrCodeScanner(video, code =>
-            {
-                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
-                if (!isValid) {
-                    createToast('QR-Code ist ungültig', 'is-danger');
-                    sleep(500).then(() => scanner.play());
-                    return;
-                }
-
-                $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: code }).done(function (data) {
-                    if (data && data.created) {
-                        createToast(`Artikel wurde angelegt.`);
+            const videoElement = $(e.target).find(".qr-code-video").get(0);
+            const canvasElement = $(e.target).find(".qr-code-canvas").get(0);
+            const scanRegion = $(e.target).find(".qr-code-scan-region").get(0);
+            scanner = new QrCodeScanner({
+                video: videoElement,
+                canvas: canvasElement,
+                onDetected(code) {
+                    if (navigator.vibrate) navigator.vibrate(200);
+                    scanRegion.classList.remove("detected");
+                    scanRegion.offsetWidth;
+                    scanRegion.classList.add("detected");
+                    const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
+                    if (!isValid) {
+                        createToast('QR-Code ist ungültig', 'is-danger');
+                        setTimeout(() => scanner.resume(), 1000);
+                        return;
                     }
-                    else if (data && data.exists) {
-                        createToast(`Artikel wurde bereits erfasst.`, 'is-warning');
-                    }
-                    else if (data && data.notfound) {
-                        createToast(`Artikel wurde nicht gefunden.`, 'is-warning');
-                    }
-                    else {
-                        createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
-                    }
-                    sleep(1000).then(() => scanner.play());
-                });
-
-            });
-
-            scanner.start().then(result =>
-            {
-                if (!result) {
+                    $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: code }).done(function (data) {
+                        if (data && data.created) {
+                            createToast(`Artikel wurde angelegt.`);
+                        }
+                        else if (data && data.exists) {
+                            createToast(`Artikel wurde bereits erfasst.`, 'is-warning');
+                        }
+                        else if (data && data.notfound) {
+                            createToast(`Artikel wurde nicht gefunden.`, 'is-warning');
+                        }
+                        else {
+                            createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
+                        }
+                        setTimeout(() => scanner.resume(), 1000);
+                    });
+                },
+                onError(err) {
                     $('.scan-button').addClass('is-hidden');
-                }
+                    createToast("Kamera-Zugriff fehlgeschlagen: " + err.message, 'is-danger');
+                },
             });
+            scanner.start();
         });
         scanModal.on('modal:close', function (e) {
-            scanner.stop();
+            scanner.destroy();
             scanner = null;
             window.location.reload();
         });
