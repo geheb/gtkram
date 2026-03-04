@@ -173,6 +173,18 @@ td .label-wrapper {
     border-radius: 50px
 }
 
+.button.is-floating.is-right-2 {
+    right: 4em
+}
+
+.button.is-floating.is-right-3 {
+    right: 7em
+}
+
+.button.is-floating.is-right-4 {
+    right: 10em
+}
+
 .list-item-clickable {
     cursor: pointer;
 }

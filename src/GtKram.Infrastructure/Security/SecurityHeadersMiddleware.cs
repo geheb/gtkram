@@ -19,7 +19,7 @@ public sealed class SecurityHeadersMiddleware
         var directives = new StringBuilder();
         directives.Append(GetDirective("default-src", "'self'"));
         directives.Append(GetDirective("script-src", "'self'", $"'nonce-{_cspNonce}'"));
-        directives.Append(GetDirective("style-src", "'self'", "'unsafe-inline'"));
+        directives.Append(GetDirective("style-src", "'self'"));
         directives.Append(GetDirective("img-src", "'self'", "data:"));
         directives.Append(GetDirective("font-src", "'self'"));
         directives.Append(GetDirective("media-src", "'self'"));
