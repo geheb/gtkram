@@ -3,6 +3,7 @@ namespace GtKram.Infrastructure.Security;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Cryptography;
 
 public sealed class BlockerMiddleware
 {
@@ -57,7 +58,7 @@ public sealed class BlockerMiddleware
         context.Response.Headers["Connection"] = "close";
         await context.Response.WriteAsync("You are banned on this site!", context.RequestAborted);
 
-        var shouldAbortConnection = new Random().Next() % 2 == 0;
+        var shouldAbortConnection = RandomNumberGenerator.GetInt32(2) == 0;
         if (shouldAbortConnection)
         {
             var connection = context.Features.Get<IConnectionLifetimeFeature>();

@@ -3,28 +3,33 @@ namespace GtKram.Infrastructure.Security;
 using Microsoft.AspNetCore.Http;
 using System.Text;
 
-public sealed class CspMiddleware
+public sealed class SecurityHeadersMiddleware
 {
-    private static readonly string _headerValues;
+    private static readonly string _cspHeaderValues;
     private readonly RequestDelegate _next;
 
-    static CspMiddleware()
+    static SecurityHeadersMiddleware()
     {
-        _headerValues = GetHeaderValues();
+        _cspHeaderValues = GetCspHeaderValues();
     }
 
-    public CspMiddleware(RequestDelegate next)
+    public SecurityHeadersMiddleware(RequestDelegate next)
     {
         _next = next;
     }
 
     public async Task Invoke(HttpContext context)
     {
-        context.Response.Headers.ContentSecurityPolicy = _headerValues;
+        var headers = context.Response.Headers;
+        headers.ContentSecurityPolicy = _cspHeaderValues;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        headers["Permissions-Policy"] = "camera=self, microphone=(), geolocation=()";
         await _next(context);
     }
 
-    private static string GetHeaderValues()
+    private static string GetCspHeaderValues()
     {
         var value = new StringBuilder();
         value.Append(GetDirective("default-src", "'self'"));
@@ -35,6 +40,7 @@ public sealed class CspMiddleware
         value.Append(GetDirective("media-src", "'self'"));
         value.Append(GetDirective("connect-src", "'self'"));
         value.Append(GetDirective("worker-src", "'self'"));
+        value.Append(GetDirective("frame-ancestors", "'none'"));
         return value.ToString();
     }
 

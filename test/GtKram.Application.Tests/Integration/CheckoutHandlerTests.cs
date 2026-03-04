@@ -41,7 +41,7 @@ public sealed class CheckoutHandlerTests
         mockEmailValidatorService.Validate(Arg.Any<string>(), _cancellationToken).Returns(true);
         _fixture.Services.AddScoped(_ => mockEmailValidatorService);
 
-        _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "http://localhost", Title = "Title", RegisterRulesUrl = "http://localhost" }));
+        _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AppSettings() { HeaderTitle = "Header", Organizer = "Organizer", PublicUrl = "https://localhost", Title = "Title", RegisterRulesUrl = "https://localhost" }));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ConfirmEmailDataProtectionTokenProviderOptions()));
         _fixture.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new DataProtectionTokenProviderOptions()));
 

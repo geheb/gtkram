@@ -122,6 +122,7 @@ public static class ServiceExtensions
         services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
         {
             options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.Cookie.Name = CookieNames.AppToken;
             options.ExpireTimeSpan = TimeSpan.FromHours(1);
@@ -135,6 +136,7 @@ public static class ServiceExtensions
         services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorRememberMeScheme, options =>
         {
             options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.Cookie.Name = CookieNames.TwoFactorTrustToken;
             options.SlidingExpiration = true;
@@ -144,6 +146,7 @@ public static class ServiceExtensions
         services.Configure<CookieAuthenticationOptions>(IdentityConstants.TwoFactorUserIdScheme, options =>
         {
             options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.Cookie.Name = CookieNames.TwoFactorIdToken;
         });
@@ -170,6 +173,7 @@ public static class ServiceExtensions
         services.Configure<AntiforgeryOptions>(options =>
         {
             options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.Cookie.Name = CookieNames.XcsrfToken;
         });

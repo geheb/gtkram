@@ -44,8 +44,6 @@ internal sealed class HostedWorker : BackgroundService
         var connection = await dbContext.GetConnection(cancellationToken);
 
         _logger.LogInformation("Run database maintenance ...");
-        await connection.ExecuteAsync("VACUUM;");
-        await connection.ExecuteAsync("REINDEX;");
 
         _logger.LogInformation("Optimze database ...");
         await connection.ExecuteAsync("PRAGMA journal_mode = WAL;");
@@ -59,6 +57,10 @@ internal sealed class HostedWorker : BackgroundService
             _logger.LogInformation("Run database migration ...");
             runner.MigrateUp();
         }
+
+        await connection.ExecuteAsync("REINDEX;");
+        await connection.ExecuteAsync("VACUUM;");
+        await connection.ExecuteAsync("ANALYZE;");
     }
 
     private async Task HandleSuperUser()

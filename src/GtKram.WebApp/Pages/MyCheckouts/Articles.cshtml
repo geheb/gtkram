@@ -188,18 +188,20 @@
                 video: videoElement,
                 canvas: canvasElement,
                 onDetected(code) {
-                    if (navigator.vibrate) navigator.vibrate(200);
-                    scanRegion.classList.remove("detected");
-                    scanRegion.offsetWidth;
-                    scanRegion.classList.add("detected");
                     const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
                     if (!isValid) {
                         createToast('QR-Code ist ungültig', 'is-danger');
                         setTimeout(() => scanner.resume(), 1000);
                         return;
                     }
+
+                    scanRegion.classList.remove("detected");
+                    scanRegion.offsetWidth;
+                    scanRegion.classList.add("detected");
+
                     $.post('@urlAdd', {@Html.AjaxCsrfToken(), articleId: code }).done(function (data) {
                         if (data && data.created) {
+                            if (navigator.vibrate) navigator.vibrate(200);
                             createToast(`Artikel wurde angelegt.`);
                         }
                         else if (data && data.exists) {

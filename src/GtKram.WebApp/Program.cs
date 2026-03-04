@@ -65,7 +65,12 @@ void ConfigurePipeline(WebApplication app)
     // Configure the HTTP request pipeline.
     app.UseExceptionHandler("/Error/500");
 
-    app.UseMiddleware<CspMiddleware>();
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+
+    app.UseMiddleware<SecurityHeadersMiddleware>();
 
     app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
@@ -82,7 +87,10 @@ void ConfigurePipeline(WebApplication app)
 
     app.UseNodeGenerator();
 
-    app.MapHealthChecks("/healthz");
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapHealthChecks("/healthz");
+    }
 }
 
 try

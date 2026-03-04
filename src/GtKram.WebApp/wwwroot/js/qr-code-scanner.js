@@ -13,6 +13,7 @@
         if (this.scanning) return;
         try {
             this.stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
                 video: { facingMode: "environment" },
             });
             this.video.srcObject = this.stream;
