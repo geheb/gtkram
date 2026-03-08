@@ -7,6 +7,7 @@ using GtKram.Infrastructure.Security;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using System.Net;
+using System.Threading.RateLimiting;
 
 void ConfigureApp(WebApplicationBuilder builder)
 {
@@ -42,6 +43,31 @@ void ConfigureApp(WebApplicationBuilder builder)
     services.AddSingleton<NodeGeneratorService>();
     services.AddInfrastructure(configuration);
     services.AddApplication(configuration);
+
+    services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        options.AddPolicy(RateLimitPolicies.Login, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress + context.Request.Headers.UserAgent,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                }));
+
+        options.AddPolicy(RateLimitPolicies.Registration, context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress + context.Request.Headers.UserAgent,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                }));
+    });
 }
 
 void ConfigurePipeline(WebApplication app)
@@ -81,6 +107,7 @@ void ConfigurePipeline(WebApplication app)
     app.UseAuthentication();
     app.UseMiddleware<BlockerMiddleware>();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapRazorPages();
     app.MapControllers();

@@ -6,11 +6,13 @@ using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GtKram.WebApp.Pages.Bazaars;
 
 [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
 [AllowAnonymous]
+[EnableRateLimiting(Infrastructure.Security.RateLimitPolicies.Registration)]
 public sealed class RegisterModel : PageModel
 {
     private readonly TimeProvider _timeProvider;

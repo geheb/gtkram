@@ -2,6 +2,8 @@ using GtKram.Infrastructure.AspNetCore.Routing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Net;
+using System.Reflection.Emit;
 
 [IgnoreAntiforgeryToken]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -33,6 +35,7 @@ public sealed class ErrorModel : PageModel
             400 => "Die Anfrage ist ungültig.",
             403 => $"Der Zugriff auf die angeforderte Seite '{returnUrl}' wurde verweigert.",
             404 => "Die angeforderte Seite wurde nicht gefunden.",
+            429 => "Du hast uns in letzter Zeit zu viele Anfragen gesendet. Bitte versuche es später erneut.",
             _ => "Ein interner Server-Fehler ist aufgetreten."
         };
 

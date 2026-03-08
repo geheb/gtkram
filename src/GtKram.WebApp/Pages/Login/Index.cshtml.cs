@@ -5,11 +5,13 @@ using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using System.ComponentModel.DataAnnotations;
 
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
+[EnableRateLimiting(Infrastructure.Security.RateLimitPolicies.Login)]
 public sealed class IndexModel : PageModel
 {
     private readonly IMediator _mediator;

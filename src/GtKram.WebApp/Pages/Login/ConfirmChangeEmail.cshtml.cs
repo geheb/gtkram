@@ -4,10 +4,12 @@ using GtKram.WebApp.Converter;
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace GtKram.WebApp.Pages.Login;
 
 [AllowAnonymous]
+[EnableRateLimiting(Infrastructure.Security.RateLimitPolicies.Login)]
 public sealed class ConfirmChangeEmailModel : PageModel
 {
     private readonly IMediator _mediator;
