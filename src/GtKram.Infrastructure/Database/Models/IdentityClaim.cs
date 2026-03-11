@@ -5,8 +5,6 @@ namespace GtKram.Infrastructure.Database.Models;
 
 internal sealed class IdentityClaim : IEquatable<IdentityClaim>, IEquatable<Claim>
 {
-    public static IdentityClaim TwoFactorClaim { get; } = new(UserClaims.TwoFactorClaim);
-
     public IdentityClaim(Claim claim)
     {
         ArgumentNullException.ThrowIfNull(claim);

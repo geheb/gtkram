@@ -409,21 +409,6 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return result.Errors.ToError();
         }
 
-        if (enable)
-        {
-            result = await _signInManager.UserManager.AddClaimAsync(user, UserClaims.TwoFactorClaim);
-        }
-        else
-        {
-            result = await _signInManager.UserManager.RemoveClaimAsync(user, UserClaims.TwoFactorClaim);
-        }
-
-        if (!result.Succeeded)
-        {
-            await _signInManager.UserManager.SetTwoFactorEnabledAsync(user, false);
-            return result.Errors.ToError();
-        }
-
         return Result.Success;
     }
 
@@ -442,12 +427,6 @@ internal sealed class UserAuthenticator : IUserAuthenticator
         }
 
         var result = await _signInManager.UserManager.SetTwoFactorEnabledAsync(user, false);
-        if (!result.Succeeded)
-        {
-            return result.Errors.ToError();
-        }
-
-        result = await _signInManager.UserManager.RemoveClaimAsync(user, UserClaims.TwoFactorClaim);
         if (!result.Succeeded)
         {
             return result.Errors.ToError();

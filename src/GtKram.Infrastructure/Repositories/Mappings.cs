@@ -1,6 +1,6 @@
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
-using Microsoft.AspNetCore.Identity;
+using GtKram.Infrastructure.Database;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -20,7 +20,7 @@ internal static class Mappings
                 now < entity.Json.LockoutEnd
                 ? dc.ToLocal(entity.Json.LockoutEnd.Value)
                 : null,
-            IsTwoFactorEnabled = entity.Json.Claims.Contains(Database.Models.IdentityClaim.TwoFactorClaim)
+            IsTwoFactorEnabled = entity.Json.Claims.Contains(UserClaims.TwoFactorClaim)
         };
 
     public static string MapToRole(this Domain.Models.UserRoleType role) => 

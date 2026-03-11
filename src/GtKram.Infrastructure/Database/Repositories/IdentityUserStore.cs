@@ -262,23 +262,25 @@ internal sealed class IdentityUserStore :
 
     public Task SetTwoFactorEnabledAsync(Identity user, bool enabled, CancellationToken cancellationToken)
     {
+        var claim = UserClaims.TwoFactorClaim;
         if (enabled)
         {
-            if (!user.Json.Claims.Contains(IdentityClaim.TwoFactorClaim))
+            if (!user.Json.Claims.Contains(claim))
             {
-                user.Json.Claims.Add(IdentityClaim.TwoFactorClaim);
+                user.Json.Claims.Add(claim);
             }
         }
         else
         {
-            user.Json.Claims.Remove(IdentityClaim.TwoFactorClaim);
+            user.Json.Claims.Remove(claim);
         }
         return Task.CompletedTask;
     }
 
     public Task<bool> GetTwoFactorEnabledAsync(Identity user, CancellationToken cancellationToken)
     {
-        return Task.FromResult(user.Json.Claims.Contains(IdentityClaim.TwoFactorClaim));
+        var claim = UserClaims.TwoFactorClaim;
+        return Task.FromResult(user.Json.Claims.Contains(claim));
     }
 
     public Task SetPhoneNumberAsync(Identity user, string? phoneNumber, CancellationToken cancellationToken)

@@ -301,10 +301,10 @@ internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntit
 
         return
             isCollection
-            ? $"json_extract({nameof(Identity.JsonProperties)},'$.{field}') IN @{field}"
+            ? $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}') IN @{field}"
             : (value is null
-                ? $"json_extract({nameof(Identity.JsonProperties)},'$.{field}') IS NULL"
-                : $"json_extract({nameof(Identity.JsonProperties)},'$.{field}')=@{field}{collation}");
+                ? $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}') IS NULL"
+                : $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}')=@{field}{collation}");
     }
 
     private static string BuildSelect(int count, string? field, object? value)
