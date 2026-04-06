@@ -43,14 +43,6 @@ internal sealed class HostedWorker : BackgroundService
         var dbContext = scope.ServiceProvider.GetRequiredService<SQLiteDbContext>();
         var connection = await dbContext.GetConnection(cancellationToken);
 
-        _logger.LogInformation("Run database maintenance ...");
-
-        _logger.LogInformation("Optimze database ...");
-        await connection.ExecuteAsync("PRAGMA journal_mode = WAL;");
-        await connection.ExecuteAsync("PRAGMA synchronous = NORMAL;");
-        await connection.ExecuteAsync("PRAGMA cache_size = 10000;");
-        await connection.ExecuteAsync("PRAGMA temp_store = MEMORY;");
-
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
         if (runner.HasMigrationsToApplyUp())
         {
