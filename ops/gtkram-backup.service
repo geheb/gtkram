@@ -1,0 +1,6 @@
+[Unit]
+Description=GT Kram Backup-Script
+
+[Service]
+Type=oneshot
+ExecStart=/opt/backup/gtkram-backup.sh

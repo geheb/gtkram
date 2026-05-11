@@ -17,4 +17,7 @@ public static class Checkout
 
     public static Error Empty { get; } =
         Error.Failure($"{_prefix}.empty", "Der Kassenvorgang ist leer.");
+
+    public static Error WrongEvent { get; } =
+        Error.Failure($"{_prefix}.wrong.event", "Der Artikel ist einem anderen Kinderbasar zugeordnet.");
 }

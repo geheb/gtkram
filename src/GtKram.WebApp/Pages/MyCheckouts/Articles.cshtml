@@ -207,13 +207,16 @@
                         else if (data && data.exists) {
                             createToast(`Artikel wurde bereits erfasst.`, 'is-warning');
                         }
+                        else if(data && data.wrongevent) {
+                            createToast(`Artikel ist einem anderen Kinderbasar zugeordnet.`, 'is-danger');
+                        }
                         else if (data && data.notfound) {
-                            createToast(`Artikel wurde nicht gefunden.`, 'is-warning');
+                            createToast(`Artikel wurde nicht gefunden.`, 'is-danger');
                         }
                         else {
-                            createToast('Artikel konnte nicht bearbeitet werden.', 'is-danger');
+                            createToast('Artikel konnte nicht erfasst werden.', 'is-danger');
                         }
-                        setTimeout(() => scanner.resume(), 1000);
+                        setTimeout(() => scanner.resume(), 500);
                     });
                 },
                 onError(err) {

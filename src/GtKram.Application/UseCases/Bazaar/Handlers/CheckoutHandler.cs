@@ -566,7 +566,7 @@ internal sealed class CheckoutHandler :
 
         if (seller.Value.EventId != checkout.Value.EventId)
         {
-            return Domain.Errors.Checkout.NotFound;
+            return Domain.Errors.Checkout.WrongEvent;
         }
 
         var checkouts = await _checkouts.GetByEventId(@checkout.Value.EventId, cancellationToken);

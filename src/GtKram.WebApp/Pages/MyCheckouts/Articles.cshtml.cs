@@ -66,6 +66,11 @@ public sealed class ArticlesModel : PageModel
             return new JsonResult(new { created = true });
         }
 
+        if (result.Errors.Any(e => e.Code == Checkout.WrongEvent.Code))
+        {
+            return new JsonResult(new { wrongevent = true });
+        }
+
         if (result.Errors.Any(e => e.Code == Checkout.AlreadyBooked.Code))
         {
             return new JsonResult(new { exists = true });
