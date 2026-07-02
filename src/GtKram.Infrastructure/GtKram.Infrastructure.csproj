@@ -17,6 +17,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
 		<PackageReference Include="Microsoft.Data.Sqlite" />
 		<PackageReference Include="Scriban" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
 		<PackageReference Include="System.IO.Hashing" />
 	</ItemGroup>
 

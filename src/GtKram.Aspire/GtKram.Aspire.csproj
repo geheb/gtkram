@@ -1,15 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<Sdk Name="Aspire.AppHost.Sdk" Version="13.0.2" />
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aspire.Hosting.AppHost" />
 		<PackageReference Include="CommunityToolkit.Aspire.Hosting.MailPit" />
 		<PackageReference Include="CommunityToolkit.Aspire.Hosting.SQLite" />
+		<PackageReference Include="MessagePack" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -21,14 +21,14 @@
       ]
     },
     {
-      "library": "bulma@1.0.3",
+      "library": "bulma@1.0.4",
       "destination": "wwwroot/lib/bulma/",
       "files": [
         "css/bulma.min.css"
       ]
     },
     {
-      "library": "jquery-validate@1.21.0",
+      "library": "jquery-validate@1.22.1",
       "destination": "wwwroot/lib/jquery-validate/",
       "files": [
         "jquery.validate.min.js",
@@ -59,7 +59,7 @@
     },
     {
       "provider": "jsdelivr",
-      "library": "bulma-list@2.1.0",
+      "library": "bulma-list@3.0.0",
       "destination": "wwwroot/lib/bulma-list/",
       "files": [
         "css/bulma-list.min.css",
