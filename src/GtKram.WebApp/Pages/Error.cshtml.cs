@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+namespace GtKram.WebApp.Pages;
+
 [IgnoreAntiforgeryToken]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [AllowAnonymous]
@@ -30,10 +32,11 @@ public sealed class ErrorModel : PageModel
         Code = code < 1 ? 500 : code;
         Description = code switch
         {
-            400 => "Die Anfrage ist ungültig.",
-            403 => $"Der Zugriff auf die angeforderte Seite '{returnUrl}' wurde verweigert.",
-            404 => "Die angeforderte Seite wurde nicht gefunden.",
-            429 => "Du hast uns in letzter Zeit zu viele Anfragen gesendet. Bitte versuche es später erneut.",
+            StatusCodes.Status400BadRequest => "Deine Anfrage ist ungültig und kann nicht verarbeitet werden.",
+            StatusCodes.Status403Forbidden => $"Der Zugriff auf die angeforderte Seite '{returnUrl}' wurde verweigert.",
+            StatusCodes.Status404NotFound => "Die angeforderte Seite wurde nicht gefunden.",
+            StatusCodes.Status408RequestTimeout => "Zeitüberschreitung bei der Verarbeitung deiner Anfrage.",
+            StatusCodes.Status429TooManyRequests => "Du hast uns in letzter Zeit zu viele Anfragen gesendet. Bitte versuche es später erneut.",
             _ => "Ein interner Server-Fehler ist aufgetreten."
         };
 

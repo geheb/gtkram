@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -11,7 +12,7 @@ public sealed class OperationCancelledExceptionFilter : ExceptionFilterAttribute
         {
             var path = context.HttpContext.Request.Path;
             context.ExceptionHandled = true;
-            context.Result = new BadRequestResult();
+            context.Result = new StatusCodeResult(StatusCodes.Status408RequestTimeout);
         }
     }
 }

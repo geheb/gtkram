@@ -1,13 +1,13 @@
 namespace GtKram.Infrastructure.Security;
 
-using System.Globalization;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using DnsClient;
 using DnsClient.Internal;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 
 internal sealed class IpReputationChecker
 {
@@ -24,7 +24,7 @@ internal sealed class IpReputationChecker
     {
         var options = new LookupClientOptions
         {
-            UseCache = true
+            UseCache = true,
         };
         _lookupClient = new LookupClient(options);
         _logger = logger;
