@@ -40,7 +40,7 @@ internal sealed class HostedWorker : BackgroundService
     {
         await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
-        var dbContext = scope.ServiceProvider.GetRequiredService<SQLiteDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var connection = await dbContext.GetConnection(cancellationToken);
 
         var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
@@ -49,10 +49,6 @@ internal sealed class HostedWorker : BackgroundService
             _logger.LogInformation("Run database migration ...");
             runner.MigrateUp();
         }
-
-        await connection.ExecuteAsync("REINDEX;");
-        await connection.ExecuteAsync("VACUUM;");
-        await connection.ExecuteAsync("ANALYZE;");
     }
 
     private async Task HandleSuperUser()

@@ -8,79 +8,75 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class Sellers : ISellers
 {
-    private readonly TableLocker _tableLocker;
     private readonly ISqlRepository<Seller, SellerValues> _repository;
 
     public Sellers(
-        TableLocker tableLocker,
         ISqlRepository<Seller, SellerValues> repository)
     {
-        _tableLocker = tableLocker;
         _repository = repository;
     }
 
     public async Task<ErrorOr<Guid>> Create(Domain.Models.Seller model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new() { Json = new() });
-        entity.Json.IdentityId = model.IdentityId;
-
-        using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
-        if (locker is null)
+        var values = new Dictionary<string, object?>
         {
-            return Domain.Errors.Internal.Timeout;
+            ["@event_id"] = model.EventId,
+            ["@key"] = BitConverter.ToInt64(model.EventId.ToByteArray(), 8),
+        };
+
+        var entity = model.MapToEntity(new());
+        entity.Id = Guid.CreateVersion7();
+        entity.Value.IdentityId = model.IdentityId;
+
+        await using var trans = await _repository.BeginTransaction(cancellationToken);
+
+        if (model.SellerNumber == 0)
+        {
+            // assign next value
+
+            const string query = $"""
+                SELECT pg_advisory_xact_lock(@key);
+
+                INSERT INTO $table ($insert_fields)
+                VALUES (
+                    $insert_params_without_data, 
+                    $data_param || jsonb_build_object('{nameof(SellerValues.SellerNumber)}', (
+                        SELECT COALESCE(MAX(($data_field->>'{nameof(SellerValues.SellerNumber)}')::int), 0) + 1 FROM $table
+                        WHERE ($data_field->>'{nameof(SellerValues.EventId)}')::uuid = @event_id
+                    ))
+                );
+                """;
+
+            await _repository.ExecuteScalar(entity, query, values, cancellationToken);
+        }
+        else 
+        {
+            // assign provided value, but correct others
+
+            values["@seller_number"] = model.SellerNumber;
+
+            const string query = $$"""
+                SELECT pg_advisory_xact_lock(@key);
+
+                UPDATE $table
+                SET $data_field = jsonb_set(
+                    $data_field,
+                    '{{{nameof(SellerValues.SellerNumber)}}}',
+                    to_jsonb(($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int + 1)
+                )
+                WHERE 
+                    ($data_field->>'{{nameof(SellerValues.EventId)}}')::uuid = @event_id AND
+                    ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int >= @seller_number;                    
+
+                $insert_table_query
+                """;
+
+            await _repository.ExecuteScalar(entity, query, values, cancellationToken);
         }
 
-        try
-        {
-            await using var trans = await _repository.CreateTransaction(cancellationToken);
+        await trans.Commit(cancellationToken);
 
-            if (entity.Json.SellerNumber == 0)
-            {
-                var max = await _repository.MaxBy(
-                    e => e.SellerNumber, 
-                    e => e.EventId, 
-                    model.EventId, 
-                    cancellationToken);
-
-                entity.Json.SellerNumber = max + 1;
-            }
-            else
-            {
-                var entities = await _repository.SelectBy(
-                    0,
-                    e => e.EventId,
-                    model.EventId,
-                    cancellationToken);
-
-                var updates = new List<Seller>();
-
-                var max = entities.Max(e => e.SellerNumber);
-                foreach (var e in entities.Where(e => e.SellerNumber == entity.SellerNumber))
-                {
-                    e.Json.SellerNumber = ++max;
-                    updates.Add(e);
-                }
-
-                if (updates.Count > 0)
-                {
-                    var result = await _repository.Update(updates, cancellationToken);
-                    if (result != updates.Count)
-                    {
-                        return Domain.Errors.Internal.ConflictData;
-                    }
-                }
-            }
-
-            await _repository.Insert(entity, cancellationToken);
-
-            await trans.CommitAsync(cancellationToken);
-
-            return entity.Id;
-        }
-        finally
-        {
-            _repository.Transaction = null;
-        }
+        return entity.Id;
     }
 
     public async Task<ErrorOr<Domain.Models.Seller>> Find(Guid id, CancellationToken cancellationToken)
@@ -97,7 +93,11 @@ internal sealed class Sellers : ISellers
 
     public async Task<Domain.Models.Seller[]> GetByEventId(Guid id, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.EventId, id, cancellationToken);
+        const string query = $"""
+            ($data_field->>'{nameof(SellerValues.EventId)}')::uuid = @event_id
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { event_id = id }, cancellationToken);
         if (entities.Length == 0)
         {
             return [];
@@ -109,7 +109,11 @@ internal sealed class Sellers : ISellers
 
     public async Task<Domain.Models.Seller[]> GetByIdentityId(Guid id, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.IdentityId, id, cancellationToken);
+        const string query = $"""
+            ($data_field->>'{nameof(SellerValues.IdentityId)}')::uuid = @identity_id
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { identity_id = id }, cancellationToken);
         if (entities.Length == 0)
         {
             return [];
@@ -121,8 +125,13 @@ internal sealed class Sellers : ISellers
 
     public async Task<ErrorOr<Domain.Models.Seller>> FindByIdentityIdAndEventId(Guid identityId, Guid eventId, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.IdentityId, identityId, cancellationToken);
-        var entity = entities.FirstOrDefault(e => e.EventId == eventId);
+        const string query = $"""
+            ($data_field->>'{nameof(SellerValues.IdentityId)}')::uuid = @identity_id AND
+            ($data_field->>'{nameof(SellerValues.EventId)}')::uuid = @event_id
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { identity_id = identityId, event_id = eventId }, cancellationToken);
+        var entity = entities.FirstOrDefault();
         if (entity is null)
         {
             return Domain.Errors.Seller.NotFound;
@@ -139,50 +148,51 @@ internal sealed class Sellers : ISellers
             return Domain.Errors.Seller.NotFound;
         }
 
+        var values = new Dictionary<string, object?>
+        {
+            ["@event_id"] = model.EventId,
+            ["@key"] = BitConverter.ToInt64(model.EventId.ToByteArray(), 8),
+            ["@new_number"] = model.SellerNumber,
+            ["@old_number"] = entity.Value.SellerNumber
+        };
+
+        const string query = $$"""
+            SELECT pg_advisory_xact_lock(@key);
+
+            UPDATE $table
+            SET $data_field = jsonb_set(
+                $data_field,
+                '{{{nameof(SellerValues.SellerNumber)}}}',
+                to_jsonb(
+                    CASE
+                        WHEN @new_number > @old_number
+                            AND ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int > @old_number
+                            AND ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int <= @new_number
+                            THEN ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int - 1
+                        WHEN @new_number < @old_number
+                            AND ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int >= @new_number
+                            AND ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int < @old_number
+                            THEN ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int + 1
+                        ELSE ($data_field->>'{{nameof(SellerValues.SellerNumber)}}')::int
+                    END
+                )
+            )
+            WHERE 
+                ($data_field->>'{{nameof(SellerValues.EventId)}}')::uuid = @event_id AND
+                $id_field <> $id_param;
+
+            $update_table_query
+            """;
+
         model.MapToEntity(entity);
 
-        using var locker = await _tableLocker.LockSellerNumber(cancellationToken);
-        if (locker is null)
-        {
-            return Domain.Errors.Internal.Timeout;
-        }
+        await using var trans = await _repository.BeginTransaction(cancellationToken);
 
-        try
-        {
-            await using var trans = await _repository.CreateTransaction(cancellationToken);
+        await _repository.ExecuteScalar(entity, query, values, cancellationToken);
 
-            var entities = await _repository.SelectBy(0, e => e.EventId, entity.EventId, cancellationToken);
+        await trans.Commit(cancellationToken);
 
-            var updates = new List<Seller>
-            {
-                entity
-            };
-
-            var max = entities.Max(e => e.Id != model.Id ? e.SellerNumber : 0);
-
-            foreach (var e in entities.Where(e => e.Id != entity.Id && e.SellerNumber == entity.SellerNumber))
-            {
-                e.Json.SellerNumber = ++max;
-                updates.Add(e);
-            }
-
-            if (updates.Count > 0)
-            {
-                var result = await _repository.Update(updates, cancellationToken);
-                if (result != updates.Count)
-                {
-                    return Domain.Errors.Internal.ConflictData;
-                }
-            }
-
-            await trans.CommitAsync(cancellationToken);
-
-            return Result.Success;
-        }
-        finally
-        {
-            _repository.Transaction = null;
-        }
+        return Result.Success;
     }
 
     public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
@@ -206,8 +216,13 @@ internal sealed class Sellers : ISellers
 
     public async Task<ErrorOr<Domain.Models.Seller>> FindByEventIdAndSellerNumber(Guid eventId, int sellerNumber, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.EventId, eventId, cancellationToken);
-        var entity = entities.FirstOrDefault(e => e.SellerNumber == sellerNumber);
+        const string query = $"""
+            ($data_field->>'{nameof(SellerValues.EventId)}')::uuid = @event_id AND
+            ($data_field->>'{nameof(SellerValues.SellerNumber)}')::int = @seller_number
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { event_id = eventId, seller_number = sellerNumber }, cancellationToken);
+        var entity = entities.FirstOrDefault();
 
         if (entity is null)
         {

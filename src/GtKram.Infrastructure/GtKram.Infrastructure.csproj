@@ -12,12 +12,11 @@
 		<PackageReference Include="Dapper" />
 		<PackageReference Include="DnsClient" />
 		<PackageReference Include="FluentMigrator" />
-		<PackageReference Include="FluentMigrator.Runner.SQLite" />
+		<PackageReference Include="FluentMigrator.Runner.Postgres" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
-		<PackageReference Include="Microsoft.Data.Sqlite" />
+		<PackageReference Include="Npgsql" />
 		<PackageReference Include="Scriban" />
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
 		<PackageReference Include="System.IO.Hashing" />
 	</ItemGroup>
 

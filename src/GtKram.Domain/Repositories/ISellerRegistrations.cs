@@ -5,7 +5,7 @@ namespace GtKram.Domain.Repositories;
 
 public interface ISellerRegistrations
 {
-    Task<ErrorOr<Success>> Create(SellerRegistration model, CancellationToken cancellationToken);
+    Task<ErrorOr<Guid>> Upsert(SellerRegistration model, CancellationToken cancellationToken);
     Task<ErrorOr<SellerRegistration>> Find(Guid id, CancellationToken cancellationToken);
     Task<ErrorOr<SellerRegistration>> FindBySellerId(Guid id, CancellationToken cancellationToken);
     Task<SellerRegistration[]> GetAll(CancellationToken cancellationToken);

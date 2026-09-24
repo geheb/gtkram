@@ -12,6 +12,9 @@ public interface ICheckouts
     Task<Checkout[]> GetAll(CancellationToken cancellationToken);
     Task<Checkout[]> GetById(Guid[] ids, CancellationToken cancellationToken);
     Task<ErrorOr<Checkout>> Find(Guid id, CancellationToken cancellationToken);
+    Task<ErrorOr<Success>> AddArticle(Guid checkoutId, Guid articleId, Guid eventId, CancellationToken cancellationToken);
+    Task<ErrorOr<Success>> DeleteArticle(Guid id, Guid articleId, CancellationToken cancellationToken);
+    Task<ErrorOr<Success>> SetCompleted(Guid id, CancellationToken cancellationToken);
     Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken);
     Task<ErrorOr<Success>> Update(Checkout model, CancellationToken cancellationToken);
     Task<bool> HasArticle(Guid eventId, Guid articleId, CancellationToken cancellationToken);

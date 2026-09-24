@@ -4,7 +4,11 @@ internal sealed class IdentityValues
 {
     public string Email { get; set; } = null!;
 
+    public string? NormalizedEmail { get; set; }
+
     public string UserName { get; set; } = null!;
+
+    public string? NormalizedUserName { get; set; }
 
     public bool IsEmailConfirmed { get; set; }
 

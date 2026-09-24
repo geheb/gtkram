@@ -18,7 +18,7 @@ internal sealed class Plannings : IPlannings
 
     public async Task<ErrorOr<Success>> Create(Domain.Models.Planning model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new() { Json = new() });
+        var entity = model.MapToEntity(new());
 
         await _repository.Insert(entity, cancellationToken);
 
@@ -41,7 +41,11 @@ internal sealed class Plannings : IPlannings
 
     public async Task<Domain.Models.Planning[]> GetByEventId(Guid id, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.EventId, id, cancellationToken);
+        const string query = $"""
+            ($data_field->>'{nameof(PlanningValues.EventId)}')::uuid = @event_id
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { event_id = id }, cancellationToken);
         if (entities.Length == 0)
         {
             return [];

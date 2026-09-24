@@ -3,55 +3,38 @@ using GtKram.Infrastructure;
 using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Database.Repositories;
 using GtKram.Infrastructure.Email;
-using GtKram.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace GtKram.Application.Tests;
+namespace GtKram.Application.Tests.Fixtures;
 
 public sealed class ServiceFixture : IAsyncDisposable
 {
     private readonly ServiceCollection _services = new();
     private ServiceProvider? _serviceProvider;
-    private readonly string _databaseFile;
 
     public IServiceCollection Services => _services;
 
-    public ServiceFixture()
+    public ServiceFixture(string connectionString)
     {
-        var connectionStringBuilder = new SqliteConnectionStringBuilder();
-        _databaseFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".sqlite");
-        connectionStringBuilder.DataSource = _databaseFile;
-        connectionStringBuilder.ForeignKeys = true;
-
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "ConnectionStrings:SQLite", connectionStringBuilder.ToString() }
+                { "ConnectionStrings:gtkram", connectionString }
             })
             .Build();
 
-        configuration.InitSQLiteContext();
-
         _services.AddSingleton<IConfiguration>(configuration);
-        _services.AddScoped<SQLiteDbContext>();
-        _services.AddSingleton<TableLocker>();
-
-        _services.AddFluentMigratorCore()
-            .ConfigureRunner(rb => rb
-                .AddSQLite()
-                .WithGlobalConnectionString(connectionStringBuilder.ToString())
-                .ScanIn(typeof(Infrastructure.Database.Migrations.Initial).Assembly).For.Migrations());
 
         _services.AddSingleton(TimeProvider.System);
-        _services.AddScoped(typeof(ISqlRepository<,>), typeof(SqlRepository<,>));
+
+        _services.AddPersistence(configuration);
 
         _services.AddDataProtection();
 
-        _services.AddScoped<ILookupNormalizer, NoneLookupNormalizer>();
+        _services.AddScoped<ILookupNormalizer, UpperLookupNormalizer>();
 
         var builder = _services
             .AddIdentityCore<Infrastructure.Database.Models.Identity>()
@@ -65,10 +48,29 @@ public sealed class ServiceFixture : IAsyncDisposable
         _services.AddMediatorHandler();
     }
 
-    public IServiceProvider Build()
+    public void Build()
     {
         _serviceProvider = _services.BuildServiceProvider();
-        return _serviceProvider;
+    }
+
+    public AsyncServiceScope CreateScope()
+    {
+        if (_serviceProvider is null)
+        {
+            throw new InvalidOperationException("Service Provider is not initialized");
+        }
+        return _serviceProvider.CreateAsyncScope();
+    }
+
+    public async Task MigrateDb(CancellationToken cancellationToken)
+    {
+        if (_serviceProvider is null)
+        {
+            throw new InvalidOperationException("Service Provider is not initialized");
+        }
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+        runner.MigrateUp();
     }
 
     public async ValueTask DisposeAsync()

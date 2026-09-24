@@ -21,7 +21,7 @@ internal sealed class EmailQueues
     {
         var entity = new EmailQueue
         {
-            Json = new()
+            Value = new()
             {
                 Recipient = model.Recipient,
                 Subject = model.Subject,
@@ -37,7 +37,11 @@ internal sealed class EmailQueues
 
     public async Task<Domain.Models.EmailQueue[]> GetNotSent(int count, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(count, e => e.IsSent, false, cancellationToken);
+        const string query = $"""
+            $data_field->>'{nameof(EmailQueueValues.Sent)}' IS NULL
+            """;
+
+        var entities = await _repository.SelectBy(count, query, null, cancellationToken);
 
         return [.. entities.Select(e => e.MapToDomain())];
     }
@@ -50,11 +54,21 @@ internal sealed class EmailQueues
             return Domain.Errors.Internal.EmailNotFound;
         }
 
-        entity.Json.Sent = _timeProvider.GetUtcNow();
+        var values = new Dictionary<string, object?>
+        {
+            ["@sent"] = _timeProvider.GetUtcNow(),
+            ["@id"] = id
+        };
 
-        var result = await _repository.Update(entity, cancellationToken);
+        const string query = $"""
+            UPDATE $table SET $data_field->>'{nameof(EmailQueueValues.Sent)}' = @sent 
+            WHERE $id_field = @id
+            RETURNING 1
+            """;
 
-        if (!result)
+        var result = await _repository.ExecuteScalar(query, values, cancellationToken);
+
+        if (result is null)
         {
             return Domain.Errors.Internal.ConflictData;
         }

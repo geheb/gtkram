@@ -1,7 +1,6 @@
-using FluentMigrator.Runner;
+using GtKram.Application.Tests.Fixtures;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
@@ -10,24 +9,22 @@ namespace GtKram.Application.Tests.Integration;
 [TestClass]
 public sealed class UserTests
 {
-    private readonly ServiceFixture _fixture = new();
-    private IServiceProvider _serviceProvider = null!;
+    private ServiceFixture _fixture = null!;
     private CancellationToken _cancellationToken;
 
     public UserTests(TestContext context)
     {
-        _cancellationToken = context.CancellationTokenSource.Token;
+        _cancellationToken = context.CancellationToken;
     }
 
     [TestInitialize]
     public async Task Init()
     {
-        _fixture.Services.AddScoped<IUsers, Users>();
-        _serviceProvider = _fixture.Build();
+        _fixture = new(await PostgresFixture.Instance.CreateDatabase());
 
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-        runner.MigrateUp();
+        _fixture.Build();
+
+        await _fixture.MigrateDb(_cancellationToken);
     }
 
     [TestCleanup]
@@ -39,7 +36,7 @@ public sealed class UserTests
     [TestMethod]
     public async Task Create_User_IsSuccess()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<IUsers>();
 
         var result = await users.Create("foo", "foo@bar", [UserRoleType.Manager], _cancellationToken);

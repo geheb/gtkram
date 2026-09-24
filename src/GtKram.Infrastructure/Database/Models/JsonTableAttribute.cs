@@ -4,9 +4,8 @@ namespace GtKram.Infrastructure.Database.Models;
 
 internal sealed class JsonTableAttribute : TableAttribute
 {
-    public string[]? MapColumns { get; set; }
-
-    public JsonTableAttribute(string name) : base(name)
+    public JsonTableAttribute(string name, string schema) : base(name)
     {
+        Schema = schema;
     }
 }

@@ -17,12 +17,12 @@ internal sealed class Events : IEvents
 
     public async Task<ErrorOr<Guid>> Create(Domain.Models.Event model, CancellationToken cancellationToken)
     {
-        var entity = model.MapToEntity(new() { Json = new() });
-        entity.Json.Commission = 20;
+        var entity = model.MapToEntity(new());
+        entity.Value.Commission = 20;
 
-        await _repository.Insert(entity, cancellationToken);
+        var id = await _repository.Insert(entity, cancellationToken);
 
-        return entity.Id;
+        return id;
     }
 
     public async Task<ErrorOr<Domain.Models.Event>> Find(Guid id, CancellationToken cancellationToken)

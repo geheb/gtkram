@@ -1,9 +1,8 @@
-using FluentMigrator.Runner;
+using GtKram.Application.Tests.Fixtures;
 using GtKram.Application.UseCases.Bazaar.Commands;
 using GtKram.Application.UseCases.Bazaar.Queries;
 using GtKram.Domain.Models;
 using GtKram.Domain.Repositories;
-using GtKram.Infrastructure.Repositories;
 using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -14,31 +13,27 @@ namespace GtKram.Application.Tests.Integration;
 [TestClass]
 public sealed class PlanningHandlerTests
 {
-    private readonly ServiceFixture _fixture = new();
-    private IServiceProvider _serviceProvider = null!;
+    private ServiceFixture _fixture = null!;
     private TimeProvider _mockTimeProvider = null!;
     private CancellationToken _cancellationToken;
 
     public PlanningHandlerTests(TestContext context)
     {
-        _cancellationToken = context.CancellationTokenSource.Token;
+        _cancellationToken = context.CancellationToken;
     }
 
     [TestInitialize]
     public async Task Init()
     {
+        _fixture = new(await PostgresFixture.Instance.CreateDatabase());
+
         _mockTimeProvider = Substitute.For<TimeProvider>();
         _mockTimeProvider.GetUtcNow().Returns(_ => DateTimeOffset.UtcNow);
 
         _fixture.Services.AddSingleton(_mockTimeProvider);
-        _fixture.Services.AddScoped<IEvents, Events>();
-        _fixture.Services.AddScoped<IPlannings, Plannings>();
+        _fixture.Build();
 
-        _serviceProvider = _fixture.Build();
-
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-        runner.MigrateUp();
+        await _fixture.MigrateDb(_cancellationToken);
     }
 
     [TestCleanup]
@@ -50,7 +45,7 @@ public sealed class PlanningHandlerTests
     [TestMethod]
     public async Task CreatePlanningCommand_IsSuccess()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
 
         var eventRepo = scope.ServiceProvider.GetRequiredService<IEvents>();
         var eventId = (await eventRepo.Create(TestData.CreateEvent(_mockTimeProvider.GetUtcNow()), _cancellationToken)).Value;
@@ -72,7 +67,7 @@ public sealed class PlanningHandlerTests
     [TestMethod]
     public async Task GetPlanningsQuery_IsSuccess()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
 
         var plannings = await CreatePlannings(scope);
 
@@ -84,7 +79,7 @@ public sealed class PlanningHandlerTests
     [TestMethod]
     public async Task UpdatePlanningCommand_IsSuccess()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
 
         var plannings = await CreatePlannings(scope);
         plannings[0].From = new TimeOnly(8, 0);
@@ -97,7 +92,7 @@ public sealed class PlanningHandlerTests
     [TestMethod]
     public async Task EventExpired_UpdatePlanningCommand_IsFailed()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
 
         var plannings = await CreatePlannings(scope);
 
@@ -114,7 +109,7 @@ public sealed class PlanningHandlerTests
     [TestMethod]
     public async Task ValidationFrom_UpdatePlanningCommand_IsFailed()
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = _fixture.CreateScope();
 
         var plannings = await CreatePlannings(scope);
 

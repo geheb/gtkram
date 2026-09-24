@@ -8,6 +8,8 @@ internal sealed class SellerRegistrationValues
 
     public string? Email { get; set; }
 
+    public string? NormalizedEmail { get; set; }
+
     public string? Name { get; set; }
 
     public string? Phone { get; set; }

@@ -5,7 +5,6 @@ using GtKram.Domain.Repositories;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.Sqlite;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -31,7 +30,13 @@ internal sealed class Users : IUsers
 
     public async Task<ErrorOr<Guid>> Create(string name, string email, UserRoleType[] roles, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.Email, email, cancellationToken);
+        var normalizedEmail = _userManager.NormalizeEmail(email);
+
+        const string query = $"""
+            $data_field->>'{nameof(IdentityValues.NormalizedEmail)}' = @normalized_email
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { normalized_email = normalizedEmail }, cancellationToken);
         if (entities.Length > 0)
         {
             var error = _errorDescriber.DuplicateEmail(email);
@@ -40,7 +45,8 @@ internal sealed class Users : IUsers
 
         var entity = new Identity
         {
-            Json = new()
+            Id = Guid.CreateVersion7(),
+            Value = new()
             {
                 Email = email,
                 UserName = Guid.NewGuid().ToString("N"),
@@ -48,7 +54,7 @@ internal sealed class Users : IUsers
             },
         };
 
-        entity.Json.Claims.AddRange(roles.Select(r => new IdentityClaim(ClaimTypes.Role, r.MapToRole())));
+        entity.Value.Claims.AddRange(roles.Select(r => new IdentityClaim(ClaimTypes.Role, r.MapToRole())));
 
         var result = await _userManager.CreateAsync(entity);
 
@@ -66,9 +72,9 @@ internal sealed class Users : IUsers
         foreach (var role in roles)
         {
             var roleClaim = new IdentityClaim(ClaimTypes.Role, role.MapToRole());
-            if (!entity.Json.Claims.Contains(roleClaim))
+            if (!entity.Value.Claims.Contains(roleClaim))
             {
-                entity.Json.Claims.Add(roleClaim);
+                entity.Value.Claims.Add(roleClaim);
             }
         }
 
@@ -85,17 +91,17 @@ internal sealed class Users : IUsers
             return Domain.Errors.Identity.NotFound;
         }
 
-        if (!string.IsNullOrWhiteSpace(newName) && entity.Json.Name != newName)
+        if (!string.IsNullOrWhiteSpace(newName) && entity.Value.Name != newName)
         {
-            entity.Json.Name = newName;
+            entity.Value.Name = newName;
         }
 
         if (newRoles?.Length > 0)
         {
-            entity.Json.Claims.RemoveAll(c => c.Type == ClaimTypes.Role);
+            entity.Value.Claims.RemoveAll(c => c.Type == ClaimTypes.Role);
             foreach (var role in newRoles)
             {
-                entity.Json.Claims.Add(new IdentityClaim(ClaimTypes.Role, role.MapToRole()));
+                entity.Value.Claims.Add(new IdentityClaim(ClaimTypes.Role, role.MapToRole()));
             }
         }
 
@@ -112,19 +118,20 @@ internal sealed class Users : IUsers
             return Domain.Errors.Identity.NotFound;
         }
 
-        var name = new string([.. entity.Json.Name!.Split(' ').Select(u => u[0])]);
+        var name = new string([.. entity.Value.Name!.Split(' ').Select(u => u[0])]);
 
-        entity.Json.Email = entity.Json.UserName + "@disabled";
-        entity.Json.PasswordHash = null;
-        entity.Json.Name = name;
-        entity.Json.IsEmailConfirmed = false;
-        entity.Json.Disabled = _timeProvider.GetUtcNow();
-        entity.Json.LastLogin = null;
-        entity.Json.PhoneNumber = null;
-        entity.Json.IsPhoneNumberConfirmed = false;
-        entity.Json.AuthenticatorKey = null;
-        entity.Json.LockoutEnd = null;
-        entity.Json.Claims.Clear();
+        entity.Value.Email = entity.Value.UserName + "@disabled";
+        entity.Value.NormalizedEmail = entity.Value.Email;
+        entity.Value.PasswordHash = null;
+        entity.Value.Name = name;
+        entity.Value.IsEmailConfirmed = false;
+        entity.Value.Disabled = _timeProvider.GetUtcNow();
+        entity.Value.LastLogin = null;
+        entity.Value.PhoneNumber = null;
+        entity.Value.IsPhoneNumberConfirmed = false;
+        entity.Value.AuthenticatorKey = null;
+        entity.Value.LockoutEnd = null;
+        entity.Value.Claims.Clear();
 
         var result = await _repository.Update(entity, cancellationToken);
 
@@ -133,7 +140,11 @@ internal sealed class Users : IUsers
 
     public async Task<User[]> GetAll(CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectByJson(0, e => e.Json.Disabled, null, cancellationToken);
+        const string query = $"""
+            $data_field->>'{nameof(IdentityValues.Disabled)}' IS NULL
+            """;
+
+        var entities = await _repository.SelectBy(0, query, null, cancellationToken);
 
         if (entities.Length == 0)
         {
@@ -147,9 +158,13 @@ internal sealed class Users : IUsers
 
     public async Task<ErrorOr<User>> FindByEmail(string email, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        const string query = $"""
+            $data_field->>'{nameof(IdentityValues.NormalizedEmail)}' = @normalized_email
+            """;
 
-        var entity = await _repository.SelectBy(0, e => e.Email, email, cancellationToken);
+        var normalizedEmail = _userManager.NormalizeEmail(email);
+
+        var entity = await _repository.SelectBy(0, query, new { normalized_email = normalizedEmail }, cancellationToken);
         if (entity.Length == 0)
         {
             return Domain.Errors.Identity.NotFound;
@@ -171,14 +186,7 @@ internal sealed class Users : IUsers
 
     public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _repository.Delete(id, cancellationToken);
-            return result > 0 ? Result.Success : Domain.Errors.Identity.DeleteFailed;
-        }
-        catch (SqliteException)
-        {
-            return Domain.Errors.Identity.DeleteFailed;
-        }
+        var result = await _repository.Delete(id, cancellationToken);
+        return result > 0 ? Result.Success : Domain.Errors.Identity.DeleteFailed;
     }
 }

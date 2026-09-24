@@ -1,29 +1,25 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var superUserSecret = builder.AddParameter("SuperUser", true);
+var superUserSecret = builder.AddParameter("gtkram-superuser", true);
+var pgSecret = builder.AddParameter("gtkram-pguser", true);
 
-var sqliteDir = new DirectoryInfo("/data/gtkram/sqlite");
-if (!sqliteDir.Exists)
-{
-    sqliteDir.Create();
-}
+var postgres = builder
+    .AddPostgres("postgres", password: pgSecret)
+    .WithImageTag("18-alpine")
+    .WithContainerName("postgres")
+    .WithDataVolume("postgres")
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithPgAdmin(containerName: "pgadmin");
 
-var mailpitDir = new DirectoryInfo("/data/gtkram/mailpit");
-if (!mailpitDir.Exists)
-{
-    mailpitDir.Create();
-}
-
-const string databaseFileName = "gtkram.sqlite";
-
-var sqlite = builder.AddSqlite("SQLite", sqliteDir.FullName, databaseFileName)
-    .WithSqliteWeb(c => c.WithArgs(databaseFileName));
+var db = postgres.AddDatabase("gtkram");
 
 var mailpit = builder.AddMailPit("mailpit")
-    .WithDataBindMount(mailpitDir.FullName);
+    .WithContainerName("mailpit")
+    .WithDataVolume("mailpit")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 builder.AddProject<Projects.GtKram_WebApp>("webapp")
-    .WithReference(sqlite)
+    .WithReference(db)
     .WithReference(mailpit)
     .WithHttpHealthCheck("/healthz")
     .WithEnvironment(c =>
@@ -33,7 +29,9 @@ builder.AddProject<Projects.GtKram_WebApp>("webapp")
         c.EnvironmentVariables["SMTP__PORT"] = endpoint.Port;
 
         c.EnvironmentVariables["BOOTSTRAP__SUPERUSER__PASSWORD"] = superUserSecret;
-    });
+    })
+    .WaitFor(postgres)
+    .WaitFor(mailpit);
 
 using var app = builder.Build();
 

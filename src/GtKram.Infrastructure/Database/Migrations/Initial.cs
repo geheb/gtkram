@@ -1,14 +1,18 @@
 using FluentMigrator;
+using FluentMigrator.Builders.Create.Table;
 using GtKram.Infrastructure.Database.Models;
 using GtKram.Infrastructure.Database.Repositories;
 
 namespace GtKram.Infrastructure.Database.Migrations;
 
-[Migration(20251218)]
+[Migration(20261001)]
 public sealed class Initial : Migration
 {
     public override void Up()
     {
+        Create.Schema(TableSchemas.Infra);
+        Create.Schema(TableSchemas.Events);
+
         CreateIdentitites();
         CreateEmailQueues();
         CreateEvents();
@@ -16,6 +20,7 @@ public sealed class Initial : Migration
         CreateSellerRegistrations();
         CreateArticles();
         CreateCheckouts();
+        CreatePlannings();
     }
 
     public override void Down()
@@ -24,132 +29,151 @@ public sealed class Initial : Migration
 
     private void CreateIdentitites()
     {
-        Create.Table(TableNames.Identities)
-            .WithColumn(nameof(Identity.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(Identity.Created)).AsString()
-            .WithColumn(nameof(Identity.Updated)).AsString().Nullable()
-            .WithColumn(nameof(Identity.JsonProperties)).AsString()
-            .WithColumn(nameof(Identity.JsonVersion)).AsInt32()
-            .WithColumn(nameof(Identity.Email)).AsString(256).Unique();
-    }
+        CreateTableWithJson(TableNames.Identities, TableSchemas.Infra);
 
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{TableNames.Identities}_normalizedemail
+            ON "{TableSchemas.Infra}"."{TableNames.Identities}" (("{nameof(JsonEntity<>.Data)}"->>'{nameof(IdentityValues.NormalizedEmail)}'))
+            WHERE "{nameof(JsonEntity<>.Data)}"->>'{nameof(IdentityValues.NormalizedEmail)}' IS NOT NULL;
+            """);
+
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{TableNames.Identities}_normalizedusername
+            ON "{TableSchemas.Infra}"."{TableNames.Identities}" (("{nameof(JsonEntity<>.Data)}"->>'{nameof(IdentityValues.NormalizedUserName)}'))
+            WHERE "{nameof(JsonEntity<>.Data)}"->>'{nameof(IdentityValues.NormalizedUserName)}' IS NOT NULL;
+            """);
+    }
 
     private void CreateEmailQueues()
     {
-        const string table = TableNames.EmailQueues;
-
-        Create.Table(table)
-            .WithColumn(nameof(EmailQueue.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(EmailQueue.Created)).AsString()
-            .WithColumn(nameof(EmailQueue.Updated)).AsString().Nullable()
-            .WithColumn(nameof(EmailQueue.JsonProperties)).AsString()
-            .WithColumn(nameof(EmailQueue.JsonVersion)).AsInt32()
-            .WithColumn(nameof(EmailQueue.IsSent)).AsInt32();
-
-        Create.Index($"IX_{table}_{nameof(EmailQueue.IsSent)}")
-            .OnTable(table)
-            .OnColumn(nameof(EmailQueue.IsSent));
+        CreateTableWithJson(TableNames.EmailQueues, TableSchemas.Infra);
     }
 
     private void CreateEvents()
     {
-        Create.Table(TableNames.Events)
-            .WithColumn(nameof(Event.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(Event.Created)).AsString()
-            .WithColumn(nameof(Event.Updated)).AsString().Nullable()
-            .WithColumn(nameof(Event.JsonProperties)).AsString()
-            .WithColumn(nameof(Event.JsonVersion)).AsInt32();
+        CreateTableWithJson(TableNames.Events, TableSchemas.Events);
     }
 
     private void CreateSellers()
     {
         const string table = TableNames.Sellers;
+        const string schema = TableSchemas.Events;
 
-        Create.Table(table)
-            .WithColumn(nameof(Seller.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(Seller.Created)).AsString()
-            .WithColumn(nameof(Seller.Updated)).AsString().Nullable()
-            .WithColumn(nameof(Seller.JsonProperties)).AsString()
-            .WithColumn(nameof(Seller.JsonVersion)).AsInt32()
-            .WithColumn(nameof(Seller.SellerNumber)).AsInt32()
-            .WithColumn(nameof(Seller.EventId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Events}", TableNames.Events, nameof(Event.Id))
-            .WithColumn(nameof(Seller.IdentityId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Identities}", TableNames.Identities, nameof(Identity.Id));
+        CreateTableWithJson(table, schema)
+            .WithColumn(nameof(SellerValues.EventId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(SellerValues.EventId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Events}", schema, TableNames.Events, nameof(Event.Id))
+            .WithColumn(nameof(SellerValues.IdentityId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(SellerValues.IdentityId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Identities}", TableSchemas.Infra, TableNames.Identities, nameof(Identity.Id));
 
-        Create.Index($"IX_{table}_{nameof(Seller.EventId)}")
-            .OnTable(table)
-            .OnColumn(nameof(Seller.EventId));
-
-        Create.Index($"IX_{table}_{nameof(Seller.IdentityId)}")
-            .OnTable(table)
-            .OnColumn(nameof(Seller.IdentityId));
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{table}_eventid_identityid
+            ON "{schema}"."{table}" (
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerValues.EventId)}'),
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerValues.IdentityId)}')
+            )
+            WHERE 
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerValues.EventId)}' IS NOT NULL AND
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerValues.IdentityId)}' IS NOT NULL
+            """);
     }
 
     private void CreateSellerRegistrations()
     {
         const string table = TableNames.SellerRegistrations;
+        const string schema = TableSchemas.Events;
 
-        Create.Table(table)
-            .WithColumn(nameof(SellerRegistration.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(SellerRegistration.Created)).AsString()
-            .WithColumn(nameof(SellerRegistration.Updated)).AsString().Nullable()
-            .WithColumn(nameof(SellerRegistration.JsonProperties)).AsString()
-            .WithColumn(nameof(SellerRegistration.JsonVersion)).AsInt32()
-            .WithColumn(nameof(SellerRegistration.EventId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Events}", TableNames.Events, nameof(Event.Id))
-            .WithColumn(nameof(SellerRegistration.SellerId)).AsString(36).Nullable()
-                .ForeignKey($"FK_{table}_{TableNames.Sellers}", TableNames.Sellers, nameof(Seller.Id));
+        CreateTableWithJson(table, schema)
+            .WithColumn(nameof(SellerRegistrationValues.EventId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(SellerRegistrationValues.EventId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Events}", schema, TableNames.Events, nameof(Event.Id))
+            .WithColumn(nameof(SellerRegistrationValues.SellerId)).AsGuid().Nullable()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(SellerRegistrationValues.SellerId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Sellers}", schema, TableNames.Sellers, nameof(Seller.Id));
 
-        Create.Index($"IX_{table}_{nameof(SellerRegistration.EventId)}")
-            .OnTable(table)
-            .OnColumn(nameof(SellerRegistration.EventId));
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{table}_eventid_sellerid
+            ON "{schema}"."{table}" (
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.EventId)}'),
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.SellerId)}')
+            )
+            WHERE 
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.EventId)}' IS NOT NULL AND
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.SellerId)}' IS NOT NULL
+            """);
 
-        Create.Index($"IX_{table}_{nameof(SellerRegistration.SellerId)}")
-            .OnTable(table)
-            .OnColumn(nameof(SellerRegistration.SellerId));
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{table}_eventid_normalizedemail
+            ON "{schema}"."{table}" (
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.EventId)}'),
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.NormalizedEmail)}')
+            )
+            WHERE 
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.EventId)}' IS NOT NULL AND
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(SellerRegistrationValues.NormalizedEmail)}' IS NOT NULL
+            """);
     }
 
     private void CreateArticles()
     {
         const string table = TableNames.Articles;
+        const string schema = TableSchemas.Events;
 
-        Create.Table(table)
-            .WithColumn(nameof(Article.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(Article.Created)).AsString()
-            .WithColumn(nameof(Article.Updated)).AsString().Nullable()
-            .WithColumn(nameof(Article.JsonProperties)).AsString()
-            .WithColumn(nameof(Article.JsonVersion)).AsInt32()
-            .WithColumn(nameof(Article.SellerId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Sellers}", TableNames.Sellers, nameof(Seller.Id))
-            .WithColumn(nameof(Article.LabelNumber)).AsInt32();
+        CreateTableWithJson(table, schema)
+            .WithColumn(nameof(ArticleValues.SellerId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(ArticleValues.SellerId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Sellers}", schema, TableNames.Sellers, nameof(Seller.Id));
 
-        Create.Index($"IX_{table}_{nameof(Article.SellerId)}")
-            .OnTable(table)
-            .OnColumn(nameof(Article.SellerId));
+        Execute.Sql(
+            $"""
+            CREATE UNIQUE INDEX uix_{table}_sellerid_labelnumber
+            ON "{schema}"."{table}" (
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(ArticleValues.SellerId)}'),
+                ("{nameof(JsonEntity<>.Data)}"->>'{nameof(ArticleValues.LabelNumber)}')
+            )
+            WHERE 
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(ArticleValues.SellerId)}' IS NOT NULL AND
+                "{nameof(JsonEntity<>.Data)}"->>'{nameof(ArticleValues.LabelNumber)}' IS NOT NULL
+            """);
     }
 
     private void CreateCheckouts()
     {
         const string table = TableNames.Checkouts;
+        const string schema = TableSchemas.Events;
 
-        Create.Table(table)
-            .WithColumn(nameof(Checkout.Id)).AsString(36).PrimaryKey()
-            .WithColumn(nameof(Checkout.Created)).AsString()
-            .WithColumn(nameof(Checkout.Updated)).AsString().Nullable()
-            .WithColumn(nameof(Checkout.JsonProperties)).AsString()
-            .WithColumn(nameof(Checkout.JsonVersion)).AsInt32()
-            .WithColumn(nameof(Checkout.EventId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Events}", TableNames.Events, nameof(Event.Id))
-            .WithColumn(nameof(Checkout.IdentityId)).AsString(36)
-                .ForeignKey($"FK_{table}_{TableNames.Identities}", TableNames.Identities, nameof(Identity.Id));
-
-        Create.Index($"IX_{table}_{nameof(Checkout.EventId)}")
-            .OnTable(table)
-            .OnColumn(nameof(Checkout.EventId));
-
-        Create.Index($"IX_{table}_{nameof(Checkout.IdentityId)}")
-            .OnTable(table)
-            .OnColumn(nameof(Checkout.IdentityId));
+        CreateTableWithJson(table, schema)
+            .WithColumn(nameof(CheckoutValues.EventId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(CheckoutValues.EventId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Events}", schema, TableNames.Events, nameof(Event.Id))
+            .WithColumn(nameof(CheckoutValues.IdentityId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(CheckoutValues.IdentityId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Identities}", TableSchemas.Infra, TableNames.Identities, nameof(Identity.Id));
     }
+
+    private void CreatePlannings()
+    {
+        const string table = TableNames.Plannings;
+        const string schema = TableSchemas.Events;
+
+        CreateTableWithJson(table, schema)
+            .WithColumn(nameof(PlanningValues.EventId)).AsGuid()
+                .Computed($"(\"{nameof(JsonEntity<>.Data)}\"->>'{nameof(PlanningValues.EventId)}')::uuid", true)
+                .ForeignKey($"fk_{table}_{TableNames.Events}", schema, TableNames.Events, nameof(Event.Id));
+    }
+
+    private ICreateTableWithColumnSyntax CreateTableWithJson(string name, string schema) =>
+         Create.Table(name)
+            .InSchema(schema)
+            .WithColumn(nameof(JsonEntity<>.Id)).AsGuid().PrimaryKey($"pk_{name}")
+            .WithColumn(nameof(JsonEntity<>.Created)).AsDateTimeOffset()
+            .WithColumn(nameof(JsonEntity<>.Updated)).AsDateTimeOffset().Nullable()
+            .WithColumn(nameof(JsonEntity<>.Data)).AsCustom("jsonb").NotNullable()
+            .WithColumn(nameof(JsonEntity<>.Version)).AsInt32();
 }

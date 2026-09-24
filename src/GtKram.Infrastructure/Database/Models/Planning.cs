@@ -1,22 +1,8 @@
 using GtKram.Infrastructure.Database.Repositories;
-using System.Text.Json;
 
 namespace GtKram.Infrastructure.Database.Models;
 
-[JsonTable(TableNames.Plannings, MapColumns = [nameof(EventId)])]
-internal sealed class Planning : IEntity, IEntityJsonValue<PlanningValues>
+[JsonTable(TableNames.Plannings, TableSchemas.Events)]
+internal sealed class Planning : JsonEntity<PlanningValues>
 {
-    public Guid Id { get; set; }
-
-    public DateTime Created { get; set; }
-
-    public DateTime? Updated { get; set; }
-
-    public string JsonProperties { get; set; } = null!;
-
-    public int JsonVersion { get; set; }
-
-    public PlanningValues Json { get; set; } = null!;
-
-    public Guid EventId => Json.EventId;
 }

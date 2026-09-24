@@ -5,8 +5,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Aspire.Hosting.PostgreSQL" />
 		<PackageReference Include="CommunityToolkit.Aspire.Hosting.MailPit" />
-		<PackageReference Include="CommunityToolkit.Aspire.Hosting.SQLite" />
 		<PackageReference Include="MessagePack" />
 	</ItemGroup>
 

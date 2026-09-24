@@ -5,7 +5,6 @@ using GtKram.Application.Options;
 using GtKram.Application.Services;
 using GtKram.Application.UseCases.User.Extensions;
 using GtKram.Application.UseCases.User.Models;
-using GtKram.Infrastructure.Database;
 using GtKram.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -69,7 +68,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Domain.Errors.Identity.NotFound;
         }
 
-        if (user.Email == newEmail)
+        if (user.Value.Email == newEmail)
         {
             return Result.Success;
         }
@@ -92,7 +91,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return result.Errors.ToError();
         }
 
-        if (!user.Json.IsEmailConfirmed)
+        if (!user.Value.IsEmailConfirmed)
         {
             token = await userManager.GenerateEmailConfirmationTokenAsync(user);
             result = await userManager.ConfirmEmailAsync(user, token);
@@ -121,7 +120,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return result.Errors.ToError();
         }
 
-        if (!user.Json.IsEmailConfirmed)
+        if (!user.Value.IsEmailConfirmed)
         {
             token = await userManager.GenerateEmailConfirmationTokenAsync(user);
             result = await userManager.ConfirmEmailAsync(user, token);
@@ -142,7 +141,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Domain.Errors.Identity.NotFound;
         }
 
-        var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Json.PasswordHash!, currentPassword);
+        var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Value.PasswordHash!, currentPassword);
         if (result != PasswordVerificationResult.Success)
         {
             return _errorDescriber.PasswordMismatch().ToError();
@@ -166,7 +165,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Domain.Errors.Identity.NotFound;
         }
 
-        var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Json.PasswordHash!, password);
+        var result = _signInManager.UserManager.PasswordHasher.VerifyHashedPassword(user, user.Value.PasswordHash!, password);
         if (result != PasswordVerificationResult.Success)
         {
             return _errorDescriber.PasswordMismatch().ToError();
@@ -183,7 +182,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
             return Domain.Errors.Identity.NotFound;
         }
 
-        if (user.Json.IsEmailConfirmed)
+        if (user.Value.IsEmailConfirmed)
         {
             return Domain.Errors.Identity.AlreadyActivated;
         }
@@ -355,7 +354,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
 
         var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
 
-        var uri = GenerateQrCodeUri(_appTitle, user.Email!, key);
+        var uri = GenerateQrCodeUri(_appTitle, user.Value.Email, key);
 
         return new UserOtp(isEnabled, key, uri);
     }
@@ -382,7 +381,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
 
         var isEnabled = await _signInManager.UserManager.GetTwoFactorEnabledAsync(user);
 
-        var uri = GenerateQrCodeUri(_appTitle, user.Email!, key);
+        var uri = GenerateQrCodeUri(_appTitle, user.Value.Email, key);
 
         return new UserOtp(isEnabled, key, uri);
     }
@@ -452,7 +451,7 @@ internal sealed class UserAuthenticator : IUserAuthenticator
     {
         if (result.Succeeded)
         {
-            user.Json.LastLogin = _timeProvider.GetUtcNow();
+            user.Value.LastLogin = _timeProvider.GetUtcNow();
             await _signInManager.UserManager.UpdateAsync(user);
             _logger.LogInformation("Der Benutzer {Id} ist angemeldet", user.Id);
             return new AuthResult(false);

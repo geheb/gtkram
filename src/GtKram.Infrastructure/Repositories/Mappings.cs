@@ -1,6 +1,8 @@
+using ErrorOr;
 using GtKram.Application.Converter;
 using GtKram.Application.UseCases.User.Models;
 using GtKram.Infrastructure.Database;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace GtKram.Infrastructure.Repositories;
@@ -11,16 +13,16 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Name = entity.Json.Name!,
-            Email = entity.Email!,
-            Roles = [.. entity.Json.Claims.Where(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Select(c => c.Value.MapToRole())],
-            IsEmailConfirmed = entity.Json.IsEmailConfirmed,
-            LastLoginDate = entity.Json.LastLogin is not null ? dc.ToLocal(entity.Json.LastLogin!.Value) : null,
+            Name = entity.Value.Name,
+            Email = entity.Value.Email,
+            Roles = [.. entity.Value.Claims.Where(c => c.Type == ClaimsIdentity.DefaultRoleClaimType).Select(c => c.Value.MapToRole())],
+            IsEmailConfirmed = entity.Value.IsEmailConfirmed,
+            LastLoginDate = entity.Value.LastLogin is not null ? dc.ToLocal(entity.Value.LastLogin!.Value) : null,
             LockoutEndDate =
-                now < entity.Json.LockoutEnd
-                ? dc.ToLocal(entity.Json.LockoutEnd.Value)
+                now < entity.Value.LockoutEnd
+                ? dc.ToLocal(entity.Value.LockoutEnd.Value)
                 : null,
-            IsTwoFactorEnabled = entity.Json.Claims.Contains(UserClaims.TwoFactorClaim)
+            IsTwoFactorEnabled = entity.Value.Claims.Contains(UserClaims.TwoFactorClaim)
         };
 
     public static string MapToRole(this Domain.Models.UserRoleType role) => 
@@ -49,47 +51,47 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Recipient = entity.Json.Recipient!,
-            Subject = entity.Json.Subject!,
-            Body = entity.Json.Body!,
-            AttachmentName = entity.Json.AttachmentName,
-            AttachmentMimeType = entity.Json.AttachmentMimeType,
-            AttachmentBlob = entity.Json.AttachmentBlob,
+            Recipient = entity.Value.Recipient!,
+            Subject = entity.Value.Subject!,
+            Body = entity.Value.Body!,
+            AttachmentName = entity.Value.AttachmentName,
+            AttachmentMimeType = entity.Value.AttachmentMimeType,
+            AttachmentBlob = entity.Value.AttachmentBlob,
         };
 
     public static Domain.Models.Event MapToDomain(this Database.Models.Event entity, GermanDateTimeConverter dc) => 
         new()
         {
             Id = entity.Id,
-            Name = entity.Json.Name!,
-            Description = entity.Json.Description,
-            Start = dc.ToLocal(entity.Json.Start),
-            End = dc.ToLocal(entity.Json.End),
-            Address = entity.Json.Address,
-            MaxSellers = entity.Json.MaxSellers,
-            Commission = entity.Json.Commission,
-            RegisterStart = dc.ToLocal(entity.Json.RegisterStart),
-            RegisterEnd = dc.ToLocal(entity.Json.RegisterEnd),
-            EditArticleEnd = entity.Json.EditArticleEnd.HasValue ? dc.ToLocal(entity.Json.EditArticleEnd.Value) : null,
-            PickUpLabelsStart = entity.Json.PickUpLabelsStart.HasValue ? dc.ToLocal(entity.Json.PickUpLabelsStart.Value) : null,
-            PickUpLabelsEnd = entity.Json.PickUpLabelsEnd.HasValue ? dc.ToLocal(entity.Json.PickUpLabelsEnd.Value) : null,
-            HasRegistrationsLocked = entity.Json.HasRegistrationsLocked
+            Name = entity.Value.Name!,
+            Description = entity.Value.Description,
+            Start = dc.ToLocal(entity.Value.Start),
+            End = dc.ToLocal(entity.Value.End),
+            Address = entity.Value.Address,
+            MaxSellers = entity.Value.MaxSellers,
+            Commission = entity.Value.Commission,
+            RegisterStart = dc.ToLocal(entity.Value.RegisterStart),
+            RegisterEnd = dc.ToLocal(entity.Value.RegisterEnd),
+            EditArticleEnd = entity.Value.EditArticleEnd.HasValue ? dc.ToLocal(entity.Value.EditArticleEnd.Value) : null,
+            PickUpLabelsStart = entity.Value.PickUpLabelsStart.HasValue ? dc.ToLocal(entity.Value.PickUpLabelsStart.Value) : null,
+            PickUpLabelsEnd = entity.Value.PickUpLabelsEnd.HasValue ? dc.ToLocal(entity.Value.PickUpLabelsEnd.Value) : null,
+            HasRegistrationsLocked = entity.Value.HasRegistrationsLocked
         };
 
     public static Database.Models.Event MapToEntity(this Domain.Models.Event model, Database.Models.Event entity)
     {
-        entity.Json.Name = model.Name;
-        entity.Json.Description = model.Description;
-        entity.Json.Start = model.Start.ToUniversalTime();
-        entity.Json.End = model.End.ToUniversalTime();
-        entity.Json.Address = model.Address;
-        entity.Json.MaxSellers = model.MaxSellers;
-        entity.Json.RegisterStart = model.RegisterStart.ToUniversalTime();
-        entity.Json.RegisterEnd = model.RegisterEnd.ToUniversalTime();
-        entity.Json.EditArticleEnd = model.EditArticleEnd?.ToUniversalTime();
-        entity.Json.PickUpLabelsStart = model.PickUpLabelsStart?.ToUniversalTime();
-        entity.Json.PickUpLabelsEnd = model.PickUpLabelsEnd?.ToUniversalTime();
-        entity.Json.HasRegistrationsLocked = model.HasRegistrationsLocked;
+        entity.Value.Name = model.Name;
+        entity.Value.Description = model.Description;
+        entity.Value.Start = model.Start.ToUniversalTime();
+        entity.Value.End = model.End.ToUniversalTime();
+        entity.Value.Address = model.Address;
+        entity.Value.MaxSellers = model.MaxSellers;
+        entity.Value.RegisterStart = model.RegisterStart.ToUniversalTime();
+        entity.Value.RegisterEnd = model.RegisterEnd.ToUniversalTime();
+        entity.Value.EditArticleEnd = model.EditArticleEnd?.ToUniversalTime();
+        entity.Value.PickUpLabelsStart = model.PickUpLabelsStart?.ToUniversalTime();
+        entity.Value.PickUpLabelsEnd = model.PickUpLabelsEnd?.ToUniversalTime();
+        entity.Value.HasRegistrationsLocked = model.HasRegistrationsLocked;
         return entity;
     }
 
@@ -97,26 +99,28 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            EventId = entity.Json.EventId,
-            Email = entity.Json.Email!,
-            Name = entity.Json.Name!,
-            Phone = entity.Json.Phone!,
-            ClothingType = entity.Json.Clothing?.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => int.Parse(c)).ToArray(),
-            IsAccepted = entity.Json.IsAccepted,
-            PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.Json.PreferredType,
-            SellerId = entity.Json.SellerId
+            Updated = entity.Updated,
+            EventId = entity.Value.EventId,
+            Email = entity.Value.Email!,
+            Name = entity.Value.Name!,
+            Phone = entity.Value.Phone!,
+            ClothingType = entity.Value.Clothing?.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(c => int.Parse(c)).ToArray(),
+            IsAccepted = entity.Value.IsAccepted,
+            PreferredType = (Domain.Models.SellerRegistrationPreferredType)entity.Value.PreferredType,
+            SellerId = entity.Value.SellerId
         };
 
-    public static Database.Models.SellerRegistration MapToEntity(this Domain.Models.SellerRegistration model, Database.Models.SellerRegistration entity)
+    public static Database.Models.SellerRegistration MapToEntity(this Domain.Models.SellerRegistration model, Database.Models.SellerRegistration entity, ILookupNormalizer lookupNormalizer)
     {
-        entity.Json.EventId = model.EventId;
-        entity.Json.Email = model.Email;
-        entity.Json.Name = model.Name;
-        entity.Json.Phone = model.Phone;
-        entity.Json.Clothing = model.ClothingType is not null ? string.Join(';', model.ClothingType) : null;
-        entity.Json.IsAccepted = model.IsAccepted;
-        entity.Json.PreferredType = (int)model.PreferredType;
-        entity.Json.SellerId = model.SellerId;
+        entity.Value.EventId = model.EventId;
+        entity.Value.Email = model.Email;
+        entity.Value.NormalizedEmail = lookupNormalizer.NormalizeEmail(model.Email);
+        entity.Value.Name = model.Name;
+        entity.Value.Phone = model.Phone;
+        entity.Value.Clothing = model.ClothingType is not null ? string.Join(';', model.ClothingType) : null;
+        entity.Value.IsAccepted = model.IsAccepted;
+        entity.Value.PreferredType = (int)model.PreferredType;
+        entity.Value.SellerId = model.SellerId;
         return entity;
     }
 
@@ -124,21 +128,21 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Created = dc.ToLocal(new DateTimeOffset(entity.Created, TimeSpan.Zero)),
-            Status = (Domain.Models.CheckoutStatus)entity.Json.Status,
-            EventId = entity.EventId,
-            IdentityId = entity.IdentityId,
-            ArticleIds = entity.Json.ArticleIds,
-            Total = entity.Json.Total ?? 0,
+            Created = dc.ToLocal(entity.Created),
+            Status = (Domain.Models.CheckoutStatus)entity.Value.Status,
+            EventId = entity.Value.EventId,
+            IdentityId = entity.Value.IdentityId,
+            ArticleIds = entity.Value.ArticleIds,
+            Total = entity.Value.Total ?? 0,
         };
 
     public static Database.Models.Checkout MapToEntity(this Domain.Models.Checkout model, Database.Models.Checkout entity)
     {
-        entity.Json.Status = (int)model.Status;
-        entity.Json.EventId = model.EventId;
-        entity.Json.IdentityId = model.IdentityId;
-        entity.Json.ArticleIds = [.. model.ArticleIds];
-        entity.Json.Total = model.Total;
+        entity.Value.Status = (int)model.Status;
+        entity.Value.EventId = model.EventId;
+        entity.Value.IdentityId = model.IdentityId;
+        entity.Value.ArticleIds = [.. model.ArticleIds];
+        entity.Value.Total = model.Total;
         return entity;
     }
 
@@ -146,20 +150,20 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            SellerId = entity.Json.SellerId,
-            LabelNumber = entity.Json.LabelNumber,
-            Name = entity.Json.Name,
-            Size = entity.Json.Size,
-            Price = entity.Json.Price
+            SellerId = entity.Value.SellerId,
+            LabelNumber = entity.Value.LabelNumber,
+            Name = entity.Value.Name,
+            Size = entity.Value.Size,
+            Price = entity.Value.Price
         };
 
     public static Database.Models.Article MapToEntity(this Domain.Models.Article model, Database.Models.Article entity)
     {
-        entity.Json.SellerId = model.SellerId;
-        entity.Json.LabelNumber = model.LabelNumber;
-        entity.Json.Name = model.Name;
-        entity.Json.Size = model.Size;
-        entity.Json.Price = model.Price;
+        entity.Value.SellerId = model.SellerId;
+        entity.Value.LabelNumber = model.LabelNumber;
+        entity.Value.Name = model.Name;
+        entity.Value.Size = model.Size;
+        entity.Value.Price = model.Price;
         return entity;
     }
 
@@ -167,22 +171,22 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            Created = dc.ToLocal(new DateTimeOffset(entity.Created, TimeSpan.Zero)),
-            EventId = entity.EventId,
-            IdentityId = entity.IdentityId,
-            SellerNumber = entity.Json.SellerNumber,
-            Role = (Domain.Models.SellerRole)entity.Json.Role,
-            MaxArticleCount = entity.Json.MaxArticleCount,
-            CanCheckout = entity.Json.CanCheckout,
+            Created = dc.ToLocal(entity.Created),
+            EventId = entity.Value.EventId,
+            IdentityId = entity.Value.IdentityId,
+            SellerNumber = entity.Value.SellerNumber,
+            Role = (Domain.Models.SellerRole)entity.Value.Role,
+            MaxArticleCount = entity.Value.MaxArticleCount,
+            CanCheckout = entity.Value.CanCheckout,
         };
 
     public static Database.Models.Seller MapToEntity(this Domain.Models.Seller model, Database.Models.Seller entity)
     {
-        entity.Json.EventId = model.EventId;
-        entity.Json.SellerNumber = model.SellerNumber;
-        entity.Json.Role = (int)model.Role;
-        entity.Json.MaxArticleCount = model.MaxArticleCount;
-        entity.Json.CanCheckout = model.CanCheckout;
+        entity.Value.EventId = model.EventId;
+        entity.Value.SellerNumber = model.SellerNumber;
+        entity.Value.Role = (int)model.Role;
+        entity.Value.MaxArticleCount = model.MaxArticleCount;
+        entity.Value.CanCheckout = model.CanCheckout;
         return entity;
     }
 
@@ -190,31 +194,31 @@ internal static class Mappings
         new()
         {
             Id = entity.Id,
-            EventId = entity.Json.EventId,
-            Date = dc.ToLocal(entity.Json.Date),
-            Name = entity.Json.Name,
-            From = entity.Json.From,
-            To = entity.Json.To,
-            MaxHelper = entity.Json.MaxHelper,
-            IdentityIds = [ .. entity.Json.IdentityIds],
-            CheckedIdentityIds = [.. entity.Json.CheckedIdentityIds],
-            Persons = [.. entity.Json.Persons],
-            CheckedPersons = [.. entity.Json.CheckedPersons],
+            EventId = entity.Value.EventId,
+            Date = dc.ToLocal(entity.Value.Date),
+            Name = entity.Value.Name,
+            From = entity.Value.From,
+            To = entity.Value.To,
+            MaxHelper = entity.Value.MaxHelper,
+            IdentityIds = [ .. entity.Value.IdentityIds],
+            CheckedIdentityIds = [.. entity.Value.CheckedIdentityIds],
+            Persons = [.. entity.Value.Persons],
+            CheckedPersons = [.. entity.Value.CheckedPersons],
         };
 
     public static Database.Models.Planning MapToEntity(this Domain.Models.Planning model, Database.Models.Planning entity)
     {
         entity.Id = model.Id;
-        entity.Json.EventId = model.EventId;
-        entity.Json.Date = model.Date.ToUniversalTime();
-        entity.Json.Name = model.Name;
-        entity.Json.From = model.From;
-        entity.Json.To = model.To;
-        entity.Json.MaxHelper = model.MaxHelper;
-        entity.Json.IdentityIds = [.. model.IdentityIds];
-        entity.Json.CheckedIdentityIds = [.. model.CheckedIdentityIds];
-        entity.Json.Persons = [.. model.Persons];
-        entity.Json.CheckedPersons = [.. model.CheckedPersons];
+        entity.Value.EventId = model.EventId;
+        entity.Value.Date = model.Date.ToUniversalTime();
+        entity.Value.Name = model.Name;
+        entity.Value.From = model.From;
+        entity.Value.To = model.To;
+        entity.Value.MaxHelper = model.MaxHelper;
+        entity.Value.IdentityIds = [.. model.IdentityIds];
+        entity.Value.CheckedIdentityIds = [.. model.CheckedIdentityIds];
+        entity.Value.Persons = [.. model.Persons];
+        entity.Value.CheckedPersons = [.. model.CheckedPersons];
         return entity;
     }
 }

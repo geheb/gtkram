@@ -1,166 +1,156 @@
 using Dapper;
 using GtKram.Infrastructure.Database.Models;
 using System.Data.Common;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 
 namespace GtKram.Infrastructure.Database.Repositories;
 
-internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntity, TJsonValue> 
-    where TEntity : class, IEntity, IEntityJsonValue<TJsonValue>
+internal sealed class SqlRepository<TEntity, TValue> : ISqlRepository<TEntity, TValue>
+    where TEntity : JsonEntity<TValue>
+    where TValue : new()
 {
-    private static readonly string _tableName;
-    private static string _selectColumnNames;
-    private static readonly string _insertOne;
-    private static readonly string _deleteOne;
-    private static readonly string _selectOne;
-    private static readonly string _selectMany;
-    private static readonly string _selectAll;
-    private static readonly string _updateOne;
-    private static readonly string _countAll;
-    private readonly TimeProvider _timeProvider;
-    private readonly SQLiteDbContext _dbContext;
-    private DbTransaction? _transaction;
+    private static readonly string _table;
 
-    public DbTransaction? Transaction
-    {
-        set {  _transaction = value; }
-    }
+    private const string _setVersionUpdatedDataFields = $"""
+        "{nameof(JsonEntity<>.Version)}" = "{nameof(JsonEntity<>.Version)}" + 1,
+        "{nameof(JsonEntity<>.Updated)}" = @_{nameof(JsonEntity<>.Updated)},
+        "{nameof(JsonEntity<>.Data)}" = @_{ nameof(JsonEntity<>.Data)}
+        """;
+
+    private const string _setVersionUpdatedFields = $"""
+        "{nameof(JsonEntity<>.Version)}" = "{nameof(JsonEntity<>.Version)}" + 1,
+        "{nameof(JsonEntity<>.Updated)}" = @_{nameof(JsonEntity<>.Updated)}
+        """;
+
+    private const string _insertFields = $"""
+        "{nameof(JsonEntity<>.Id)}",
+        "{nameof(JsonEntity<>.Created)}",
+        "{nameof(JsonEntity<>.Version)}",
+        "{nameof(JsonEntity<>.Data)}"
+        """;
+
+    private const string _insertParams = $"""
+        @_{nameof(JsonEntity<>.Id)},
+        @_{nameof(JsonEntity<>.Created)},
+        @_{nameof(JsonEntity<>.Version)},
+        @_{nameof(JsonEntity<>.Data)}
+        """;
+
+    private const string _insertParamsWithoutData = $"""
+        @_{nameof(JsonEntity<>.Id)},
+        @_{nameof(JsonEntity<>.Created)},
+        @_{nameof(JsonEntity<>.Version)}
+        """;
+
+    private readonly TimeProvider _timeProvider;
+    private readonly PostgresDbContext _dbContext;
+    internal DbTransaction? _transaction;
+
+    public string Table => _table;
 
     static SqlRepository()
     {
-        var attribute = typeof(TEntity).GetCustomAttribute<JsonTableAttribute>();
-        _tableName = attribute!.Name;
-
-        _selectColumnNames = string.Join(',',
-            [
-                nameof(IEntity.Id),
-                nameof(IEntity.Created),
-                nameof(IEntity.Updated),
-                nameof(IEntity.JsonProperties),
-                nameof(IEntity.JsonVersion),
-            ]);
-
-        string[] names =
-        [
-            nameof(IEntity.Id),
-            nameof(IEntity.Created),
-            nameof(IEntity.JsonProperties),
-            nameof(IEntity.JsonVersion),
-            .. attribute.MapColumns ?? []
-        ];
-
-        var insertColumnNames = string.Join(',', names);
-        var insertValues = "@" + string.Join(",@", names);
-
-        var update =
-            BuildWhere(nameof(IEntity.Updated), DateTime.MinValue) + "," +
-            BuildWhere(nameof(IEntity.JsonProperties), string.Empty) + "," +
-            $"{nameof(IEntity.JsonVersion)}={nameof(IEntity.JsonVersion)}+1";
-
-        foreach (var n in attribute.MapColumns ?? [])
-        {
-            update += $",{n}=@{n}";
-        }
-
-        var whereId = BuildWhere(nameof(IEntity.Id), Guid.Empty);
-        var whereJsonVersion = BuildWhere(nameof(IEntity.JsonVersion), 0);
-        _insertOne = $"INSERT INTO {_tableName} ({insertColumnNames}) VALUES ({insertValues})";
-        _deleteOne = $"DELETE FROM {_tableName} WHERE {whereId}";
-        _selectOne = BuildSelect(0, nameof(IEntity.Id), Guid.Empty);
-        _selectMany = BuildSelect(0, nameof(IEntity.Id), Array.Empty<Guid>());
-        _selectAll = BuildSelect(0, null, null);
-        _updateOne = $"UPDATE {_tableName} SET {update} WHERE {whereId} AND {whereJsonVersion}";
-        _countAll = BuildCount(null, null);
+        var attribute = typeof(TEntity).GetCustomAttribute<JsonTableAttribute>()!;
+        _table = $"\"{attribute.Schema}\".\"{attribute.Name}\"";
     }
 
     public SqlRepository(
         TimeProvider timeProvider,
-        SQLiteDbContext dbContext)
+        PostgresDbContext dbContext)
     {
         _timeProvider = timeProvider;
         _dbContext = dbContext;
     }
 
-    public async Task<DbTransaction> CreateTransaction(CancellationToken cancellationToken) =>
-        _transaction = await _dbContext.BeginTransaction(cancellationToken);
-
-    public async Task Insert(TEntity entity, CancellationToken cancellationToken)
+    public async Task<IRepoTransaction> BeginTransaction(CancellationToken cancellationToken)
     {
-        if (entity.Id == Guid.Empty)
-        {
-            entity.Id = Guid.CreateVersion7();
-        }
+        _transaction = await _dbContext.BeginTransaction(cancellationToken);
+        return new RepoTransaction(this);
+    }
 
-        if (entity.Created == DateTime.MinValue)
-        {
-            entity.Created = _timeProvider.GetUtcNow().DateTime;
-        }
+    public async Task<Guid> Insert(TEntity entity, CancellationToken cancellationToken)
+    {
+        using var data = JsonSerializer.SerializeToDocument(entity.Value);
 
-        entity.JsonVersion = 1;
-        Serialize(entity);
+        var id = entity.Id == default ? Guid.CreateVersion7() : entity.Id;
+
+        var values = new Dictionary<string, object?>
+        {
+            [$"@_{nameof(JsonEntity<>.Id)}"] = id,
+            [$"@_{nameof(JsonEntity<>.Created)}"] = entity.Created == default ? _timeProvider.GetUtcNow() : entity.Created,
+            [$"@_{nameof(JsonEntity<>.Version)}"] = 1,
+            [$"@_{nameof(JsonEntity<>.Data)}"] = data
+        };
+
+        var query = BuildInsertTableQuery();
 
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        await connection.ExecuteAsync(_insertOne, entity, _transaction);
+        await connection.ExecuteAsync(query, values, _transaction);
+
+        return id;
+    }
+
+    public async Task<object?> ExecuteScalar(
+        TEntity entity, 
+        string sql, 
+        Dictionary<string, object?> values,
+        CancellationToken cancellationToken)
+    {
+        using var data = JsonSerializer.SerializeToDocument(entity.Value);
+
+        var query = BuildQuery(sql);
+
+        values[$"@_{nameof(JsonEntity<>.Id)}"] = entity.Id == default ? Guid.CreateVersion7() : entity.Id;
+        if (entity.Created == default)
+        {
+            values[$"@_{nameof(JsonEntity<>.Created)}"] = _timeProvider.GetUtcNow();
+        }
+        else
+        {
+            values[$"@_{nameof(JsonEntity<>.Updated)}"] = _timeProvider.GetUtcNow();
+        }
+        values[$"@_{nameof(JsonEntity<>.Version)}"] = entity.Version == default ? 1 : entity.Version;
+        values[$"@_{nameof(JsonEntity<>.Data)}"] = data;
+
+        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
+        var result = await connection.ExecuteScalarAsync(query, values, _transaction);
+
+        return result;
+    }
+
+    public async Task<object?> ExecuteScalar(
+        string sql,
+        Dictionary<string, object?> values,
+        CancellationToken cancellationToken)
+    {
+        values[$"@_{nameof(JsonEntity<>.Updated)}"] = _timeProvider.GetUtcNow();
+
+        var query = BuildQuery(sql);
+
+        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
+        var result = await connection.ExecuteScalarAsync(query, values, _transaction);
+
+        return result;
     }
 
     public async Task<int> Delete(Guid id, CancellationToken cancellationToken)
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        return await connection.ExecuteAsync(_deleteOne, new { Id = id }, _transaction);
+
+        var query = $"""DELETE FROM {_table} WHERE "{nameof(JsonEntity<>.Id)}"=@id""";
+
+        return await connection.ExecuteAsync(query, new { id }, _transaction);
     }
 
     public async Task<TEntity?> SelectOne(Guid id, CancellationToken cancellationToken)
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var entity = await connection.QueryFirstOrDefaultAsync<TEntity>(_selectOne, new { Id = id }, _transaction);
-        
-        if (entity is not null)
-        {
-            Deserialize(entity);
-        }
 
-        return entity;
-    }
+        var query = BuildSelectTableQuery(0, $""" "{nameof(JsonEntity<>.Id)}"=@id """);
+        var entity = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { id }, _transaction);
 
-    public async Task<TEntity[]> SelectBy(
-        int count,
-        Expression<Func<TEntity, object?>> whereField,
-        object? whereValue,
-        CancellationToken cancellationToken)
-    {
-        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var fieldName = whereField.GetPropertyName();
-
-        var sql = BuildSelect(count, fieldName, whereValue);
-
-        var parameters = whereValue is null ? null : new Dictionary<string, object?>
-        {
-            { $"@{fieldName}", whereValue },
-        };
-
-        var entities = await connection.QueryAsync<TEntity>(sql, parameters, _transaction);
-        return [.. entities.Select(Deserialize)];
-    }
-
-    public async Task<TEntity[]> SelectByJson(
-        int count,
-        Expression<Func<TEntity, object?>> whereField,
-        object? whereValue,
-        CancellationToken cancellationToken)
-    {
-        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var fieldName = whereField.GetPropertyName();
-
-        var sql = BuildSelectJson(count, fieldName, whereValue);
-
-        var parameters = whereValue is null ? null : new Dictionary<string, object?>
-        {
-            { $"@{fieldName}", whereValue },
-        };
-        var entities = await connection.QueryAsync<TEntity>(sql, parameters, _transaction);
-        return [.. entities.Select(Deserialize)];
+        return entity is null ? null : Deserialize(entity);
     }
 
     public async Task<TEntity[]> SelectMany(ICollection<Guid> ids, CancellationToken cancellationToken)
@@ -170,9 +160,11 @@ internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntit
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
         var result = new List<TEntity>(ids.Count);
 
+        var query = BuildSelectTableQuery(0, $""" ("{nameof(JsonEntity<>.Id)}")::uuid = ANY(@ids) """);
+
         foreach (var chunk in ids.Chunk(100))
         {
-            var entities = await connection.QueryAsync<TEntity>(_selectMany, new { Id = chunk }, _transaction);
+            var entities = await connection.QueryAsync<TEntity>(query, new { ids = chunk }, _transaction);
             result.AddRange(entities.Select(Deserialize));
         }
 
@@ -182,8 +174,24 @@ internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntit
     public async Task<TEntity[]> SelectAll(CancellationToken cancellationToken)
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var entities = await connection.QueryAsync<TEntity>(_selectAll, _transaction);
 
+        var query = BuildSelectTableQuery(0, null);
+        var entities = await connection.QueryAsync<TEntity>(query, _transaction);
+
+        return [.. entities.Select(Deserialize)];
+    }
+
+    public async Task<TEntity[]> SelectBy(
+        int limit,
+        string whereCondition,
+        object? whereValues,
+        CancellationToken cancellationToken)
+    {
+        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
+
+        var sql = BuildSelectTableQuery(limit, BuildQuery(whereCondition));
+
+        var entities = await connection.QueryAsync<TEntity>(sql, whereValues, _transaction);
         return [.. entities.Select(Deserialize)];
     }
 
@@ -191,168 +199,138 @@ internal sealed class SqlRepository<TEntity, TJsonValue> : ISqlRepository<TEntit
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
 
-        Serialize(entity);
-        entity.Updated = _timeProvider.GetUtcNow().DateTime;
+        using var data = JsonSerializer.SerializeToDocument(entity.Value);
 
-        var affectedRows = await connection.ExecuteAsync(_updateOne, entity, _transaction);
+        var values = new Dictionary<string, object?>
+        {
+            [$"@_{nameof(JsonEntity<>.Id)}"] = entity.Id,
+            [$"@_{nameof(JsonEntity<>.Updated)}"] = _timeProvider.GetUtcNow(),
+            [$"@_{nameof(JsonEntity<>.Version)}"] = entity.Version,
+            [$"@_{nameof(JsonEntity<>.Data)}"] = data
+        };
+
+        var query = BuildUpdateTableQuery();
+
+        var affectedRows = await connection.ExecuteAsync(query, values, _transaction);
         if (affectedRows == 0)
         {
             return false;
         }
 
-        entity.JsonVersion++;
-
         return true;
     }
 
-    public async Task<int> Update(IEnumerable<TEntity> entities, CancellationToken cancellationToken)
-    {
-        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var count = 0;
-
-        foreach (var entity in entities)
-        {
-            Serialize(entity);
-            entity.Updated = _timeProvider.GetUtcNow().DateTime;
-
-            var affectedRows = await connection.ExecuteAsync(_updateOne, entity, _transaction);
-            if (affectedRows == 0)
-            {
-                continue;
-            }
-
-            count++;
-            entity.JsonVersion++;
-        }
-
-        return count;
-    }
-
-    public async Task<int> Count(CancellationToken cancellationToken)
-    {
-        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        return await connection.ExecuteScalarAsync<int?>(_countAll, null, _transaction) ?? default;
-    }
-
     public async Task<int> CountBy(
-        Expression<Func<TEntity, object?>> whereField,
-        object? whereValue,
+        string whereCondition,
+        object? whereValues,
         CancellationToken cancellationToken)
     {
         var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var fieldName = whereField.GetPropertyName();
 
-        var sql = BuildCount(fieldName, whereValue);
+        var sql = BuildCountTableQuery(BuildQuery(whereCondition));
 
-        var parameters = whereValue is null ? null : new Dictionary<string, object?>
-        {
-            { $"@{fieldName}", whereValue },
-        };
-
-        return await connection.ExecuteScalarAsync<int?>(sql, parameters, _transaction) ?? default;
+        return await connection.ExecuteScalarAsync<int?>(sql, whereValues, _transaction) ?? default;
     }
 
-    public async Task<int> MaxBy(
-        Expression<Func<TEntity, object?>> maxField,
-        Expression<Func<TEntity, object?>> whereField,
-        object? whereValue,
-        CancellationToken cancellationToken)
-    {
-        var connection = _transaction?.Connection ?? await _dbContext.GetConnection(cancellationToken);
-        var maxFieldName = maxField.GetPropertyName();
-        var whereFieldName = whereField.GetPropertyName();
-
-        var sql = BuildMax(maxFieldName, whereFieldName, whereValue);
-
-        var parameters = whereValue is null ? null : new Dictionary<string, object?>
-        {
-            { $"@{whereFieldName}", whereValue },
-        };
-
-        return await connection.ExecuteScalarAsync<int?>(sql, parameters, _transaction) ?? default;
-    }
-
-    private static void Serialize(TEntity entity)
-    {
-        entity.JsonProperties = JsonSerializer.Serialize(entity.Json);
-    }
+    private static string BuildQuery(string sql) =>
+        sql
+        .Replace("$table", _table)
+        .Replace("$id_field", $"\"{nameof(JsonEntity<>.Id)}\"")
+        .Replace("$id_param", $"@_{nameof(JsonEntity<>.Id)}")
+        .Replace("$insert_fields", _insertFields)
+        .Replace("$insert_table_query", BuildInsertTableQuery())
+        .Replace("$update_table_query", BuildUpdateTableQuery())
+        .Replace("$created_field", $"\"{nameof(JsonEntity<>.Created)}\"")
+        .Replace("$created_param", $"@_{nameof(JsonEntity<>.Created)}")
+        .Replace("$version_field", $"\"{nameof(JsonEntity<>.Version)}\"")
+        .Replace("$updated_field", $"\"{nameof(JsonEntity<>.Updated)}\"")
+        .Replace("$updated_param", $"@_{nameof(JsonEntity<>.Updated)}")
+        .Replace("$data_field", $"\"{nameof(JsonEntity<>.Data)}\"")
+        .Replace("$data_param", $"@_{nameof(JsonEntity<>.Data)}")
+        .Replace("$insert_params_without_data", _insertParamsWithoutData)
+        .Replace("$insert_params", _insertParams)
+        .Replace("$set_version_updated", _setVersionUpdatedFields);
 
     private static TEntity Deserialize(TEntity entity)
     {
-        entity.Json = JsonSerializer.Deserialize<TJsonValue>(entity.JsonProperties)!;
+        if (!string.IsNullOrWhiteSpace(entity.Data))
+        {
+            entity.Value = JsonSerializer.Deserialize<TValue>(entity.Data)!;
+            entity.Data = null;
+        }
         return entity;
     }
 
-    private static string BuildWhere(string field, object? value)
-    {
-        var isCollection = value is not string && value is System.Collections.IEnumerable;
-        var collation = value is string ? " COLLATE utf8_ci" : string.Empty;
+    private static string BuildInsertTableQuery() =>
+        $"""
+        INSERT INTO {_table} (
+            {_insertFields}
+        ) 
+        VALUES (
+            {_insertParams}
+        );
+        """;
 
-        return
-            isCollection
-            ? $"{field} IN @{field}"
-            : value is null ? $"{field} IS NULL" : $"{field}=@{field}{collation}";
+    private static string BuildUpdateTableQuery()
+    {
+        const string where = $""" 
+            "{nameof(JsonEntity<>.Id)}" = @_{nameof(JsonEntity<>.Id)} AND "{nameof(JsonEntity<>.Version)}" = @_{nameof(JsonEntity<>.Version)}
+            """;
+
+        return $"UPDATE {_table} SET {_setVersionUpdatedDataFields} WHERE {where};";
     }
 
-    private static string BuildWhereJson(string field, object? value)
+    private static string BuildSelectTableQuery(int limit, string? where)
     {
-        var isCollection = value is not string && value is System.Collections.IEnumerable;
-        var collation = value is string ? " COLLATE utf8_ci" : string.Empty;
+        const string columns = $"""
+            "{nameof(JsonEntity<>.Id)}",
+            "{nameof(JsonEntity<>.Created)}",
+            "{nameof(JsonEntity<>.Updated)}",
+            "{nameof(JsonEntity<>.Version)}",
+            "{nameof(JsonEntity<>.Data)}"
+            """;
 
-        return
-            isCollection
-            ? $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}') IN @{field}"
-            : (value is null
-                ? $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}') IS NULL"
-                : $"json_extract({nameof(IEntity.JsonProperties)},'$.{field}')=@{field}{collation}");
-    }
-
-    private static string BuildSelect(int count, string? field, object? value)
-    {
-        if (field is null)
+        if (where is null)
         {
-            return count > 0
-                ? $"SELECT {_selectColumnNames} FROM {_tableName} LIMIT {count}"
-                : $"SELECT {_selectColumnNames} FROM {_tableName}";
+            return limit > 0
+                ? $"SELECT {columns} FROM {_table} LIMIT {limit};"
+                : $"SELECT {columns} FROM {_table};";
         }
 
-        var where = BuildWhere(field, value);
-
-        return count > 0
-            ? $"SELECT {_selectColumnNames} FROM {_tableName} WHERE {where} LIMIT {count}"
-            : $"SELECT {_selectColumnNames} FROM {_tableName} WHERE {where}";
+        return limit > 0
+            ? $"SELECT {columns} FROM {_table} WHERE {where} LIMIT {limit};"
+            : $"SELECT {columns} FROM {_table} WHERE {where};";
     }
 
-    private static string BuildSelectJson(int count, string field, object? value)
+    private static string BuildCountTableQuery(string? where)
     {
-        var where = BuildWhereJson(field, value);
-
-        return count > 0
-            ? $"SELECT {_selectColumnNames} FROM {_tableName} WHERE {where} LIMIT {count}"
-            : $"SELECT {_selectColumnNames} FROM {_tableName} WHERE {where}";
-    }
-
-    private static string BuildCount(string? field, object? value)
-    {
-        if (field is null)
+        if (where is null)
         {
-            return $"SELECT COUNT(*) FROM {_tableName}";
+            return $"SELECT COUNT(*) FROM {_table};";
         }
 
-        var where = BuildWhere(field, value);
-
-        return $"SELECT COUNT(*) FROM {_tableName} WHERE {where}";
+        return $"SELECT COUNT(*) FROM {_table} WHERE {where};";
     }
 
-    private static string BuildMax(string maxField, string? whereField, object? whereValue)
+    private readonly struct RepoTransaction : IRepoTransaction
     {
-        if (whereField is null)
+        private readonly SqlRepository<TEntity, TValue> _repository;
+
+        public RepoTransaction(SqlRepository<TEntity, TValue> repository) =>
+            _repository = repository;
+
+        public Task Commit(CancellationToken cancellationToken) =>
+            _repository._transaction!.CommitAsync(cancellationToken);
+
+        public async ValueTask DisposeAsync()
         {
-            return $"SELECT MAX({maxField}) FROM {_tableName}";
+            if (_repository._transaction is null)
+            {
+                return;
+            }
+            var transaction = _repository._transaction!;
+            _repository._transaction = null;
+            await transaction.DisposeAsync();
         }
-
-        var where = BuildWhere(whereField, whereValue);
-
-        return $"SELECT MAX({maxField}) FROM {_tableName} WHERE {where}";
     }
 }

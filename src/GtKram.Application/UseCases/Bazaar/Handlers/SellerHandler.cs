@@ -158,22 +158,26 @@ internal sealed class SellerHandler :
             }
         }
 
-        var seller = await _sellerRegistrations.FindByEventIdAndEmail(
-            command.Registration.EventId,
-            command.Registration.Email,
-            cancellationToken);
+        var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
+        if (!isValid)
+        {
+            return _errorDescriber.InvalidEmail(command.Registration.Email).ToError();
+        }
 
+        var result = await _sellerRegistrations.Upsert(command.Registration, cancellationToken);
+        if (result.IsError)
+        {
+            return Domain.Errors.SellerRegistration.LimitExceeded;
+        }
+        /*
+        var seller = await _sellerRegistrations.Find(result.Value, cancellationToken);
         if (seller.IsError)
         {
-            var isValid = await _emailValidatorService.Validate(command.Registration.Email, cancellationToken);
-            if (!isValid)
-            {
-                return _errorDescriber.InvalidEmail(command.Registration.Email).ToError();
-            }
-
-            return await _sellerRegistrations.Create(command.Registration, cancellationToken);
+            return seller.Errors;
         }
-        else
+
+        // seller already registered, update only
+        if (seller.Value.Updated.HasValue)
         {
             seller.Value.Name = command.Registration.Name;
             seller.Value.Phone = command.Registration.Phone;
@@ -181,7 +185,9 @@ internal sealed class SellerHandler :
             seller.Value.PreferredType = command.Registration.PreferredType;
 
             return await _sellerRegistrations.Update(seller.Value, cancellationToken);
-        }
+        }*/
+
+        return Result.Success;
     }
 
     public async ValueTask<ErrorOr<Success>> Handle(UpdateSellerCommand command, CancellationToken cancellationToken)

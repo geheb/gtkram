@@ -7,31 +7,42 @@ namespace GtKram.Infrastructure.Repositories;
 
 internal sealed class Articles : IArticles
 {
-    private readonly TableLocker _tableLocker;
     private readonly ISqlRepository<Article, ArticleValues> _repository;
 
     public Articles(
-        TableLocker tableLocker,
         ISqlRepository<Article, ArticleValues> repository)
     {
-        _tableLocker = tableLocker;
         _repository = repository;
     }
 
     public async Task<ErrorOr<Success>> Create(Domain.Models.Article model, CancellationToken cancellationToken)
     {
-        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
-        if (locker is null)
+        var values = new Dictionary<string, object?>
         {
-            return Domain.Errors.Internal.Timeout;
-        }
+            ["@seller_id"] = model.SellerId,
+            ["@key"] = BitConverter.ToInt64(model.SellerId.ToByteArray(), 8)
+        };
 
-        var max = await _repository.MaxBy(e => e.LabelNumber, e => e.SellerId, model.SellerId, cancellationToken);
+        const string query = $"""
+            SELECT pg_advisory_xact_lock(@key);
 
-        var entity = model.MapToEntity(new() { Json = new() });
-        entity.Json.LabelNumber = ++max;
+            INSERT INTO $table ($insert_fields)
+            VALUES (
+                $insert_params_without_data, 
+                $data_param || jsonb_build_object('{nameof(ArticleValues.LabelNumber)}', (
+                    SELECT COALESCE(MAX(($data_field->>'{nameof(ArticleValues.LabelNumber)}')::int), 0) + 1 FROM $table
+                    WHERE ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = @seller_id
+                ))
+            );
+            """;
 
-        await _repository.Insert(entity, cancellationToken);
+        var entity = model.MapToEntity(new());
+
+        await using var trans = await _repository.BeginTransaction(cancellationToken);
+
+        await _repository.ExecuteScalar(entity, query, values, cancellationToken);
+
+        await trans.Commit(cancellationToken);
 
         return Result.Success;
     }
@@ -43,35 +54,39 @@ internal sealed class Articles : IArticles
             return Domain.Errors.SellerArticle.Empty;
         }
 
-        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
-        if (locker is null)
+        var values = new Dictionary<string, object?>
         {
-            return Domain.Errors.Internal.Timeout;
+            ["@seller_id"] = sellerId,
+            ["@key"] = BitConverter.ToInt64(sellerId.ToByteArray(), 8)
+        };
+
+        const string query = $"""
+            SELECT pg_advisory_xact_lock(@key);
+
+            INSERT INTO $table ($insert_fields)
+            VALUES (
+                $insert_params_without_data, 
+                $data_param || jsonb_build_object('{nameof(ArticleValues.LabelNumber)}', (
+                    SELECT COALESCE(MAX(($data_field->>'{nameof(ArticleValues.LabelNumber)}')::int), 0) + 1 FROM $table
+                    WHERE ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = @seller_id
+                ))
+            );
+            """;
+
+        await using var trans = await _repository.BeginTransaction(cancellationToken);
+
+        foreach (var model in models)
+        {
+            var entity = model.MapToEntity(new());
+            entity.Value.SellerId = sellerId;
+
+            await _repository.ExecuteScalar(entity, query, values, cancellationToken);
         }
 
-        try
-        {
-            await using var trans = await _repository.CreateTransaction(cancellationToken);
+        await trans.Commit(cancellationToken);
 
-            var max = await _repository.MaxBy(e => e.LabelNumber, e => e.SellerId, sellerId, cancellationToken);
+        return Result.Success;
 
-            foreach (var model in models)
-            {
-                var entity = model.MapToEntity(new() { Json = new() });
-                entity.Json.SellerId = sellerId;
-                entity.Json.LabelNumber = ++max;
-
-                await _repository.Insert(entity, cancellationToken);
-            }
-
-            await trans.CommitAsync(cancellationToken);
-
-            return Result.Success;
-        }
-        finally
-        {
-            _repository.Transaction = null;
-        }
     }
 
     public async Task<ErrorOr<Success>> Delete(Guid id, CancellationToken cancellationToken)
@@ -82,46 +97,41 @@ internal sealed class Articles : IArticles
             return Domain.Errors.SellerArticle.NotFound;
         }
 
-        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
-        if (locker is null)
+        var values = new Dictionary<string, object?>
         {
-            return Domain.Errors.Internal.Timeout;
-        }
+            ["@key"] = BitConverter.ToInt64(existentArticle.Value.SellerId.ToByteArray(), 8),
+            ["@id"] = id,
+        };
 
-        try
-        {
-            await using var trans = await _repository.CreateTransaction(cancellationToken);
+        const string query = $$"""
+            SELECT pg_advisory_xact_lock(@key);
 
-            var result = await _repository.Delete(id, cancellationToken);
-            if (result < 1)
-            {
-                return Domain.Errors.SellerArticle.DeleteFailed;
-            }
+            WITH deleted AS (
+                DELETE FROM $table WHERE $id_field = @id
+                RETURNING 
+                    $data_field->>'{{nameof(ArticleValues.SellerId)}}' AS seller_id,
+                    ($data_field->>'{{nameof(ArticleValues.LabelNumber)}}')::int AS label_number
+            )
+            UPDATE $table
+            SET $data_field = jsonb_set(
+                $data_field,
+                '{{{nameof(ArticleValues.LabelNumber)}}}',
+                to_jsonb(($data_field->>'{{nameof(ArticleValues.LabelNumber)}}')::int - 1)
+            ), $set_version_updated
+            FROM deleted
+            WHERE 
+                $data_field->>'{{nameof(ArticleValues.SellerId)}}' = seller_id AND
+                ($data_field->>'{{nameof(ArticleValues.LabelNumber)}}')::int > label_number;
+            """;
 
-            var articles = await _repository.SelectBy(0, e => e.SellerId, existentArticle.SellerId, cancellationToken);
-            var labelNumber = 1;
+        await using var trans = await _repository.BeginTransaction(cancellationToken);
 
-            foreach (var article in articles.OrderBy(e => e.LabelNumber))
-            {
-                if (article.LabelNumber != labelNumber)
-                {
-                    article.Json.LabelNumber = labelNumber;
-                    var updated = await _repository.Update(article, cancellationToken);
-                    if (!updated)
-                    {
-                        return Domain.Errors.Internal.InvalidData;
-                    }
-                }
-                labelNumber++;
-            }
+        await _repository.ExecuteScalar(query, values, cancellationToken);
 
-            await trans.CommitAsync(cancellationToken);
-            return Result.Success;
-        }
-        finally
-        {
-            _repository.Transaction = null;
-        }
+        await trans.Commit(cancellationToken);
+
+        return Result.Success;
+
     }
 
     public async Task<ErrorOr<Domain.Models.Article>> Find(Guid id, CancellationToken cancellationToken)
@@ -138,8 +148,19 @@ internal sealed class Articles : IArticles
 
     public async Task<ErrorOr<Domain.Models.Article>> FindBySellerIdAndLabelNumber(Guid sellerId, int labelNumber, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.SellerId, sellerId, cancellationToken);
-        var entity = entities.FirstOrDefault(e => e.LabelNumber == labelNumber);
+        var values = new Dictionary<string, object?>
+        {
+            ["@seller_id"] = sellerId,
+            ["@label_number"] = labelNumber
+        };
+
+        const string query = $"""
+            ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = @seller_id AND
+            ($data_field->>'{nameof(ArticleValues.LabelNumber)}')::int = @label_number
+            """;
+
+        var entities = await _repository.SelectBy(0, query, values, cancellationToken);
+        var entity = entities.FirstOrDefault();
         if (entity is null)
         {
             return Domain.Errors.SellerArticle.NotFound;
@@ -150,7 +171,11 @@ internal sealed class Articles : IArticles
 
     public async Task<Domain.Models.Article[]> GetBySellerId(Guid id, CancellationToken cancellationToken)
     {
-        var entities = await _repository.SelectBy(0, e => e.SellerId, id, cancellationToken);
+        const string query = $"""
+            ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = @id
+            """;
+
+        var entities = await _repository.SelectBy(0, query, new { id }, cancellationToken);
         if (entities.Length == 0)
         {
             return [];
@@ -163,9 +188,13 @@ internal sealed class Articles : IArticles
     {
         var result = new List<Domain.Models.Article>(ids.Length);
 
+        const string query = $"""
+            ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = ANY(@seller_ids)
+            """;
+
         foreach (var chunk in ids.Chunk(100))
         {
-            var entities = await _repository.SelectBy(0, e => e.SellerId, chunk, cancellationToken);
+            var entities = await _repository.SelectBy(0, query, new { seller_ids = chunk }, cancellationToken);
             result.AddRange(entities.Select(e => e.MapToDomain()));
         }
 
@@ -185,13 +214,11 @@ internal sealed class Articles : IArticles
 
     public async Task<ErrorOr<int>> GetCountBySellerId(Guid id, CancellationToken cancellationToken)
     {
-        using var locker = await _tableLocker.LockLabelNumber(cancellationToken);
-        if (locker is null)
-        {
-            return Domain.Errors.SellerArticle.Timeout;
-        }
+        const string query = $"""
+            ($data_field->>'{nameof(ArticleValues.SellerId)}')::uuid = @seller_id
+            """;
 
-        var count = await _repository.CountBy(e => e.SellerId, id, cancellationToken);
+        var count = await _repository.CountBy(query, new { seller_id = id }, cancellationToken);
         return  count;
     }
 

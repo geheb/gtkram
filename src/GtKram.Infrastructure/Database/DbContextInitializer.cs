@@ -38,7 +38,8 @@ internal sealed class DbContextInitializer
 
         superUser = new Identity
         {
-            Json = new()
+            Id = Guid.CreateVersion7(),
+            Value = new()
             {
                 Email = superUserEmail,
                 UserName = Guid.NewGuid().ToString("N"),

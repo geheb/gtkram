@@ -14,11 +14,13 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Npgsql;
+using NpgsqlTypes;
 using System.Data;
+using System.Text.Json;
 
 namespace GtKram.Infrastructure;
 
@@ -26,6 +28,9 @@ public static class ServiceExtensions
 {
     public static void AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHealthChecks()
+            .AddCheck<MigrationHealthCheck>("migration");
+
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
         services.AddSingleton(TimeProvider.System);
@@ -44,21 +49,19 @@ public static class ServiceExtensions
 
     public static void AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHealthChecks()
-            .AddCheck<MigrationHealthCheck>("migration");
+        SqlMapper.AddTypeHandler(new JsonDocumentTypeHandler());
 
-        configuration.InitSQLiteContext();
+        var connectionString = configuration.GetConnectionString("gtkram");
 
         services.AddFluentMigratorCore()
             .ConfigureRunner(rb => rb
-                .AddSQLite()
-                .WithGlobalConnectionString(configuration.GetConnectionString("SQLite"))
+                .AddPostgres()
+                .WithGlobalConnectionString(connectionString)
                 .WithVersionTable(new Migrations())
                 .ScanIn(typeof(Database.Migrations.Initial).Assembly).For.Migrations());
 
-        services.AddScoped<SQLiteDbContext>();
+        services.AddScoped<PostgresDbContext>();
 
-        services.AddSingleton<TableLocker>();
         services.AddScoped(typeof(Database.Repositories.ISqlRepository<,>), typeof(Database.Repositories.SqlRepository<,>));
         services.AddScoped<EmailQueues>();
         services.AddScoped<IUsers, Users>();
@@ -74,7 +77,7 @@ public static class ServiceExtensions
 
     public static void AddAuth(this IServiceCollection services, IConfiguration config, string policyName)
     {
-        services.AddScoped<ILookupNormalizer, NoneLookupNormalizer>();
+        services.AddScoped<ILookupNormalizer, UpperLookupNormalizer>();
         services.AddScoped<IdentityErrorDescriber, GermanyIdentityErrorDescriber>();
 
         var builder = services
@@ -185,25 +188,9 @@ public static class ServiceExtensions
         services.AddScoped<SmtpDispatcher>();
     }
 
-    internal static void InitSQLiteContext(this IConfiguration configuration)
-    {
-        // https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/dapper-limitations
-        SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-        SqlMapper.AddTypeHandler(new GuidHandler());
-        SqlMapper.AddTypeHandler(new TimeSpanHandler());
-
-        var connectionStringBuilder = new SqliteConnectionStringBuilder(configuration.GetConnectionString("SQLite"));
-
-        var file = new FileInfo(connectionStringBuilder.DataSource);
-        if (file.Directory?.Exists == false)
-        {
-            file.Directory.Create();
-        }
-    }
-
     private sealed class Migrations : IVersionTableMetaData
     {
-        public string SchemaName => string.Empty;
+        public string SchemaName => "db";
         public string TableName => "migrations";
         public string ColumnName => "Version";
         public string UniqueIndexName => "IX_migrations_Version";
@@ -212,28 +199,18 @@ public static class ServiceExtensions
         public bool OwnsSchema => true;
         public bool CreateWithPrimaryKey => false;
     }
-
-    private abstract class SqliteTypeHandler<T> : SqlMapper.TypeHandler<T>
+    private sealed class JsonDocumentTypeHandler : SqlMapper.TypeHandler<JsonDocument>
     {
-        public override void SetValue(IDbDataParameter parameter, T? value)
-            => parameter.Value = value;
-    }
+        public override void SetValue(IDbDataParameter parameter, JsonDocument? value)
+        {
+            var p = (NpgsqlParameter)parameter;
+            p.NpgsqlDbType = NpgsqlDbType.Jsonb;
+            p.Value = value?.RootElement.GetRawText() ?? (object)DBNull.Value;
+        }
 
-    private sealed class DateTimeOffsetHandler : SqliteTypeHandler<DateTimeOffset>
-    {
-        public override DateTimeOffset Parse(object value)
-            => DateTimeOffset.Parse((string)value);
-    }
-
-    private sealed class GuidHandler : SqliteTypeHandler<Guid>
-    {
-        public override Guid Parse(object value)
-            => Guid.Parse((string)value);
-    }
-
-    private sealed class TimeSpanHandler : SqliteTypeHandler<TimeSpan>
-    {
-        public override TimeSpan Parse(object value)
-            => TimeSpan.Parse((string)value);
+        public override JsonDocument Parse(object value)
+        {
+            return JsonDocument.Parse((string)value);
+        }
     }
 }

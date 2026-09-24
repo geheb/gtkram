@@ -4,6 +4,8 @@ public sealed class SellerRegistration
 {
     public Guid Id { get; set; }
 
+    public DateTimeOffset? Updated { get; set; }
+
     public required Guid EventId { get; set; }
 
     public required string Email { get; set; }
