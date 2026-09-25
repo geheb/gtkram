@@ -191,7 +191,7 @@
                     const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
                     if (!isValid) {
                         createToast('QR-Code ist ungültig', 'is-danger');
-                        setTimeout(() => scanner.resume(), 1000);
+                        setTimeout(() => scanner.resume(), 1500);
                         return;
                     }
 
@@ -216,7 +216,7 @@
                         else {
                             createToast('Artikel konnte nicht erfasst werden.', 'is-danger');
                         }
-                        setTimeout(() => scanner.resume(), 500);
+                        setTimeout(() => scanner.resume(), 1500);
                     });
                 },
                 onError(err) {
